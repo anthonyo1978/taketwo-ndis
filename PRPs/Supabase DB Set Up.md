@@ -429,3 +429,9 @@ const { data: houses, loading, error } = useHouses()
 **Last Updated**: January 2025  
 **Version**: 1.0  
 **Status**: Planning Phase
+
+### Migration Behaviour
+
+ - Lets migrate one table at a time and then test
+ - as we move through the migration, educate Ant (in the chat) about what has happened and guide hom about where to look and how to manually test that front end to back thorughly
+ 
