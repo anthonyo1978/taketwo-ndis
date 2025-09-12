@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
 import { houseCreateSchema } from "lib/schemas/house"
-import { generateHouseId } from "lib/utils/house-id-generator"
-import { addHouseToStorage, getHousesFromStorage } from "lib/utils/house-storage"
+import { houseService } from "lib/supabase/services/houses"
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,11 +24,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate unique ID
-    const houseId = generateHouseId()
-
-    // Save to storage with audit fields
-    const newHouse = addHouseToStorage(validation.data, houseId)
+    // Create house in Supabase
+    const newHouse = await houseService.create(validation.data)
 
     return NextResponse.json(
       { 
@@ -56,8 +52,8 @@ export async function GET() {
     // Add delay to simulate realistic API behavior
     await new Promise((resolve) => setTimeout(resolve, 300))
 
-    // Get all houses from storage
-    const houses = getHousesFromStorage()
+    // Get all houses from Supabase
+    const houses = await houseService.getAll()
 
     return NextResponse.json(
       { 

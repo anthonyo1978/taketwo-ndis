@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
-import { getHouseByIdFromStorage } from "lib/utils/house-storage"
+import { houseService } from "lib/supabase/services/houses"
 
 interface RouteParams {
   params: {
@@ -25,8 +25,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Get house from storage
-    const house = getHouseByIdFromStorage(id)
+    // Get house from Supabase
+    const house = await houseService.getById(id)
 
     if (!house) {
       return NextResponse.json(
