@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { contractStatusTransitionSchema } from 'lib/schemas/contract'
-import { 
-  createContractRenewal,
-  getResidentByIdFromStorage,
-  updateContractStatus
-} from 'lib/utils/resident-storage'
+import { ResidentService } from 'lib/supabase/services/residents'
 
 interface RouteParams {
   id: string
@@ -36,20 +32,12 @@ export async function PUT(
     await new Promise(resolve => setTimeout(resolve, 300))
     
     try {
-      const updatedResident = updateContractStatus(id, fundingId, status)
+      const residentService = new ResidentService()
       
-      if (!updatedResident) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Resident or funding contract not found' 
-          }, 
-          { status: 404 }
-        )
-      }
-      
-      // Find the updated contract
-      const updatedContract = updatedResident.fundingInformation.find(f => f.id === fundingId)
+      // Update the contract status using Supabase
+      const updatedContract = await residentService.updateFundingContract(fundingId, {
+        contractStatus: status
+      })
       
       return NextResponse.json({
         success: true,
@@ -57,6 +45,7 @@ export async function PUT(
         message: `Contract status updated to ${status}`
       })
     } catch (error) {
+      console.error('Error updating contract status:', error)
       return NextResponse.json(
         { 
           success: false, 
@@ -125,21 +114,23 @@ export async function POST(
     await new Promise(resolve => setTimeout(resolve, 400))
     
     try {
-      const updatedResident = createContractRenewal(id, validation.data.parentContractId, validation.data)
+      const residentService = new ResidentService()
       
-      if (!updatedResident) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Resident not found' 
-          }, 
-          { status: 404 }
-        )
-      }
-      
-      // Find the newly created renewal contract
-      const renewalContract = updatedResident.fundingInformation
-        .find(f => f.parentContractId === validation.data.parentContractId && f.contractStatus === 'Draft')
+      // Create contract renewal using Supabase
+      const renewalContract = await residentService.createFundingContract(id, {
+        type: 'Renewal',
+        amount: validation.data.amount,
+        startDate: validation.data.startDate,
+        endDate: validation.data.endDate,
+        description: validation.data.description || 'Contract renewal',
+        isActive: true,
+        contractStatus: 'Draft',
+        originalAmount: validation.data.amount,
+        currentBalance: validation.data.amount,
+        drawdownRate: validation.data.drawdownRate,
+        autoDrawdown: validation.data.autoDrawdown,
+        parentContractId: validation.data.parentContractId
+      })
       
       return NextResponse.json({
         success: true,
@@ -178,7 +169,8 @@ export async function GET(
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 200))
     
-    const resident = getResidentByIdFromStorage(id)
+    const residentService = new ResidentService()
+    const resident = await residentService.getResidentById(id)
     
     if (!resident) {
       return NextResponse.json(

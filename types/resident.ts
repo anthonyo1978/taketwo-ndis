@@ -6,7 +6,7 @@ export type FundingType = 'NDIS' | 'Government' | 'Private' | 'Family' | 'Other'
 
 export type ContractStatus = 'Draft' | 'Active' | 'Expired' | 'Cancelled' | 'Renewed'
 
-export type DrawdownRate = 'daily' | 'weekly' | 'fortnightly' | 'monthly'
+export type DrawdownRate = 'daily' | 'weekly' | 'monthly'
 
 export interface FundingInformation {
   id: string

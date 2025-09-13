@@ -2,13 +2,13 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
+import { ErrorBoundary } from "components/ErrorBoundary"
 import { AuditTrail } from "components/residents/AuditTrail"
 import { ContractManagementTile } from "components/residents/ContractManagementTile"
 import { ResidentBalanceWidget } from "components/residents/ResidentBalanceWidget"
 import { StatusManager } from "components/residents/StatusManager"
 import { type TabItem, Tabs } from "components/ui/Tabs"
-import { ErrorBoundary } from "components/ErrorBoundary"
-import type { Resident } from "types/resident"
+import type { FundingInformation, Resident } from "types/resident"
 
 interface ApiResponse {
   success: boolean
@@ -22,6 +22,7 @@ interface ResidentDetailPageProps {
 
 export default function ResidentDetailPage({ params }: ResidentDetailPageProps) {
   const [resident, setResident] = useState<Resident | null>(null)
+  const [fundingContracts, setFundingContracts] = useState<FundingInformation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [residentId, setResidentId] = useState<string>('')
@@ -37,51 +38,79 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
   useEffect(() => {
     if (!residentId) return
 
-    const fetchResident = async () => {
+    const fetchResidentData = async () => {
       try {
         setLoading(true)
-        const response = await fetch(`/api/residents/${residentId}`)
-        const result: ApiResponse = await response.json()
         
-        if (result.success && result.data) {
-          setResident(result.data)
+        // Fetch resident and funding contracts in parallel
+        const [residentResponse, fundingResponse] = await Promise.all([
+          fetch(`/api/residents/${residentId}`),
+          fetch(`/api/residents/${residentId}/funding`)
+        ])
+        
+        const residentResult: ApiResponse = await residentResponse.json()
+        const fundingResult = await fundingResponse.json()
+        
+        if (residentResult.success && residentResult.data) {
+          setResident(residentResult.data)
           setError(null)
         } else {
-          setError(result.error || 'Failed to load resident')
+          setError(residentResult.error || 'Failed to load resident')
+        }
+        
+        if (fundingResult.success && fundingResult.data) {
+          setFundingContracts(fundingResult.data)
+        } else {
+          console.error('Failed to load funding contracts:', fundingResult.error)
+          setFundingContracts([])
         }
       } catch (err) {
         setError('Network error. Please check your connection and try again.')
-        console.error('Error fetching resident:', err)
+        console.error('Error fetching resident data:', err)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchResident()
+    fetchResidentData()
   }, [residentId])
 
   const retryFetch = () => {
     setError(null)
     if (residentId) {
-      const fetchResident = async () => {
+      const fetchResidentData = async () => {
         try {
           setLoading(true)
-          const response = await fetch(`/api/residents/${residentId}`)
-          const result: ApiResponse = await response.json()
           
-          if (result.success && result.data) {
-            setResident(result.data)
+          // Fetch resident and funding contracts in parallel
+          const [residentResponse, fundingResponse] = await Promise.all([
+            fetch(`/api/residents/${residentId}`),
+            fetch(`/api/residents/${residentId}/funding`)
+          ])
+          
+          const residentResult: ApiResponse = await residentResponse.json()
+          const fundingResult = await fundingResponse.json()
+          
+          if (residentResult.success && residentResult.data) {
+            setResident(residentResult.data)
           } else {
-            setError(result.error || 'Failed to load resident')
+            setError(residentResult.error || 'Failed to load resident')
+          }
+          
+          if (fundingResult.success && fundingResult.data) {
+            setFundingContracts(fundingResult.data)
+          } else {
+            console.error('Failed to load funding contracts:', fundingResult.error)
+            setFundingContracts([])
           }
         } catch (err) {
           setError('Network error. Please check your connection and try again.')
-          console.error('Error fetching resident:', err)
+          console.error('Error fetching resident data:', err)
         } finally {
           setLoading(false)
         }
       }
-      fetchResident()
+      fetchResidentData()
     }
   }
 
@@ -111,12 +140,12 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
     }
   }
 
-
   const handleStatusChange = (updatedResident: Resident) => {
     setResident(updatedResident)
   }
 
-  const handleFundingChange = (updatedFunding: Resident['fundingInformation']) => {
+  const handleFundingChange = (updatedFunding: FundingInformation[]) => {
+    setFundingContracts(updatedFunding)
     if (resident) {
       setResident({
         ...resident,
@@ -344,47 +373,57 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
     </div>
   )
 
-  const renderFundingTab = () => (
-    <div className="space-y-6">
-      {/* Contract Management - Consolidated Tile */}
-      <ContractManagementTile
-        residentId={resident.id}
-        fundingInfo={resident.fundingInformation}
-        onFundingChange={handleFundingChange}
-      />
-    </div>
-  )
-
-  const renderTransactionsTab = () => (
-    <div className="space-y-6">
-      {/* Balance Overview */}
-      <ResidentBalanceWidget 
-        residentId={resident.id}
-        onCreateTransaction={() => {
-          window.open(`/transactions?residentId=${resident.id}`, '_blank')
-        }}
-      />
-      
-      {/* Link to Full Transactions */}
-      <div className="text-center p-6 bg-gray-50 rounded-lg">
-        <p className="text-gray-600 mb-4">
-          View and manage all transactions for this resident
-        </p>
-        <a
-          href={`/transactions?residentId=${resident.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Open Transactions Page
-        </a>
+  const renderFundingTab = () => {
+    if (!resident) return null
+    
+    return (
+      <div className="space-y-6">
+        {/* Contract Management - Consolidated Tile */}
+        <ContractManagementTile
+          residentId={resident.id}
+          fundingInfo={fundingContracts}
+          onFundingChange={handleFundingChange}
+        />
       </div>
-    </div>
-  )
+    )
+  }
 
-  const renderAuditTab = () => (
-    <AuditTrail entries={resident.auditTrail} />
-  )
+  const renderTransactionsTab = () => {
+    if (!resident) return null
+    
+    return (
+      <div className="space-y-6">
+        {/* Balance Overview */}
+        <ResidentBalanceWidget 
+          residentId={resident.id}
+          onCreateTransaction={() => {
+            window.open(`/transactions?residentId=${resident.id}`, '_blank')
+          }}
+        />
+        
+        {/* Link to Full Transactions */}
+        <div className="text-center p-6 bg-gray-50 rounded-lg">
+          <p className="text-gray-600 mb-4">
+            View and manage all transactions for this resident
+          </p>
+          <a
+            href={`/transactions?residentId=${resident.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Open Transactions Page
+          </a>
+        </div>
+      </div>
+    )
+  }
+
+  const renderAuditTab = () => {
+    if (!resident) return null
+    
+    return <AuditTrail entries={resident.auditTrail} />
+  }
 
   const tabItems: TabItem[] = [
     {

@@ -434,4 +434,131 @@ const { data: houses, loading, error } = useHouses()
 
  - Lets migrate one table at a time and then test
  - as we move through the migration, educate Ant (in the chat) about what has happened and guide hom about where to look and how to manually test that front end to back thorughly
+
+## Lessons Learned from Houses Migration
+
+### Critical Schema Compatibility Issues
+
+#### 1. **Frontend vs Database Field Naming Mismatch**
+**Problem**: Frontend uses camelCase (`goLiveDate`) but Supabase uses snake_case (`go_live_date`)
+**Impact**: "Could not find the 'goLiveDate' column" errors
+**Solution**: 
+- Create field mapping functions in service layer
+- Convert camelCase ↔ snake_case automatically
+- Never assume naming conventions match
+
+#### 2. **Schema Evolution Mismatch**
+**Problem**: Frontend schema expected fields not present in initial database table
+**Impact**: Validation errors for missing required fields (`status`, `goLiveDate`, etc.)
+**Solution**:
+- Always compare frontend schema with database schema before migration
+- Create migration scripts to add missing fields
+- Use `ALTER TABLE` statements to evolve schema
+
+#### 3. **API Route Integration Points**
+**Problem**: API routes still using localStorage instead of Supabase service
+**Impact**: Data not persisting to database despite successful frontend submission
+**Solution**:
+- Update ALL API routes to use Supabase services
+- Remove localStorage dependencies from server-side code
+- Test API endpoints independently before frontend testing
+
+### Field Mapping Strategy
+
+#### Required Conversion Functions
+```typescript
+// Database (snake_case) → Frontend (camelCase)
+private convertDbToFrontend(dbRecord: any): FrontendType {
+  return {
+    id: dbRecord.id,
+    goLiveDate: dbRecord.go_live_date,
+    createdAt: new Date(dbRecord.created_at),
+    updatedAt: new Date(dbRecord.updated_at),
+    // ... other fields
+  }
+}
+
+// Frontend (camelCase) → Database (snake_case)
+private convertFrontendToDb(frontendRecord: any): any {
+  return {
+    go_live_date: frontendRecord.goLiveDate,
+    created_at: frontendRecord.createdAt,
+    updated_at: frontendRecord.updatedAt,
+    // ... other fields
+  }
+}
+```
+
+### Testing Strategy Lessons
+
+#### 1. **API-First Testing**
+- Test Supabase service layer independently
+- Test API routes with curl/Postman before frontend
+- Create debug endpoints for troubleshooting
+
+#### 2. **Schema Validation Testing**
+- Test with minimal required fields first
+- Gradually add optional fields
+- Verify field mapping in both directions
+
+#### 3. **Error Message Analysis**
+- Look for specific column name errors
+- Check browser console for detailed error messages
+- Use server logs to trace API call failures
+
+### Migration Checklist for Each Table
+
+#### Pre-Migration
+- [ ] Compare frontend schema with planned database schema
+- [ ] Identify field naming mismatches (camelCase vs snake_case)
+- [ ] Create migration SQL for missing fields
+- [ ] Plan field mapping strategy
+
+#### During Migration
+- [ ] Create Supabase service with field mapping
+- [ ] Update API routes to use Supabase service
+- [ ] Test service layer independently
+- [ ] Test API routes with curl/Postman
+- [ ] Test frontend integration
+
+#### Post-Migration
+- [ ] Verify data persistence in Supabase dashboard
+- [ ] Test CRUD operations (Create, Read, Update, Delete)
+- [ ] Test cross-request persistence
+- [ ] Verify data survives browser refresh
+
+### Common Pitfalls to Avoid
+
+1. **Assuming Schema Compatibility** - Always verify field names and types
+2. **Skipping API Testing** - Test service layer before frontend integration
+3. **Ignoring Field Mapping** - Frontend and database naming conventions differ
+4. **Incomplete API Updates** - Update ALL related API routes, not just one
+5. **Missing Error Handling** - Add proper error messages for debugging
+
+### Debugging Tools
+
+#### Server-Side Debugging
+- Create `/api/debug-[table]` endpoints for testing
+- Use console.log for detailed error tracking
+- Test with minimal data first
+
+#### Client-Side Debugging
+- Check browser Developer Tools Console
+- Monitor Network tab for API call failures
+- Look for specific error messages in terminal logs
+
+#### Database Debugging
+- Use Supabase dashboard to verify data
+- Check table schema matches expectations
+- Verify RLS policies are correct
+
+### Success Indicators
+
+- [ ] API returns success status (200/201)
+- [ ] Data appears in Supabase dashboard
+- [ ] Frontend shows created/updated data
+- [ ] Data persists across browser refreshes
+- [ ] No console errors in browser
+- [ ] No server errors in terminal
+
  

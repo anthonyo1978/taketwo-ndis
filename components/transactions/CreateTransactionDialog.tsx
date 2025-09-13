@@ -1,16 +1,18 @@
+
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "components/ui/Dialog"
 import { Button } from "components/Button/Button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "components/ui/Dialog"
 import { Input } from "components/ui/Input"
-import { getResidentsFromStorage } from "lib/utils/resident-storage"
 import { getHousesFromStorage } from "lib/utils/house-storage"
-import { getTransactionBalancePreview, createTransaction } from "lib/utils/transaction-storage"
-import type { TransactionCreateInput, TransactionBalancePreview } from "types/transaction"
+import { getResidentsFromStorage } from "lib/utils/resident-storage"
+import { createTransaction, getTransactionBalancePreview } from "lib/utils/transaction-storage"
+import type { FundingInformation } from "types/resident"
+import type { TransactionBalancePreview, TransactionCreateInput } from "types/transaction"
 
 // Form schema - enhanced for Drawing Down mode
 const createTransactionSchema = z.object({
@@ -98,12 +100,38 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
     fetchData()
   }, [])
 
+  const [fundingContracts, setFundingContracts] = useState<Record<string, FundingInformation[]>>({})
+
   const watchedValues = form.watch()
   const selectedResident = residents.find(r => r.id === watchedValues.residentId)
-  const selectedContract = selectedResident?.fundingInformation.find(c => c.id === watchedValues.contractId)
+  const selectedResidentContracts = selectedResident ? fundingContracts[selectedResident.id] || [] : []
+  const selectedContract = selectedResidentContracts.find(c => c.id === watchedValues.contractId)
 
   // Get available contracts for selected resident (only active contracts)
-  const availableContracts = selectedResident?.fundingInformation.filter(c => c.contractStatus === 'Active') || []
+  const availableContracts = selectedResidentContracts.filter(c => c.contractStatus === 'Active') || []
+
+  // Load funding contracts when resident is selected
+  useEffect(() => {
+    if (watchedValues.residentId && !fundingContracts[watchedValues.residentId]) {
+      const loadFundingContracts = async () => {
+        try {
+          const response = await fetch(`/api/residents/${watchedValues.residentId}/funding`)
+          const result = await response.json()
+          
+          if (result.success && result.data) {
+            setFundingContracts(prev => ({
+              ...prev,
+              [watchedValues.residentId]: result.data
+            }))
+          }
+        } catch (error) {
+          console.error('Error loading funding contracts:', error)
+        }
+      }
+      
+      loadFundingContracts()
+    }
+  }, [watchedValues.residentId, fundingContracts])
 
   // Calculate amount when quantity or unit price changes
   useEffect(() => {

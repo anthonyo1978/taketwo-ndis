@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { residentUpdateSchema, statusTransitionSchema } from 'lib/schemas/resident'
-import { 
-  changeResidentStatus, 
-  getResidentByIdFromStorage,
-  updateResidentInStorage
-} from 'lib/utils/resident-storage'
+import { residentService } from 'lib/supabase/services/residents'
 import type { ResidentStatus, ResidentUpdateInput } from 'types/resident'
 
 interface RouteParams {
@@ -22,7 +18,7 @@ export async function GET(
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    const resident = getResidentByIdFromStorage(id)
+    const resident = await residentService.getById(id)
     
     if (!resident) {
       return NextResponse.json(
@@ -62,7 +58,7 @@ export async function PUT(
     // Check if this is a status change request
     if (body.status && Object.keys(body).length === 1) {
       // Handle status transition separately for proper validation
-      const currentResident = getResidentByIdFromStorage(id)
+      const currentResident = await residentService.getById(id)
       if (!currentResident) {
         return NextResponse.json(
           { 
@@ -91,17 +87,7 @@ export async function PUT(
       }
       
       try {
-        const updatedResident = changeResidentStatus(id, body.status)
-        
-        if (!updatedResident) {
-          return NextResponse.json(
-            { 
-              success: false, 
-              error: 'Failed to update resident status' 
-            }, 
-            { status: 400 }
-          )
-        }
+        const updatedResident = await residentService.update(id, { status: body.status })
         
         return NextResponse.json({
           success: true,
@@ -135,17 +121,7 @@ export async function PUT(
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    const updatedResident = updateResidentInStorage(id, validation.data as ResidentUpdateInput)
-    
-    if (!updatedResident) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Resident not found' 
-        }, 
-        { status: 404 }
-      )
-    }
+    const updatedResident = await residentService.update(id, validation.data as ResidentUpdateInput)
     
     return NextResponse.json({
       success: true,
@@ -175,17 +151,7 @@ export async function DELETE(
     await new Promise(resolve => setTimeout(resolve, 300))
     
     try {
-      const deactivatedResident = changeResidentStatus(id, 'Deactivated')
-      
-      if (!deactivatedResident) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'Resident not found' 
-          }, 
-          { status: 404 }
-        )
-      }
+      const deactivatedResident = await residentService.update(id, { status: 'Deactivated' })
       
       return NextResponse.json({
         success: true,

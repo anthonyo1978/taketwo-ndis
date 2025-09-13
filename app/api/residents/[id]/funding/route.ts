@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { fundingInformationSchema } from 'lib/schemas/resident'
-import { 
-  addFundingToResident,
-  getResidentByIdFromStorage,
-  removeFundingFromResident,
-  updateFundingInResident
-} from 'lib/utils/resident-storage'
+import { residentService } from 'lib/supabase/services/residents'
 
 interface RouteParams {
   id: string
@@ -23,7 +18,7 @@ export async function GET(
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 200))
     
-    const resident = getResidentByIdFromStorage(id)
+    const resident = await residentService.getById(id)
     
     if (!resident) {
       return NextResponse.json(
@@ -35,9 +30,12 @@ export async function GET(
       )
     }
     
+    // Get funding contracts for this resident
+    const fundingContracts = await residentService.getFundingContracts(id)
+    
     return NextResponse.json({
       success: true,
-      data: resident.fundingInformation
+      data: fundingContracts
     })
   } catch (error) {
     console.error('Error fetching funding information:', error)
@@ -107,20 +105,25 @@ export async function POST(
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    const updatedResident = addFundingToResident(id, validation.data)
-    
-    if (!updatedResident) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Resident not found' 
-        }, 
-        { status: 404 }
-      )
-    }
-    
-    // Return the newly added funding information
-    const newFunding = updatedResident.fundingInformation[updatedResident.fundingInformation.length - 1]
+    // Create funding contract in Supabase
+    const newFunding = await residentService.createFundingContract(id, {
+      type: validation.data.type,
+      amount: validation.data.amount,
+      startDate: validation.data.startDate,
+      endDate: validation.data.endDate,
+      description: validation.data.description,
+      isActive: validation.data.isActive,
+      contractStatus: 'Draft',
+      originalAmount: validation.data.amount,
+      currentBalance: validation.data.amount,
+      drawdownRate: validation.data.drawdownRate,
+      autoDrawdown: validation.data.autoDrawdown,
+      lastDrawdownDate: undefined,
+      renewalDate: validation.data.renewalDate,
+      parentContractId: undefined,
+      supportItemCode: undefined,
+      dailySupportItemCost: undefined
+    })
     
     return NextResponse.json({
       success: true,
@@ -215,20 +218,8 @@ export async function PUT(
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    const updatedResident = updateFundingInResident(id, fundingId, validation.data)
-    
-    if (!updatedResident) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Resident or funding information not found' 
-        }, 
-        { status: 404 }
-      )
-    }
-    
-    // Find the updated funding information
-    const updatedFunding = updatedResident.fundingInformation.find(f => f.id === fundingId)
+    // Update funding contract in Supabase
+    const updatedFunding = await residentService.updateFundingContract(fundingId, validation.data)
     
     return NextResponse.json({
       success: true,
@@ -270,21 +261,15 @@ export async function DELETE(
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    const updatedResident = removeFundingFromResident(id, fundingId)
+    // Delete funding contract from Supabase
+    await residentService.deleteFundingContract(fundingId)
     
-    if (!updatedResident) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: 'Resident or funding information not found' 
-        }, 
-        { status: 404 }
-      )
-    }
+    // Get updated funding contracts for the resident
+    const updatedFundingContracts = await residentService.getFundingContracts(id)
     
     return NextResponse.json({
       success: true,
-      data: updatedResident.fundingInformation,
+      data: updatedFundingContracts,
       message: 'Funding information removed successfully'
     })
   } catch (error) {

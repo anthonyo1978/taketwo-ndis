@@ -5,7 +5,8 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { Button } from "components/Button/Button"
 import type { ResidentBalanceSummary, RecentTransactionsSummary, Transaction } from "types/transaction"
-import { getResidentBalanceSummary, getRecentTransactionsSummary } from "lib/utils/transaction-storage"
+import { getRecentTransactionsSummary } from "lib/utils/transaction-storage"
+import type { FundingInformation } from "types/resident"
 
 interface ResidentBalanceWidgetProps {
   residentId: string
@@ -15,15 +16,56 @@ interface ResidentBalanceWidgetProps {
 export function ResidentBalanceWidget({ residentId, onCreateTransaction }: ResidentBalanceWidgetProps) {
   const [balanceSummary, setBalanceSummary] = useState<ResidentBalanceSummary | null>(null)
   const [recentTransactions, setRecentTransactions] = useState<RecentTransactionsSummary | null>(null)
+  const [fundingContracts, setFundingContracts] = useState<FundingInformation[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const loadData = () => {
+    const loadData = async () => {
       try {
-        const balance = getResidentBalanceSummary(residentId)
-        const recent = getRecentTransactionsSummary(residentId, 5)
+        // Load funding contracts from API
+        const fundingResponse = await fetch(`/api/residents/${residentId}/funding`)
+        const fundingResult = await fundingResponse.json()
         
-        setBalanceSummary(balance)
+        if (fundingResult.success && fundingResult.data) {
+          setFundingContracts(fundingResult.data)
+          
+          // Calculate balance summary from funding contracts
+          const totalAllocated = fundingResult.data.reduce((sum: number, contract: FundingInformation) => 
+            sum + (contract.originalAmount || contract.amount || 0), 0)
+          const totalRemaining = fundingResult.data.reduce((sum: number, contract: FundingInformation) => 
+            sum + (contract.currentBalance || contract.amount || 0), 0)
+          const totalSpent = totalAllocated - totalRemaining
+          
+          const activeContracts = fundingResult.data
+            .filter((contract: FundingInformation) => contract.contractStatus === 'Active')
+            .map((contract: FundingInformation) => ({
+              contractId: contract.id,
+              type: contract.type,
+              originalAmount: contract.originalAmount || contract.amount || 0,
+              currentBalance: contract.currentBalance || contract.amount || 0,
+              recentTransactionCount: 0 // TODO: Calculate from transactions
+            }))
+          
+          setBalanceSummary({
+            residentId,
+            activeContracts,
+            totalAllocated,
+            totalRemaining,
+            totalSpent
+          })
+        } else {
+          // Set safe defaults if no funding contracts
+          setBalanceSummary({
+            residentId,
+            activeContracts: [],
+            totalAllocated: 0,
+            totalRemaining: 0,
+            totalSpent: 0
+          })
+        }
+        
+        // Load recent transactions
+        const recent = getRecentTransactionsSummary(residentId, 5)
         setRecentTransactions(recent)
       } catch (error) {
         console.error('Error loading resident financial data:', error)

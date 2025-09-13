@@ -38,7 +38,8 @@ export function calculateCurrentBalance(contract: FundingInformation): number {
   const totalPeriods = getElapsedPeriods(startDate, endDate, drawdownRate)
 
   if (totalPeriods === 0) {
-    return originalAmount
+    // If same start and end date, contract should be fully drawn down
+    return 0
   }
 
   // Calculate linear drawdown based on elapsed time

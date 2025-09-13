@@ -113,7 +113,9 @@ describe('StatusManager', () => {
     render(<StatusManager resident={mockResident} onStatusChange={mockOnStatusChange} />)
     
     await user.click(screen.getByText('Change to Active'))
-    await user.click(screen.getByRole('button', { name: /Change to Active/i }))
+    // Click the confirmation button in the dialog
+    const confirmButton = screen.getByRole('dialog').querySelector('button[class*="bg-blue-600"]')
+    await user.click(confirmButton!)
     
     await waitFor(() => {
       expect(screen.getByText('Invalid status transition')).toBeInTheDocument()
@@ -159,8 +161,9 @@ describe('StatusManager', () => {
     render(<StatusManager resident={mockResident} onStatusChange={mockOnStatusChange} />)
     
     await user.click(screen.getByText('Change to Active'))
-    const confirmButton = screen.getByRole('button', { name: /Change to Active/i })
-    await user.click(confirmButton)
+    // Click the confirmation button in the dialog
+    const confirmButton = screen.getByRole('dialog').querySelector('button[class*="bg-blue-600"]')
+    await user.click(confirmButton!)
     
     // Button should be disabled during API call
     await waitFor(() => {

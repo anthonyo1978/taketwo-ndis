@@ -70,12 +70,12 @@ describe('Tabs', () => {
     const tab2Button = screen.getByText('Tab 2').closest('button')
     
     expect(tab1Button).toHaveClass('border-blue-500', 'text-blue-600')
-    expect(tab2Button).toHaveClass('border-transparent', 'text-gray-500')
+    expect(tab2Button).toHaveClass('border-transparent', 'text-gray-600')
     
     // Click second tab
     fireEvent.click(screen.getByText('Tab 2'))
     
-    expect(tab1Button).toHaveClass('border-transparent', 'text-gray-500')
+    expect(tab1Button).toHaveClass('border-transparent', 'text-gray-600')
     expect(tab2Button).toHaveClass('border-blue-500', 'text-blue-600')
   })
 

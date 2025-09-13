@@ -34,7 +34,7 @@ const mockSupabase = {
       }))
     }))
   })
-}
+})
 
 // Mock the createClient function
 vi.mock('../../client', () => ({

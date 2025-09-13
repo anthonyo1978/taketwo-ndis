@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 
 import { residentCreateSchema } from "lib/schemas/resident"
-import { getHouseByIdFromStorage } from "lib/utils/house-storage"
-import { generateResidentId } from "lib/utils/resident-id-generator"
-import { addResidentToStorage, fileToBase64, getResidentsByHouseId } from "lib/utils/resident-storage"
+import { residentService } from "lib/supabase/services/residents"
+import { houseService } from "lib/supabase/services/houses"
+import { fileToBase64 } from "lib/utils/resident-storage"
 
 interface RouteParams {
   params: Promise<{
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const { id: houseId } = await params
 
     // Verify house exists
-    const house = getHouseByIdFromStorage(houseId)
+    const house = await houseService.getById(houseId)
     if (!house) {
       return NextResponse.json(
         { 
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get residents for this house
-    const residents = getResidentsByHouseId(houseId)
+    const residents = await residentService.getByHouseId(houseId)
 
     return NextResponse.json(
       { 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { id: houseId } = await params
 
     // Verify house exists
-    const house = getHouseByIdFromStorage(houseId)
+    const house = await houseService.getById(houseId)
     if (!house) {
       return NextResponse.json(
         { 
@@ -126,11 +126,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Generate unique ID
-    const residentId = generateResidentId()
-
-    // Prepare data for storage
+    // Prepare data for Supabase
     const residentData = {
+      houseId,
       firstName: validation.data.firstName,
       lastName: validation.data.lastName,
       dateOfBirth: validation.data.dateOfBirth,
@@ -142,8 +140,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       notes: validation.data.notes || undefined,
     }
 
-    // Save to storage with audit fields
-    const newResident = addResidentToStorage(residentData, residentId, houseId)
+    // Create resident in Supabase
+    const newResident = await residentService.create(residentData)
 
     return NextResponse.json(
       { 
