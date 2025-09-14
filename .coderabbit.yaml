@@ -1,7 +1,8 @@
----
-language: "en-AU"
+# yaml-language-server: $schema=https://docs.coderabbit.ai/schema/schema.v2.json
+language: en-AU
+
 reviews:
-  profile: "chill"
+  profile: chill
   high_level_summary: true
   commit_status: true
   auto_review:
@@ -11,4 +12,3 @@ reviews:
   path_filters:
     - "!dist/**"
     - "!**/*.snap"
----
