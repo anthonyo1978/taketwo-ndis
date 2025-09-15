@@ -1,6 +1,10 @@
 import { createClient } from '../server'
 import type { Resident, ResidentCreateInput, ResidentUpdateInput, FundingInformation, EmergencyContact, ResidentPreferences } from 'types/resident'
 
+/**
+ * Service class for managing resident data operations with Supabase.
+ * Handles CRUD operations for residents and their funding contracts.
+ */
 export class ResidentService {
   private async getSupabase() {
     return await createClient()
@@ -60,7 +64,10 @@ export class ResidentService {
   }
 
   /**
-   * Get all residents
+   * Get all residents from the database.
+   * 
+   * @returns Promise resolving to array of all residents
+   * @throws Error if database query fails
    */
   async getAll(): Promise<Resident[]> {
     try {
@@ -83,7 +90,11 @@ export class ResidentService {
   }
 
   /**
-   * Get resident by ID
+   * Get resident by ID.
+   * 
+   * @param id - The resident ID to find
+   * @returns Promise resolving to resident or null if not found
+   * @throws Error if database query fails
    */
   async getById(id: string): Promise<Resident | null> {
     try {
@@ -110,7 +121,11 @@ export class ResidentService {
   }
 
   /**
-   * Get residents by house ID
+   * Get residents by house ID.
+   * 
+   * @param houseId - The house ID to filter by
+   * @returns Promise resolving to array of residents in the house
+   * @throws Error if database query fails
    */
   async getByHouseId(houseId: string): Promise<Resident[]> {
     try {
@@ -134,7 +149,11 @@ export class ResidentService {
   }
 
   /**
-   * Create new resident
+   * Create new resident.
+   * 
+   * @param resident - The resident data to create
+   * @returns Promise resolving to created resident
+   * @throws Error if creation fails
    */
   async create(resident: ResidentCreateInput & { houseId: string }): Promise<Resident> {
     try {
@@ -164,7 +183,12 @@ export class ResidentService {
   }
 
   /**
-   * Update resident
+   * Update resident.
+   * 
+   * @param id - The resident ID to update
+   * @param updates - The fields to update
+   * @returns Promise resolving to updated resident
+   * @throws Error if update fails
    */
   async update(id: string, updates: ResidentUpdateInput): Promise<Resident> {
     try {
@@ -194,7 +218,11 @@ export class ResidentService {
   }
 
   /**
-   * Delete resident
+   * Delete resident.
+   * 
+   * @param id - The resident ID to delete
+   * @returns Promise resolving to true if deleted successfully
+   * @throws Error if deletion fails
    */
   async delete(id: string): Promise<boolean> {
     try {
@@ -217,7 +245,11 @@ export class ResidentService {
   }
 
   /**
-   * Get funding contracts for a resident
+   * Get funding contracts for a resident.
+   * 
+   * @param residentId - The resident ID to get contracts for
+   * @returns Promise resolving to array of funding contracts
+   * @throws Error if database query fails
    */
   async getFundingContracts(residentId: string): Promise<FundingInformation[]> {
     try {
@@ -261,7 +293,12 @@ export class ResidentService {
   }
 
   /**
-   * Update funding contract for a resident
+   * Update funding contract for a resident.
+   * 
+   * @param contractId - The contract ID to update
+   * @param updates - The fields to update
+   * @returns Promise resolving to updated contract
+   * @throws Error if update fails
    */
   async updateFundingContract(contractId: string, updates: Partial<Omit<FundingInformation, 'id' | 'createdAt' | 'updatedAt'>>): Promise<FundingInformation> {
     try {
@@ -326,7 +363,11 @@ export class ResidentService {
   }
 
   /**
-   * Delete funding contract for a resident
+   * Delete funding contract for a resident.
+   * 
+   * @param contractId - The contract ID to delete
+   * @returns Promise resolving to true if deleted successfully
+   * @throws Error if deletion fails
    */
   async deleteFundingContract(contractId: string): Promise<boolean> {
     try {
@@ -349,7 +390,12 @@ export class ResidentService {
   }
 
   /**
-   * Create funding contract for a resident
+   * Create funding contract for a resident.
+   * 
+   * @param residentId - The resident ID to create contract for
+   * @param contract - The contract data to create
+   * @returns Promise resolving to created contract
+   * @throws Error if creation fails
    */
   async createFundingContract(residentId: string, contract: Omit<FundingInformation, 'id' | 'createdAt' | 'updatedAt'>): Promise<FundingInformation> {
     try {
@@ -413,5 +459,7 @@ export class ResidentService {
   }
 }
 
-// Export singleton instance
+/**
+ * Singleton instance of ResidentService for use throughout the application.
+ */
 export const residentService = new ResidentService()

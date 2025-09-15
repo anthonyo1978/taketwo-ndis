@@ -34,10 +34,18 @@ jobs:
         run: pnpm run prettier
       - name: Unit & Integration tests
         run: pnpm run test
+      - name: Build application
+        run: pnpm run build
+      - name: Install Playwright browsers
+        run: pnpm playwright install --with-deps
+      - name: Run E2E tests
+        run: pnpm run e2e:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       - name: Smoke & Acceptance tests
         run: |
           pnpm run build-storybook --quiet
-          pnpm playwright install
           pnpm dlx concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
             "pnpm dlx http-server storybook-static --port 6006 --silent" \
             "pnpm dlx wait-on tcp:127.0.0.1:6006 && pnpm run test-storybook"

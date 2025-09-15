@@ -3,10 +3,20 @@
 // Mock admin guard - replace with real authentication when implemented
 // This is a placeholder that always allows access for development
 
+/**
+ * Props for the AdminGuard component.
+ */
 interface AdminGuardProps {
   children: React.ReactNode
 }
 
+/**
+ * Guard component that controls access to admin areas.
+ * Currently a mock implementation for development.
+ * 
+ * @param props - The component props
+ * @returns JSX element for the admin guard
+ */
 export function AdminGuard({ children }: AdminGuardProps) {
   // TODO: Replace with real authentication check
   // For now, always allow access in development

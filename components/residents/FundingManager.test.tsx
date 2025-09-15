@@ -82,14 +82,14 @@ describe('FundingManager', () => {
       />
     )
     
-    await user.click(screen.getByText('Add First Funding'))
+    await user.click(screen.getByText('Add First Contract'))
     
     await waitFor(() => {
-      expect(screen.getByText('Add Funding Information')).toBeInTheDocument()
+      expect(screen.getByText('Create Funding Contract')).toBeInTheDocument()
     })
     
-    expect(screen.getByLabelText(/Funding Type/)).toBeInTheDocument()
-    expect(screen.getByLabelText(/Amount/)).toBeInTheDocument()
+    expect(screen.getAllByRole('combobox')[0]).toBeInTheDocument()
+    expect(screen.getByRole('spinbutton')).toBeInTheDocument()
   })
 
   it('submits new funding information successfully', async () => {
@@ -120,7 +120,7 @@ describe('FundingManager', () => {
       />
     )
     
-    await user.click(screen.getByText('Add First Funding'))
+    await user.click(screen.getByText('Add First Contract'))
     
     // Fill form
     await user.selectOptions(screen.getByLabelText(/Funding Type/), 'Government')
@@ -128,7 +128,7 @@ describe('FundingManager', () => {
     await user.type(screen.getByLabelText(/Start Date/), '2024-02-01')
     
     // Submit
-    await user.click(screen.getByRole('button', { name: /Add Funding/i }))
+    await user.click(screen.getByRole('button', { name: /Create Contract/i }))
     
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith('/api/residents/R001/funding', {
@@ -161,7 +161,7 @@ describe('FundingManager', () => {
     )
     
     // Click edit on first funding item
-    const editButtons = screen.getAllByText('Edit')
+    const editButtons = screen.getAllByText('Edit Contract')
     await user.click(editButtons[0])
     
     await waitFor(() => {
@@ -194,7 +194,7 @@ describe('FundingManager', () => {
     )
     
     // Click edit on first funding item
-    const editButtons = screen.getAllByText('Edit')
+    const editButtons = screen.getAllByText('Edit Contract')
     await user.click(editButtons[0])
     
     // Update amount
@@ -270,9 +270,9 @@ describe('FundingManager', () => {
       />
     )
     
-    expect(screen.getByText('No funding information')).toBeInTheDocument()
-    expect(screen.getByText('Add funding information to track financial support for this resident.')).toBeInTheDocument()
-    expect(screen.getByText('Add First Funding')).toBeInTheDocument()
+    expect(screen.getByText('No funding contracts')).toBeInTheDocument()
+    expect(screen.getByText('Create funding contracts to track financial support and balance drawdown over time.')).toBeInTheDocument()
+    expect(screen.getByText('Add First Contract')).toBeInTheDocument()
   })
 
   it('validates form inputs', async () => {
@@ -285,10 +285,10 @@ describe('FundingManager', () => {
       />
     )
     
-    await user.click(screen.getByText('Add First Funding'))
+    await user.click(screen.getByText('Add First Contract'))
     
     // Try to submit without required fields
-    await user.click(screen.getByRole('button', { name: /Add Funding/i }))
+    await user.click(screen.getByRole('button', { name: /Create Contract/i }))
     
     // Should show validation errors
     await waitFor(() => {
@@ -315,12 +315,12 @@ describe('FundingManager', () => {
       />
     )
     
-    await user.click(screen.getByText('Add First Funding'))
+    await user.click(screen.getByText('Add First Contract'))
     
     // Fill and submit form
-    await user.selectOptions(screen.getByLabelText(/Funding Type/), 'NDIS')
-    await user.type(screen.getByLabelText(/Amount/), '1000')
-    await user.click(screen.getByRole('button', { name: /Add Funding/i }))
+    await user.selectOptions(screen.getAllByRole('combobox')[0], 'NDIS')
+    await user.type(screen.getByRole('spinbutton'), '1000')
+    await user.click(screen.getByRole('button', { name: /Create Contract/i }))
     
     await waitFor(() => {
       expect(screen.getByText('Failed to add funding information')).toBeInTheDocument()

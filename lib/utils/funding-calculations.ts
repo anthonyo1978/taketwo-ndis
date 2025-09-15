@@ -2,7 +2,10 @@ import { addDays, addMonths, addWeeks, differenceInDays, differenceInMonths, dif
 import type { ContractBalanceSummary, ContractStatus, DrawdownRate, FundingInformation } from 'types/resident'
 
 /**
- * Calculate the current balance for a funding contract based on elapsed time and drawdown rate
+ * Calculate the current balance for a funding contract based on elapsed time and drawdown rate.
+ * 
+ * @param contract - The funding contract to calculate balance for
+ * @returns The current remaining balance after drawdown calculations
  */
 export function calculateCurrentBalance(contract: FundingInformation): number {
   const contractStatus = contract.contractStatus || 'Draft'
@@ -50,7 +53,12 @@ export function calculateCurrentBalance(contract: FundingInformation): number {
 }
 
 /**
- * Get the number of elapsed periods between two dates based on drawdown rate
+ * Get the number of elapsed periods between two dates based on drawdown rate.
+ * 
+ * @param startDate - The start date for the calculation
+ * @param endDate - The end date for the calculation
+ * @param rate - The drawdown rate (daily, weekly, monthly)
+ * @returns The number of elapsed periods
  */
 export function getElapsedPeriods(startDate: Date, endDate: Date, rate: DrawdownRate): number {
   switch (rate) {
@@ -66,7 +74,10 @@ export function getElapsedPeriods(startDate: Date, endDate: Date, rate: Drawdown
 }
 
 /**
- * Calculate the amount drawn down from the original allocation
+ * Calculate the amount drawn down from the original allocation.
+ * 
+ * @param contract - The funding contract to calculate drawdown for
+ * @returns The total amount that has been drawn down
  */
 export function calculateDrawdownAmount(contract: FundingInformation): number {
   const currentBalance = calculateCurrentBalance(contract)
@@ -75,7 +86,11 @@ export function calculateDrawdownAmount(contract: FundingInformation): number {
 }
 
 /**
- * Check if a contract is expiring soon (within 30 days)
+ * Check if a contract is expiring soon (within specified days).
+ * 
+ * @param contract - The funding contract to check
+ * @param daysThreshold - Number of days to check for expiry (default: 30)
+ * @returns True if contract expires within the threshold
  */
 export function isContractExpiringSoon(contract: FundingInformation, daysThreshold: number = 30): boolean {
   const contractStatus = contract.contractStatus || 'Draft'
@@ -91,7 +106,11 @@ export function isContractExpiringSoon(contract: FundingInformation, daysThresho
 }
 
 /**
- * Generate a renewal contract based on an existing contract
+ * Generate a renewal contract based on an existing contract.
+ * 
+ * @param existingContract - The original contract to renew
+ * @param renewalData - The renewal configuration data
+ * @returns A new contract object without id, createdAt, updatedAt
  */
 export function generateContractRenewal(
   existingContract: FundingInformation,
@@ -125,7 +144,10 @@ export function generateContractRenewal(
 }
 
 /**
- * Calculate balance summary for multiple contracts
+ * Calculate balance summary for multiple contracts.
+ * 
+ * @param contracts - Array of funding contracts to summarize
+ * @returns Summary of total balances and contract counts
  */
 export function calculateBalanceSummary(contracts: FundingInformation[]): ContractBalanceSummary {
   let totalOriginal = 0
@@ -159,7 +181,11 @@ export function calculateBalanceSummary(contracts: FundingInformation[]): Contra
 }
 
 /**
- * Get the next drawdown date based on the current date and rate
+ * Get the next drawdown date based on the current date and rate.
+ * 
+ * @param lastDate - The last drawdown date
+ * @param rate - The drawdown rate
+ * @returns The next scheduled drawdown date
  */
 export function getNextDrawdownDate(lastDate: Date, rate: DrawdownRate): Date {
   switch (rate) {
@@ -175,7 +201,10 @@ export function getNextDrawdownDate(lastDate: Date, rate: DrawdownRate): Date {
 }
 
 /**
- * Calculate the daily drawdown rate for a contract
+ * Calculate the daily drawdown rate for a contract.
+ * 
+ * @param contract - The funding contract to calculate rate for
+ * @returns The daily drawdown amount
  */
 export function getDailyDrawdownRate(contract: FundingInformation): number {
   if (!contract.endDate || contract.contractStatus !== 'Active') {
@@ -194,7 +223,10 @@ export function getDailyDrawdownRate(contract: FundingInformation): number {
 }
 
 /**
- * Get a user-friendly description of the drawdown rate
+ * Get a user-friendly description of the drawdown rate.
+ * 
+ * @param rate - The drawdown rate to describe
+ * @returns Human-readable description of the rate
  */
 export function getDrawdownRateDescription(rate: DrawdownRate): string {
   const descriptions = {
@@ -207,7 +239,10 @@ export function getDrawdownRateDescription(rate: DrawdownRate): string {
 }
 
 /**
- * Calculate the percentage of contract completion
+ * Calculate the percentage of contract completion.
+ * 
+ * @param contract - The funding contract to check
+ * @returns Completion percentage (0-100)
  */
 export function getContractCompletionPercentage(contract: FundingInformation): number {
   const contractStatus = contract.contractStatus || 'Draft'
@@ -240,7 +275,11 @@ export function getContractCompletionPercentage(contract: FundingInformation): n
 }
 
 /**
- * Validate contract status transitions
+ * Validate contract status transitions.
+ * 
+ * @param currentStatus - The current contract status
+ * @param newStatus - The desired new status
+ * @returns True if the transition is valid
  */
 export function isValidStatusTransition(currentStatus: ContractStatus, newStatus: ContractStatus): boolean {
   const validTransitions: Record<ContractStatus, ContractStatus[]> = {
@@ -255,7 +294,10 @@ export function isValidStatusTransition(currentStatus: ContractStatus, newStatus
 }
 
 /**
- * Get valid status transitions for a contract
+ * Get valid status transitions for a contract.
+ * 
+ * @param currentStatus - The current contract status
+ * @returns Array of valid next statuses
  */
 export function getValidStatusTransitions(currentStatus: ContractStatus): ContractStatus[] {
   const validTransitions: Record<ContractStatus, ContractStatus[]> = {

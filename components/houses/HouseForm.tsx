@@ -8,12 +8,21 @@ import { Input } from "components/ui/Input"
 import { AUSTRALIAN_STATES, DEFAULT_COUNTRY, HOUSE_STATUSES } from "lib/constants"
 import { houseCreateSchema, type HouseCreateSchemaType } from "lib/schemas/house"
 
+/**
+ * Props for the HouseForm component.
+ */
 interface HouseFormProps {
   onSubmit: (data: HouseCreateSchemaType) => Promise<void>
   isLoading?: boolean
   className?: string
 }
 
+/**
+ * Form component for creating new houses.
+ * 
+ * @param props - The component props
+ * @returns JSX element for the house form
+ */
 export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormProps) {
   const {
     register,

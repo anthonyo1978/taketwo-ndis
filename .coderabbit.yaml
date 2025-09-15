@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://docs.coderabbit.ai/schema/schema.v2.json
+language: en-AU
+
+reviews:
+  profile: chill
+  high_level_summary: true
+  commit_status: true
+  auto_review:
+    enabled: true
+    auto_incremental_review: true
+    drafts: true
+  path_filters:
+    - "!dist/**"
+    - "!**/*.snap"

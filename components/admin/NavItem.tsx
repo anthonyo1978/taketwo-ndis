@@ -42,6 +42,9 @@ const navItem = cva(
   }
 )
 
+/**
+ * Props for the NavItem component.
+ */
 export interface NavItemProps extends VariantProps<typeof navItem> {
   href: string
   icon: LucideIcon
@@ -51,6 +54,12 @@ export interface NavItemProps extends VariantProps<typeof navItem> {
   className?: string
 }
 
+/**
+ * Navigation item component with tooltip support for collapsed state.
+ * 
+ * @param props - The component props
+ * @returns JSX element for the navigation item
+ */
 export function NavItem({ 
   href, 
   icon: Icon, 

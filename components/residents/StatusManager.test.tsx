@@ -66,7 +66,8 @@ describe('StatusManager', () => {
       expect(screen.getByText('Confirm Status Change')).toBeInTheDocument()
     })
     
-    expect(screen.getByText(/Change.*John Doe.*status from.*Draft.*to.*Active/)).toBeInTheDocument()
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toHaveTextContent('Are you sure you want to change John Doe\'s status from Draft to Active')
   })
 
   it('calls API and updates status on confirmation', async () => {
@@ -84,7 +85,9 @@ describe('StatusManager', () => {
     render(<StatusManager resident={mockResident} onStatusChange={mockOnStatusChange} />)
     
     await user.click(screen.getByText('Change to Active'))
-    await user.click(screen.getByRole('button', { name: /Change to Active/i }))
+    // Click the confirmation button in the dialog
+    const confirmButton = screen.getByRole('dialog').querySelector('button[class*="bg-blue-600"]')
+    await user.click(confirmButton!)
     
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith('/api/residents/R001', {
@@ -118,7 +121,7 @@ describe('StatusManager', () => {
     await user.click(confirmButton!)
     
     await waitFor(() => {
-      expect(screen.getByText('Invalid status transition')).toBeInTheDocument()
+      expect(screen.getByRole('dialog').querySelector('.text-red-800')).toHaveTextContent('Invalid status transition')
     })
   })
 
@@ -167,7 +170,9 @@ describe('StatusManager', () => {
     
     // Button should be disabled during API call
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Changing.../i })).toBeDisabled()
+      const changingButton = screen.getByRole('dialog').querySelector('button[class*="bg-blue-600"]')
+      expect(changingButton).toHaveTextContent('Changing...')
+      expect(changingButton).toBeDisabled()
     })
     
     // Resolve the promise

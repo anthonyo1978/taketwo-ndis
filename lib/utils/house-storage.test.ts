@@ -143,6 +143,12 @@ describe('house-storage', () => {
         writable: true
       })
       
+      // Mock global localStorage
+      Object.defineProperty(global, 'localStorage', {
+        value: mockLocalStorage,
+        writable: true
+      })
+      
       // Reset localStorage mock
       mockLocalStorage.getItem.mockReturnValue(null)
       mockLocalStorage.setItem.mockImplementation(() => {})

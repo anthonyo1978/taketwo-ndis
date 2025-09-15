@@ -1,6 +1,10 @@
 import { createClient } from '../client'
 import type { House } from '@/types/house'
 
+/**
+ * Service class for managing house data operations with Supabase.
+ * Handles CRUD operations for houses.
+ */
 export class HouseService {
   private supabase = createClient()
 
@@ -29,7 +33,10 @@ export class HouseService {
   }
 
   /**
-   * Get all houses from Supabase
+   * Get all houses from Supabase.
+   * 
+   * @returns Promise resolving to array of all houses
+   * @throws Error if database query fails
    */
   async getAll(): Promise<House[]> {
     try {
@@ -52,7 +59,11 @@ export class HouseService {
   }
 
   /**
-   * Get a house by ID
+   * Get a house by ID.
+   * 
+   * @param id - The house ID to find
+   * @returns Promise resolving to house or null if not found
+   * @throws Error if database query fails
    */
   async getById(id: string): Promise<House | null> {
     try {
@@ -78,7 +89,11 @@ export class HouseService {
   }
 
   /**
-   * Create a new house
+   * Create a new house.
+   * 
+   * @param house - The house data to create
+   * @returns Promise resolving to created house
+   * @throws Error if creation fails
    */
   async create(house: Omit<House, 'id' | 'createdAt' | 'updatedAt'>): Promise<House> {
     try {
@@ -116,7 +131,12 @@ export class HouseService {
   }
 
   /**
-   * Update a house
+   * Update a house.
+   * 
+   * @param id - The house ID to update
+   * @param updates - The fields to update
+   * @returns Promise resolving to updated house
+   * @throws Error if update fails
    */
   async update(id: string, updates: Partial<Omit<House, 'id' | 'createdAt' | 'updatedAt'>>): Promise<House> {
     try {
@@ -157,7 +177,11 @@ export class HouseService {
   }
 
   /**
-   * Delete a house
+   * Delete a house.
+   * 
+   * @param id - The house ID to delete
+   * @returns Promise resolving to true if deleted successfully
+   * @throws Error if deletion fails
    */
   async delete(id: string): Promise<boolean> {
     try {
@@ -179,5 +203,7 @@ export class HouseService {
   }
 }
 
-// Export a singleton instance
+/**
+ * Singleton instance of HouseService for use throughout the application.
+ */
 export const houseService = new HouseService()

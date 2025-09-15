@@ -19,7 +19,11 @@ export function Dialog({ open, onClose, children }: DialogProps) {
       {/* Dialog */}
       <div className="fixed inset-0 z-10 overflow-y-auto">
         <div className="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-          <div className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+          <div 
+            className="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg"
+            role="dialog"
+            aria-modal="true"
+          >
             {children}
           </div>
         </div>

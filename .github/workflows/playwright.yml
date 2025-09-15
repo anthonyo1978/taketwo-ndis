@@ -30,7 +30,10 @@ jobs:
         run: pnpm playwright install --with-deps
 
       - name: Run Playwright tests
-        run: pnpm playwright test
+        run: pnpm run e2e:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
       - uses: actions/upload-artifact@v4
         if: always()

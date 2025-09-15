@@ -1,77 +1,58 @@
-import { defineConfig, devices } from "@playwright/test"
+import { defineConfig, devices } from "@playwright/test";
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// require('dotenv').config();
-
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
 export default defineConfig({
+  // Where your E2E tests live
   testDir: "./e2e",
-  /* Run tests in files in parallel */
-  fullyParallel: true,
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: "html",
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
-  use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://127.0.0.1:3002",
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: "on-first-retry",
+  // CI-friendly defaults
+  fullyParallel: true,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 2 : 0,
+  workers: process.env.CI ? 1 : undefined,
+  timeout: process.env.CI ? 60000 : 30000, // Longer timeout in CI
+  expect: {
+    timeout: process.env.CI ? 10000 : 5000, // Longer expect timeout in CI
   },
 
-  /* Configure projects for major browsers */
+  // Reporter
+  reporter: "html",
+
+  // Shared options for tests
+  use: {
+    baseURL: "http://localhost:3000",
+    trace: "on-first-retry",
+    // Handle cross-origin issues
+    ignoreHTTPSErrors: true,
+    // Add some stability for CI
+    actionTimeout: process.env.CI ? 15000 : 10000,
+    navigationTimeout: process.env.CI ? 30000 : 20000,
+  },
+
+  // Browsers
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        // Slow-mo locally so you can “see” the flow; off on CI
+        launchOptions: { slowMo: process.env.CI ? 0 : 3000 },
+      },
     },
-
-    {
-      name: "firefox",
-      use: { ...devices["Desktop Firefox"] },
-    },
-
-    {
-      name: "webkit",
-      use: { ...devices["Desktop Safari"] },
-    },
-
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
-
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    // {
-    //   name: 'Google Chrome',
-    //   use: { ..devices['Desktop Chrome'], channel: 'chrome' },
-    // },
+    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+    { name: "webkit",  use: { ...devices["Desktop Safari"] } },
   ],
 
-  /* Run your local dev server before starting the tests */
+  // Start Next.js before tests, with env injected
   webServer: {
-    command: "pnpm dev",
-    url: "http://127.0.0.1:3002",
+    command: "next dev -p 3000 --hostname localhost",
+    url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
+    timeout: 120000, // 2 minutes to start server
+    env: {
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-project.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "your-anon-key",
+      // If your app truly needs it at runtime server-side:
+      // SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+    },
   },
-})
+});

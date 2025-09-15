@@ -33,23 +33,42 @@ const button = cva(
   }
 )
 
-// Link button props
+/**
+ * Props for button component when used as a link.
+ */
 export interface LinkButtonProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>, VariantProps<typeof button> {
   underline?: boolean
   href: string
 }
 
-// Form button props
+/**
+ * Props for button component when used as a form button.
+ */
 export interface FormButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof button> {
   underline?: boolean
 }
 
+/**
+ * Union type for all button component props.
+ */
 export type ButtonProps = LinkButtonProps | FormButtonProps
 
+/**
+ * Type guard to check if button props are for a link button.
+ * 
+ * @param props - The button props to check
+ * @returns True if props are for a link button
+ */
 function isLinkButton(props: ButtonProps): props is LinkButtonProps {
   return "href" in props
 }
 
+/**
+ * A flexible button component that can render as either a button or link.
+ * 
+ * @param props - The button props (either LinkButtonProps or FormButtonProps)
+ * @returns JSX element for button or link
+ */
 export function Button(props: ButtonProps) {
   const { className, intent, size, underline, ...restProps } = props
 
