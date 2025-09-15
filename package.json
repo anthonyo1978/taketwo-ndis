@@ -26,6 +26,10 @@
     "test:all": "pnpm run test:unit && pnpm run test:integration && pnpm run test:database && pnpm run test:performance && pnpm run test:migration",
     "e2e:headless": "playwright test",
     "e2e:ui": "playwright test --ui",
+    "e2e:debug": "playwright test --debug",
+    "e2e:headed": "playwright test --headed",
+    "e2e:report": "playwright show-report",
+    "test:full": "pnpm run test && pnpm run e2e:headless",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "postinstall": "npx patch-package -y",
     "coupling-graph": "npx madge --extensions js,jsx,ts,tsx,css,md,mdx ./ --exclude '.next|tailwind.config.js|reset.d.ts|prettier.config.js|postcss.config.js|playwright.config.ts|next.config.js|next-env.d.ts|instrumentation.ts|e2e/|README.md|.storybook/|.eslintrc.js' --image graph.svg"
