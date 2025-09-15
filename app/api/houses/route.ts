@@ -47,18 +47,42 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Add delay to simulate realistic API behavior
     await new Promise((resolve) => setTimeout(resolve, 300))
 
-    // Get all houses from Supabase
-    const houses = await houseService.getAll()
+    // Parse query parameters
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const search = searchParams.get('search') || ''
+    const status = searchParams.get('status') || ''
+    const sortBy = searchParams.get('sortBy') || 'created_at'
+    const sortOrder = searchParams.get('sortOrder') || 'desc'
+
+    // Get paginated houses from Supabase
+    const result = await houseService.getPaginated({
+      page,
+      limit,
+      search,
+      status,
+      sortBy,
+      sortOrder
+    })
 
     return NextResponse.json(
       { 
         success: true, 
-        data: houses 
+        data: result.houses,
+        pagination: {
+          page: result.page,
+          limit: result.limit,
+          total: result.total,
+          totalPages: result.totalPages,
+          hasNext: result.hasNext,
+          hasPrev: result.hasPrev
+        }
       },
       { status: 200 }
     )

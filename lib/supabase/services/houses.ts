@@ -35,6 +35,81 @@ export class HouseService {
   }
 
   /**
+   * Get paginated houses from Supabase with search and filtering.
+   * 
+   * @param options - Pagination and filtering options
+   * @returns Promise resolving to paginated houses result
+   * @throws Error if database query fails
+   */
+  async getPaginated(options: {
+    page: number
+    limit: number
+    search?: string
+    status?: string
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
+  }): Promise<{
+    houses: House[]
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }> {
+    try {
+      const supabase = await this.getSupabase()
+      const { page, limit, search, status, sortBy, sortOrder } = options
+      const offset = (page - 1) * limit
+
+      // Build query
+      let query = supabase
+        .from('houses')
+        .select('*', { count: 'exact' })
+
+      // Add search filter
+      if (search) {
+        query = query.or(`address1.ilike.%${search}%,suburb.ilike.%${search}%,postcode.ilike.%${search}%`)
+      }
+
+      // Add status filter
+      if (status) {
+        query = query.eq('status', status)
+      }
+
+      // Add sorting
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' })
+
+      // Add pagination
+      query = query.range(offset, offset + limit - 1)
+
+      const { data, error, count } = await query
+
+      if (error) {
+        console.error('Error fetching paginated houses:', error)
+        throw new Error(`Failed to fetch houses: ${error.message}`)
+      }
+
+      const houses = data?.map(house => this.convertDbHouseToFrontend(house)) || []
+      const total = count || 0
+      const totalPages = Math.ceil(total / limit)
+
+      return {
+        houses,
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    } catch (error) {
+      console.error('HouseService.getPaginated error:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get all houses from Supabase.
    * 
    * @returns Promise resolving to array of all houses

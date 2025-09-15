@@ -1,65 +1,107 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { ResidentAvatars } from "components/residents/ResidentAvatars"
+import { Pagination } from "components/ui/Pagination"
+import { SearchAndFilter } from "components/ui/SearchAndFilter"
 import type { House } from "types/house"
 
 interface ApiResponse {
   success: boolean
   data?: House[]
   error?: string
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }
 }
 
 export default function HousesPage() {
   const [houses, setHouses] = useState<House[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  })
+  
+  // Search and filter state
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('')
+  const [sortBy, setSortBy] = useState('created_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+
+  const fetchHouses = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+        search,
+        status,
+        sortBy,
+        sortOrder
+      })
+      
+      const response = await fetch(`/api/houses?${params}`)
+      const result: ApiResponse = await response.json()
+      
+      if (result.success && result.data) {
+        setHouses(result.data)
+        if (result.pagination) {
+          setPagination(result.pagination)
+        }
+      } else {
+        setError(result.error || 'Failed to load houses')
+      }
+    } catch (err) {
+      setError('Network error. Please check your connection and try again.')
+      console.error('Error fetching houses:', err)
+    } finally {
+      setLoading(false)
+    }
+  }, [pagination.page, pagination.limit, search, status, sortBy, sortOrder])
 
   useEffect(() => {
-    const fetchHouses = async () => {
-      try {
-        const response = await fetch('/api/houses')
-        const result: ApiResponse = await response.json()
-        
-        if (result.success && result.data) {
-          setHouses(result.data)
-        } else {
-          setError(result.error || 'Failed to load houses')
-        }
-      } catch (err) {
-        setError('Network error. Please check your connection and try again.')
-        console.error('Error fetching houses:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchHouses()
-  }, [])
+  }, [fetchHouses])
+
+  const handlePageChange = (page: number) => {
+    setPagination(prev => ({ ...prev, page }))
+  }
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+  }
+
+  const handleStatusChange = (value: string) => {
+    setStatus(value)
+    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+  }
+
+  const handleSortByChange = (value: string) => {
+    setSortBy(value)
+    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+  }
+
+  const handleSortOrderChange = (value: 'asc' | 'desc') => {
+    setSortOrder(value)
+    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+  }
 
   const retryFetch = () => {
-    setError(null)
-    setLoading(true)
-    
-    const fetchHouses = async () => {
-      try {
-        const response = await fetch('/api/houses')
-        const result: ApiResponse = await response.json()
-        
-        if (result.success && result.data) {
-          setHouses(result.data)
-        } else {
-          setError(result.error || 'Failed to load houses')
-        }
-      } catch (err) {
-        setError('Network error. Please check your connection and try again.')
-        console.error('Error fetching houses:', err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchHouses()
   }
 
@@ -232,13 +274,32 @@ export default function HousesPage() {
             Add New House
           </Link>
         </div>
+
+        {/* Search and Filter */}
+        <div className="mb-6">
+          <SearchAndFilter
+            searchValue={search}
+            onSearchChange={handleSearchChange}
+            statusValue={status}
+            onStatusChange={handleStatusChange}
+            sortBy={sortBy}
+            onSortByChange={handleSortByChange}
+            sortOrder={sortOrder}
+            onSortOrderChange={handleSortOrderChange}
+          />
+        </div>
         
         {/* Dynamic Houses Table */}
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Property Listings ({houses.length})
-            </h2>
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Property Listings ({pagination.total} total)
+              </h2>
+              <div className="text-sm text-gray-500">
+                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
+              </div>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -312,6 +373,15 @@ export default function HousesPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+          
+          {/* Pagination */}
+          <div className="px-6 py-4 border-t border-gray-200">
+            <Pagination
+              currentPage={pagination.page}
+              totalPages={pagination.totalPages}
+              onPageChange={handlePageChange}
+            />
           </div>
         </div>
       </div>
