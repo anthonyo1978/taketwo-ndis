@@ -40,6 +40,9 @@ jobs:
         run: pnpm playwright install --with-deps
       - name: Run E2E tests
         run: pnpm run e2e:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
       - name: Smoke & Acceptance tests
         run: |
           pnpm run build-storybook --quiet
