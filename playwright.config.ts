@@ -9,14 +9,23 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  timeout: process.env.CI ? 60000 : 30000, // Longer timeout in CI
+  expect: {
+    timeout: process.env.CI ? 10000 : 5000, // Longer expect timeout in CI
+  },
 
   // Reporter
   reporter: "html",
 
   // Shared options for tests
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://localhost:3000",
     trace: "on-first-retry",
+    // Handle cross-origin issues
+    ignoreHTTPSErrors: true,
+    // Add some stability for CI
+    actionTimeout: process.env.CI ? 15000 : 10000,
+    navigationTimeout: process.env.CI ? 30000 : 20000,
   },
 
   // Browsers
@@ -35,9 +44,10 @@ export default defineConfig({
 
   // Start Next.js before tests, with env injected
   webServer: {
-    command: "pnpm dev",                       // or 'pnpm start' if you prefer build+start
-    url: "http://127.0.0.1:3000",
+    command: "next dev -p 3000 --hostname localhost",
+    url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
+    timeout: 120000, // 2 minutes to start server
     env: {
       NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
       NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",

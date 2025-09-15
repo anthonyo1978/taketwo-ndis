@@ -39,7 +39,7 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm playwright install --with-deps
       - name: Run E2E tests
-        run: pnpm run e2e:headless
+        run: pnpm run e2e:ci
       - name: Smoke & Acceptance tests
         run: |
           pnpm run build-storybook --quiet

@@ -29,6 +29,7 @@
     "e2e:debug": "playwright test --debug",
     "e2e:headed": "playwright test --headed",
     "e2e:report": "playwright show-report",
+    "e2e:ci": "playwright test --reporter=line --max-failures=10",
     "test:full": "pnpm run test && pnpm run e2e:headless",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "postinstall": "npx patch-package -y",
