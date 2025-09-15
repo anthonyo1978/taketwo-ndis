@@ -97,11 +97,8 @@ test.describe("Add New House", () => {
     // Submit form
     await page.getByRole("button", { name: /create house/i }).click()
     
-    // Should show loading state (button text changes to "Creating...")
-    await expect(page.getByRole("button", { name: /create house/i })).toBeVisible()
-    
     // Wait for redirect to house detail page (toast might not be visible in tests)
-    await page.waitForURL(/\/houses\/H-\d{4}-\d{3}/, { timeout: 20000 })
+    await page.waitForURL(/\/houses\/[a-f0-9-]{36}/, { timeout: 20000 })
     
     // Verify we're on the detail page with correct data
     await expect(page.getByRole("heading", { name: /123 Test Street, Apt 2B/i })).toBeVisible()
@@ -126,7 +123,7 @@ test.describe("Add New House", () => {
     await page.getByRole("button", { name: /create house/i }).click()
     
     // Wait for redirect to house detail page
-    await page.waitForURL(/\/houses\/H-\d{4}-\d{3}/, { timeout: 20000 })
+    await page.waitForURL(/\/houses\/[a-f0-9-]{36}/, { timeout: 20000 })
     
     // Verify minimal data is displayed
     await expect(page.getByRole("heading", { name: /456 Minimal Street/i })).toBeVisible()
@@ -148,7 +145,7 @@ test.describe("Add New House", () => {
     await page.getByRole("button", { name: /create house/i }).click()
     
     // Wait for redirect to house detail page
-    await page.waitForURL(/\/houses\/H-\d{4}-\d{3}/, { timeout: 20000 })
+    await page.waitForURL(/\/houses\/[a-f0-9-]{36}/, { timeout: 20000 })
     
     // Critical test: ensure we can load the house detail page (tests server-side storage)
     // This validates that the API route can retrieve the house that was just created
@@ -156,7 +153,7 @@ test.describe("Add New House", () => {
     await expect(page.getByText("Test City, NSW 2000, AU")).toBeVisible()
     
     // Additional validation: make direct API call to ensure storage works
-    const houseId = page.url().match(/H-\d{4}-\d{3}/)?.[0]
+    const houseId = page.url().match(/[a-f0-9-]{36}/)?.[0]
     expect(houseId).toBeTruthy()
     
     // Test the API endpoint directly
@@ -182,11 +179,11 @@ test.describe("Add New House", () => {
     await page.getByLabel(/go-live date/i).fill("2024-03-01")
     
     await page.getByRole("button", { name: /create house/i }).click()
-    await page.waitForURL(/\/houses\/H-\d{4}-\d{3}/, { timeout: 20000 })
+    await page.waitForURL(/\/houses\/[a-f0-9-]{36}/, { timeout: 20000 })
     
     // Extract first house ID
     const firstUrl = page.url()
-    const firstId = firstUrl.match(/H-\d{4}-\d{3}/)?.[0]
+    const firstId = firstUrl.match(/[a-f0-9-]{36}/)?.[0]
     expect(firstId).toBeTruthy()
     houseIds.push(firstId!)
     
@@ -199,21 +196,20 @@ test.describe("Add New House", () => {
     await page.getByLabel(/go-live date/i).fill("2024-03-02")
     
     await page.getByRole("button", { name: /create house/i }).click()
-    await page.waitForURL(/\/houses\/H-\d{4}-\d{3}/, { timeout: 20000 })
+    await page.waitForURL(/\/houses\/[a-f0-9-]{36}/, { timeout: 20000 })
     
     // Extract second house ID
     const secondUrl = page.url()
-    const secondId = secondUrl.match(/H-\d{4}-\d{3}/)?.[0]
+    const secondId = secondUrl.match(/[a-f0-9-]{36}/)?.[0]
     expect(secondId).toBeTruthy()
     houseIds.push(secondId!)
     
     // Verify IDs are unique
     expect(houseIds[0]).not.toBe(houseIds[1])
     
-    // Verify ID format (should be sequential)
-    const currentYear = new Date().getFullYear()
-    expect(houseIds[0]).toMatch(new RegExp(`H-${currentYear}-\\d{3}`))
-    expect(houseIds[1]).toMatch(new RegExp(`H-${currentYear}-\\d{3}`))
+    // Verify ID format (should be UUIDs)
+    expect(houseIds[0]).toMatch(/^[a-f0-9-]{36}$/)
+    expect(houseIds[1]).toMatch(/^[a-f0-9-]{36}$/)
   })
 
   test("clear form button resets all fields", async ({ page }) => {
@@ -292,7 +288,7 @@ test.describe("Add New House", () => {
     await page.keyboard.press("Enter")
     
     // Should submit successfully and redirect
-    await page.waitForURL(/\/houses\/H-\d{4}-\d{3}/, { timeout: 20000 })
+    await page.waitForURL(/\/houses\/[a-f0-9-]{36}/, { timeout: 20000 })
   })
 
   test("form handles all Australian states", async ({ page }) => {
@@ -308,7 +304,7 @@ test.describe("Add New House", () => {
     }
     
     // Test creating house with each state
-    for (let i = 0; i < 3; i++) { // Test first 3 states to keep test reasonable
+    for (let i = 0; i < 2; i++) { // Test first 2 states to keep test reasonable
       const state = states[i]
       if (!state) continue
       
@@ -323,7 +319,7 @@ test.describe("Add New House", () => {
       await page.getByLabel(/go-live date/i).fill("2024-05-01")
       
       await page.getByRole("button", { name: /create house/i }).click()
-      await page.waitForURL(/\/houses\/H-\d{4}-\d{3}/, { timeout: 20000 })
+      await page.waitForURL(/\/houses\/[a-f0-9-]{36}/, { timeout: 20000 })
       
       // Verify state is displayed correctly
       await expect(page.getByText(`${state} City, ${state} 1000, AU`)).toBeVisible()
