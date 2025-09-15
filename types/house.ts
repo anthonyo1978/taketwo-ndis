@@ -1,7 +1,12 @@
+/** Australian state and territory codes. */
 export type AustralianState = 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA'
 
+/** Status options for houses. */
 export type HouseStatus = 'Active' | 'Vacant' | 'Under maintenance'
 
+/**
+ * Complete house information including address and status.
+ */
 export interface House {
   id: string
   address1: string
@@ -20,6 +25,9 @@ export interface House {
   updatedBy: string
 }
 
+/**
+ * Input data for creating a new house.
+ */
 export interface HouseCreateInput {
   address1: string
   unit?: string

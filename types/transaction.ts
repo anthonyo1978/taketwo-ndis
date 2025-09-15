@@ -1,8 +1,12 @@
+/** Status options for transactions. */
 export type TransactionStatus = 'draft' | 'posted' | 'voided'
 
-// Drawing Down specific status for NDIS compliance
+/** Drawing Down specific status for NDIS compliance. */
 export type DrawdownStatus = 'pending' | 'validated' | 'posted' | 'rejected' | 'voided'
 
+/**
+ * Complete transaction information including Drawing Down fields.
+ */
 export interface Transaction {
   id: string
   residentId: string
@@ -38,6 +42,9 @@ export interface Transaction {
   auditTrail?: TransactionAuditEntry[] // Immutable audit trail (optional for backward compatibility)
 }
 
+/**
+ * Input data for creating a new transaction.
+ */
 export interface TransactionCreateInput {
   residentId: string
   contractId: string
@@ -53,7 +60,9 @@ export interface TransactionCreateInput {
   isDrawdownTransaction?: boolean // Defaults to true for Drawing Down
 }
 
-// Drawing Down specific interfaces
+/**
+ * Audit log entry for tracking transaction changes.
+ */
 export interface TransactionAuditEntry {
   id: string
   action: 'created' | 'validated' | 'posted' | 'voided' | 'balance_updated'
@@ -66,6 +75,9 @@ export interface TransactionAuditEntry {
   reason?: string
 }
 
+/**
+ * Result of Drawing Down validation for a transaction.
+ */
 export interface DrawdownValidationResult {
   isValid: boolean
   errors: string[]
@@ -74,6 +86,9 @@ export interface DrawdownValidationResult {
   canProceed: boolean
 }
 
+/**
+ * Rule definition for mandatory Drawing Down validation.
+ */
 export interface MandatoryDrawdownRule {
   ruleId: string
   description: string
@@ -81,6 +96,9 @@ export interface MandatoryDrawdownRule {
   isMandatory: boolean
 }
 
+/**
+ * Input data for updating an existing transaction.
+ */
 export interface TransactionUpdateInput {
   occurredAt?: Date
   serviceCode?: string
@@ -91,6 +109,9 @@ export interface TransactionUpdateInput {
   note?: string
 }
 
+/**
+ * Filter criteria for transaction queries.
+ */
 export interface TransactionFilters {
   dateRange?: { from: Date; to: Date }
   residentIds?: string[]
@@ -101,11 +122,17 @@ export interface TransactionFilters {
   search?: string
 }
 
+/**
+ * Sorting configuration for transaction queries.
+ */
 export interface TransactionSortConfig {
   field: keyof Transaction | 'residentName' | 'houseName' | 'contractType'
   direction: 'asc' | 'desc'
 }
 
+/**
+ * Response data for paginated transaction lists.
+ */
 export interface TransactionListResponse {
   transactions: Transaction[]
   total: number
@@ -114,12 +141,18 @@ export interface TransactionListResponse {
   hasMore: boolean
 }
 
+/**
+ * Configuration for bulk transaction operations.
+ */
 export interface BulkTransactionOperation {
   transactionIds: string[]
   action: 'post' | 'void'
   reason?: string // Required for void operations
 }
 
+/**
+ * Result of bulk transaction operations.
+ */
 export interface BulkOperationResult {
   success: boolean
   processed: number
@@ -127,6 +160,9 @@ export interface BulkOperationResult {
   errors: Array<{ transactionId: string; error: string }>
 }
 
+/**
+ * Preview of balance impact for a transaction.
+ */
 export interface TransactionBalancePreview {
   currentBalance: number
   transactionAmount: number
@@ -135,7 +171,9 @@ export interface TransactionBalancePreview {
   warningMessage?: string
 }
 
-// Common service codes for NDIS providers
+/**
+ * Common service codes for NDIS providers.
+ */
 export const COMMON_SERVICE_CODES = [
   { code: 'SDA_RENT', label: 'SDA Rent', description: 'Specialist Disability Accommodation rental' },
   { code: 'SIL_SUPPORT', label: 'SIL Support', description: 'Supported Independent Living hours' },
@@ -148,9 +186,14 @@ export const COMMON_SERVICE_CODES = [
   { code: 'OTHER', label: 'Other', description: 'Other approved NDIS services' }
 ] as const
 
+/**
+ * Type for valid service codes.
+ */
 export type ServiceCode = typeof COMMON_SERVICE_CODES[number]['code']
 
-// Balance summary for resident pages
+/**
+ * Balance summary for resident pages.
+ */
 export interface ResidentBalanceSummary {
   residentId: string
   activeContracts: Array<{
@@ -165,7 +208,9 @@ export interface ResidentBalanceSummary {
   totalSpent: number
 }
 
-// Recent transactions for resident pages
+/**
+ * Recent transactions summary for resident pages.
+ */
 export interface RecentTransactionsSummary {
   residentId: string
   transactions: Transaction[]
@@ -173,6 +218,9 @@ export interface RecentTransactionsSummary {
   hasMore: boolean
 }
 
+/**
+ * Impact of a transaction on contract balance.
+ */
 export interface ContractBalanceImpact {
   contractId: string
   currentBalance: number

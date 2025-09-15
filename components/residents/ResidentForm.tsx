@@ -12,6 +12,9 @@ import { residentCreateSchema, type ResidentCreateSchemaType } from "lib/schemas
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 
+/**
+ * Props for the ResidentForm component.
+ */
 interface ResidentFormProps {
   houseId?: string
   mode?: "house-context" | "standalone"
@@ -20,6 +23,13 @@ interface ResidentFormProps {
   onSuccess?: (resident: Resident) => void
 }
 
+/**
+ * Form component for creating new residents.
+ * Supports both house-context and standalone modes.
+ * 
+ * @param props - The component props
+ * @returns JSX element for the resident form
+ */
 export function ResidentForm({ houseId, mode = "house-context", open, onClose, onSuccess }: ResidentFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)

@@ -26,7 +26,12 @@ const exportParamsSchema = z.object({
   sortDirection: z.enum(['asc', 'desc']).optional()
 })
 
-// Helper function to escape CSV values
+/**
+ * Escape CSV values to prevent injection and formatting issues.
+ * 
+ * @param value - The value to escape
+ * @returns Properly escaped CSV value
+ */
 function escapeCSVValue(value: any): string {
   if (value === null || value === undefined) return ''
   
@@ -40,21 +45,36 @@ function escapeCSVValue(value: any): string {
   return stringValue
 }
 
-// Helper function to format date for CSV
+/**
+ * Format date for CSV export in YYYY-MM-DD format.
+ * 
+ * @param date - The date to format
+ * @returns Formatted date string or empty string if invalid
+ */
 function formatDateForCSV(date: Date | string | undefined): string {
   if (!date) return ''
   const d = date instanceof Date ? date : new Date(date)
   return d.toISOString().split('T')[0] // YYYY-MM-DD format
 }
 
-// Helper function to format datetime for CSV
+/**
+ * Format datetime for CSV export in YYYY-MM-DD HH:mm:ss format.
+ * 
+ * @param date - The datetime to format
+ * @returns Formatted datetime string or empty string if invalid
+ */
 function formatDateTimeForCSV(date: Date | string | undefined): string {
   if (!date) return ''
   const d = date instanceof Date ? date : new Date(date)
   return d.toISOString().replace('T', ' ').split('.')[0] // YYYY-MM-DD HH:mm:ss format
 }
 
-// GET /api/transactions/export - Export transactions as CSV
+/**
+ * Export transactions as CSV file.
+ * 
+ * @param request - The Next.js request object with query parameters
+ * @returns CSV file download or error response
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)

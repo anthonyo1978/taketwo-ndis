@@ -13,7 +13,10 @@ interface BalanceUpdateResult {
 }
 
 /**
- * Update balances for all active contracts across all residents
+ * Update balances for all active contracts across all residents.
+ * 
+ * @returns Promise resolving to update result with counts and errors
+ * @throws Error if the update process fails
  */
 export async function updateAllContractBalances(): Promise<BalanceUpdateResult> {
   const residents = getResidentsFromStorage()
@@ -46,7 +49,10 @@ export async function updateAllContractBalances(): Promise<BalanceUpdateResult> 
 }
 
 /**
- * Update balances for a specific resident's contracts
+ * Update balances for a specific resident's contracts.
+ * 
+ * @param resident - The resident whose contracts to update
+ * @returns Promise resolving to update counts
  */
 export async function updateResidentContractBalances(resident: Resident): Promise<{
   processed: number
@@ -121,7 +127,11 @@ export async function updateResidentContractBalances(resident: Resident): Promis
 }
 
 /**
- * Update balances for a specific contract
+ * Update balances for a specific contract.
+ * 
+ * @param residentId - The resident ID
+ * @param contractId - The contract ID to update
+ * @returns Promise resolving to updated contract or null if not found
  */
 export async function updateContractBalance(residentId: string, contractId: string): Promise<FundingInformation | null> {
   const residents = getResidentsFromStorage()
@@ -188,7 +198,10 @@ export async function updateContractBalance(residentId: string, contractId: stri
 }
 
 /**
- * Get contracts that are expiring within a specified number of days
+ * Get contracts that are expiring within a specified number of days.
+ * 
+ * @param daysThreshold - Number of days to check for expiry (default: 30)
+ * @returns Array of expiring contracts with resident and expiry info
  */
 export function getExpiringContracts(daysThreshold: number = 30): Array<{
   resident: Resident
@@ -224,7 +237,9 @@ export function getExpiringContracts(daysThreshold: number = 30): Array<{
 }
 
 /**
- * Mark expired contracts as expired
+ * Mark expired contracts as expired.
+ * 
+ * @returns Promise resolving to counts of processed and expired contracts
  */
 export async function markExpiredContracts(): Promise<{
   processed: number
@@ -295,7 +310,10 @@ export async function markExpiredContracts(): Promise<{
 }
 
 /**
- * Scheduled balance update service (would be called by a cron job in production)
+ * Scheduled balance update service (would be called by a cron job in production).
+ * 
+ * @returns Promise that resolves when update is complete
+ * @throws Error if the scheduled update fails
  */
 export async function scheduledBalanceUpdate(): Promise<void> {
   console.log('Starting scheduled balance update...')
@@ -328,7 +346,9 @@ export async function scheduledBalanceUpdate(): Promise<void> {
 }
 
 /**
- * Get system health metrics for monitoring
+ * Get system health metrics for monitoring.
+ * 
+ * @returns System health metrics including contract counts and balances
  */
 export function getSystemHealthMetrics() {
   const residents = getResidentsFromStorage()

@@ -27,7 +27,12 @@ function generateTransactionId(): string {
   return `TXN-${timestamp}-${random}`.toUpperCase()
 }
 
-// Get all transactions from storage
+/**
+ * Get all transactions from localStorage.
+ * 
+ * @returns Array of all stored transactions
+ * @throws Error if localStorage is not available or data is corrupted
+ */
 export function getTransactionsFromStorage(): Transaction[] {
   try {
     // Check if we're on the server side
@@ -88,7 +93,12 @@ export function getTransactionsFromStorage(): Transaction[] {
   }
 }
 
-// Save all transactions to storage
+/**
+ * Save all transactions to localStorage.
+ * 
+ * @param transactions - Array of transactions to save
+ * @throws Error if localStorage is not available or save fails
+ */
 export function saveTransactionsToStorage(transactions: Transaction[]): void {
   try {
     // Check if we're on the server side
@@ -103,13 +113,25 @@ export function saveTransactionsToStorage(transactions: Transaction[]): void {
   }
 }
 
-// Get a single transaction by ID
+/**
+ * Get a single transaction by ID.
+ * 
+ * @param id - The transaction ID to find
+ * @returns The transaction if found, null otherwise
+ */
 export function getTransactionById(id: string): Transaction | null {
   const transactions = getTransactionsFromStorage()
   return transactions.find(tx => tx.id === id) || null
 }
 
-// Calculate balance impact for a transaction
+/**
+ * Calculate balance impact for a transaction.
+ * 
+ * @param contractId - The contract ID to check
+ * @param amount - The transaction amount
+ * @param excludeTransactionId - Optional transaction ID to exclude from calculation
+ * @returns Balance impact details including validation
+ */
 export function calculateBalanceImpact(
   contractId: string, 
   amount: number,
@@ -160,7 +182,14 @@ export function calculateBalanceImpact(
   }
 }
 
-// Create a new transaction with Drawing Down validation
+/**
+ * Create a new transaction with Drawing Down validation.
+ * 
+ * @param input - The transaction creation data
+ * @param createdBy - The user creating the transaction (default: 'system')
+ * @returns The created transaction
+ * @throws Error if validation fails or creation fails
+ */
 export function createTransaction(
   input: TransactionCreateInput,
   createdBy: string = 'system'
@@ -231,7 +260,14 @@ export function createTransaction(
   return newTransaction
 }
 
-// Update an existing transaction (only if draft)
+/**
+ * Update an existing transaction (only if draft).
+ * 
+ * @param id - The transaction ID to update
+ * @param updates - The fields to update
+ * @returns The updated transaction
+ * @throws Error if transaction not found or not in draft status
+ */
 export function updateTransaction(
   id: string,
   updates: Partial<TransactionCreateInput>
@@ -263,7 +299,13 @@ export function updateTransaction(
   return updatedTransaction
 }
 
-// Post a transaction with Drawing Down validation (change status from draft to posted)
+/**
+ * Post a transaction with Drawing Down validation (change status from draft to posted).
+ * 
+ * @param id - The transaction ID to post
+ * @param postedBy - The user posting the transaction (default: 'system')
+ * @returns Result object with success status and transaction or error
+ */
 export function postTransaction(
   id: string,
   postedBy: string = 'system'
@@ -342,7 +384,15 @@ export function postTransaction(
   return { success: true, transaction }
 }
 
-// Void a transaction (change status from posted to voided)
+/**
+ * Void a transaction (change status from posted to voided).
+ * 
+ * @param id - The transaction ID to void
+ * @param reason - The reason for voiding
+ * @param voidedBy - The user voiding the transaction (default: 'system')
+ * @returns The voided transaction
+ * @throws Error if transaction not found or not in posted status
+ */
 export function voidTransaction(
   id: string,
   reason: string,
@@ -416,7 +466,13 @@ function updateContractBalance(contractId: string): void {
   updateResidentInStorage(residentToUpdate.id, residentToUpdate)
 }
 
-// Delete a transaction (only if draft)
+/**
+ * Delete a transaction (only if draft).
+ * 
+ * @param id - The transaction ID to delete
+ * @returns True if deleted successfully
+ * @throws Error if transaction not found or not in draft status
+ */
 export function deleteTransaction(id: string): boolean {
   const transactions = getTransactionsFromStorage()
   const index = transactions.findIndex(tx => tx.id === id)
@@ -516,7 +572,15 @@ function applySorting(transactions: Transaction[], sort: TransactionSortConfig):
   })
 }
 
-// Get filtered and sorted transactions with pagination
+/**
+ * Get filtered and sorted transactions with pagination.
+ * 
+ * @param filters - Filter criteria for transactions
+ * @param sort - Sorting configuration
+ * @param page - Page number (1-based)
+ * @param pageSize - Number of items per page
+ * @returns Paginated list of transactions
+ */
 export function getTransactionsList(
   filters: TransactionFilters = {},
   sort: TransactionSortConfig = { field: 'occurredAt', direction: 'desc' },
@@ -545,7 +609,13 @@ export function getTransactionsList(
   }
 }
 
-// Bulk post transactions
+/**
+ * Bulk post transactions.
+ * 
+ * @param transactionIds - Array of transaction IDs to post
+ * @param postedBy - The user posting transactions (default: 'system')
+ * @returns Result object with success status and counts
+ */
 export function bulkPostTransactions(
   transactionIds: string[],
   postedBy: string = 'system'
@@ -574,7 +644,14 @@ export function bulkPostTransactions(
   return result
 }
 
-// Bulk void transactions
+/**
+ * Bulk void transactions.
+ * 
+ * @param transactionIds - Array of transaction IDs to void
+ * @param reason - The reason for voiding
+ * @param voidedBy - The user voiding transactions (default: 'system')
+ * @returns Result object with success status and counts
+ */
 export function bulkVoidTransactions(
   transactionIds: string[],
   reason: string,
@@ -604,7 +681,13 @@ export function bulkVoidTransactions(
   return result
 }
 
-// Get balance preview for a transaction
+/**
+ * Get balance preview for a transaction.
+ * 
+ * @param contractId - The contract ID to check
+ * @param amount - The transaction amount
+ * @returns Balance preview with validation status
+ */
 export function getTransactionBalancePreview(
   contractId: string,
   amount: number
@@ -620,7 +703,12 @@ export function getTransactionBalancePreview(
   }
 }
 
-// Get resident balance summary
+/**
+ * Get resident balance summary.
+ * 
+ * @param residentId - The resident ID to get summary for
+ * @returns Summary of resident's contract balances
+ */
 export function getResidentBalanceSummary(residentId: string): ResidentBalanceSummary {
   const residents = getResidentsFromStorage()
   const resident = residents.find(r => r.id === residentId)
@@ -665,7 +753,13 @@ export function getResidentBalanceSummary(residentId: string): ResidentBalanceSu
   }
 }
 
-// Get recent transactions for a resident
+/**
+ * Get recent transactions for a resident.
+ * 
+ * @param residentId - The resident ID to get transactions for
+ * @param limit - Maximum number of transactions to return (default: 5)
+ * @returns Summary of recent transactions
+ */
 export function getRecentTransactionsSummary(
   residentId: string,
   limit: number = 5

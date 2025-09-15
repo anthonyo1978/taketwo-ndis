@@ -1,13 +1,21 @@
+/** Gender options for residents. */
 export type Gender = 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say'
 
+/** Status options for residents. */
 export type ResidentStatus = 'Draft' | 'Active' | 'Deactivated'
 
+/** Types of funding available for residents. */
 export type FundingType = 'NDIS' | 'Government' | 'Private' | 'Family' | 'Other'
 
+/** Status options for funding contracts. */
 export type ContractStatus = 'Draft' | 'Active' | 'Expired' | 'Cancelled' | 'Renewed'
 
+/** Drawdown rate options for funding contracts. */
 export type DrawdownRate = 'daily' | 'weekly' | 'monthly'
 
+/**
+ * Information about a resident's funding contract.
+ */
 export interface FundingInformation {
   id: string
   type: FundingType
@@ -32,6 +40,9 @@ export interface FundingInformation {
   dailySupportItemCost?: number
 }
 
+/**
+ * Resident preferences and requirements.
+ */
 export interface ResidentPreferences {
   dietary?: string[]
   medical?: string[]
@@ -41,6 +52,9 @@ export interface ResidentPreferences {
   other?: string
 }
 
+/**
+ * Emergency contact information for a resident.
+ */
 export interface EmergencyContact {
   name: string
   relationship: string
@@ -48,6 +62,9 @@ export interface EmergencyContact {
   email?: string
 }
 
+/**
+ * Audit log entry for tracking changes to resident data.
+ */
 export interface AuditLogEntry {
   id: string
   residentId: string
@@ -60,6 +77,9 @@ export interface AuditLogEntry {
   userEmail: string
 }
 
+/**
+ * Complete resident information including personal details and funding.
+ */
 export interface Resident {
   id: string
   houseId: string
@@ -84,6 +104,9 @@ export interface Resident {
   updatedBy: string
 }
 
+/**
+ * Input data for creating a new resident.
+ */
 export interface ResidentCreateInput {
   firstName: string
   lastName: string
@@ -99,6 +122,9 @@ export interface ResidentCreateInput {
   emergencyContact?: EmergencyContact
 }
 
+/**
+ * Input data for updating an existing resident.
+ */
 export interface ResidentUpdateInput {
   firstName?: string
   lastName?: string
@@ -112,6 +138,9 @@ export interface ResidentUpdateInput {
   emergencyContact?: EmergencyContact
 }
 
+/**
+ * Summary of contract balances across multiple contracts.
+ */
 export interface ContractBalanceSummary {
   totalOriginal: number
   totalCurrent: number

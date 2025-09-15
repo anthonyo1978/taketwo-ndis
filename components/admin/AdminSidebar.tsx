@@ -59,10 +59,19 @@ const NAVIGATION_ITEMS = [
 
 const STORAGE_KEY = "admin-sidebar-collapsed"
 
+/**
+ * Props for the AdminSidebar component.
+ */
 export interface AdminSidebarProps {
   className?: string
 }
 
+/**
+ * Collapsible sidebar component for admin navigation.
+ * 
+ * @param props - The component props
+ * @returns JSX element for the admin sidebar
+ */
 export function AdminSidebar({ className }: AdminSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
