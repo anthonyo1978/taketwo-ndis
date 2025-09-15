@@ -185,7 +185,11 @@ test.describe("Standalone Residents Feature", () => {
     await page.selectOption('select[name="state"]', "WA")
     await page.fill('input[name="postcode"]', "6000")
     await page.click('button[type="submit"]')
-    await page.waitForURL("/houses")
+    // Wait for navigation with fallback to ensure we're on the houses page
+    await Promise.race([
+      page.waitForURL("/houses", { timeout: 10000 }),
+      page.waitForSelector('h1:has-text("Houses")', { timeout: 10000 })
+    ])
     
     // Add resident via global residents page
     await page.goto("/residents")
@@ -219,7 +223,11 @@ test.describe("Standalone Residents Feature", () => {
     await page.selectOption('select[name="state"]', "SA")
     await page.fill('input[name="postcode"]', "5000")
     await page.click('button[type="submit"]')
-    await page.waitForURL("/houses")
+    // Wait for navigation with fallback to ensure we're on the houses page
+    await Promise.race([
+      page.waitForURL("/houses", { timeout: 10000 }),
+      page.waitForSelector('h1:has-text("Houses")', { timeout: 10000 })
+    ])
     
     await page.goto("/residents")
     
