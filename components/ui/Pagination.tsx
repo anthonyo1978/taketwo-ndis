@@ -1,7 +1,5 @@
 "use client"
 
-import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline"
-
 interface PaginationProps {
   currentPage: number
   totalPages: number
@@ -62,7 +60,9 @@ export function Pagination({
           disabled={currentPage === 1}
           className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ChevronLeftIcon className="h-5 w-5" />
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
         </button>
 
         {visiblePages.map((page, index) => (
@@ -87,7 +87,9 @@ export function Pagination({
           disabled={currentPage === totalPages}
           className="relative inline-flex items-center px-2 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ChevronRightIcon className="h-5 w-5" />
+          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
         </button>
       </div>
 
