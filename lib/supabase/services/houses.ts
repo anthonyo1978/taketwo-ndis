@@ -1,4 +1,4 @@
-import { createClient } from '../client'
+import { createClient } from '../server'
 import type { House } from '@/types/house'
 
 /**
@@ -6,7 +6,9 @@ import type { House } from '@/types/house'
  * Handles CRUD operations for houses.
  */
 export class HouseService {
-  private supabase = createClient()
+  private async getSupabase() {
+    return await createClient()
+  }
 
   /**
    * Convert database house (snake_case) to frontend house (camelCase)
@@ -40,7 +42,8 @@ export class HouseService {
    */
   async getAll(): Promise<House[]> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase()
+      const { data, error } = await supabase
         .from('houses')
         .select('*')
         .order('created_at', { ascending: false })
@@ -67,7 +70,8 @@ export class HouseService {
    */
   async getById(id: string): Promise<House | null> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase()
+      const { data, error } = await supabase
         .from('houses')
         .select('*')
         .eq('id', id)
@@ -112,7 +116,8 @@ export class HouseService {
         resident: house.resident
       }
 
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase()
+      const { data, error } = await supabase
         .from('houses')
         .insert([dbHouse])
         .select()
@@ -157,7 +162,8 @@ export class HouseService {
       if (updates.goLiveDate !== undefined) dbUpdates.go_live_date = updates.goLiveDate
       if (updates.resident !== undefined) dbUpdates.resident = updates.resident
 
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase()
+      const { data, error } = await supabase
         .from('houses')
         .update(dbUpdates)
         .eq('id', id)
@@ -185,7 +191,8 @@ export class HouseService {
    */
   async delete(id: string): Promise<boolean> {
     try {
-      const { error } = await this.supabase
+      const supabase = await this.getSupabase()
+      const { error } = await supabase
         .from('houses')
         .delete()
         .eq('id', id)
