@@ -16,7 +16,7 @@ export class HouseService {
   private convertDbHouseToFrontend(dbHouse: any): House {
     return {
       id: dbHouse.id,
-      descriptor: dbHouse.descriptor,
+      descriptor: dbHouse.descriptor || undefined, // Handle missing descriptor field
       address1: dbHouse.address1,
       address2: dbHouse.address2,
       suburb: dbHouse.suburb,
@@ -179,7 +179,7 @@ export class HouseService {
     try {
       // Convert camelCase to snake_case for database
       const dbHouse = {
-        descriptor: house.descriptor,
+        descriptor: house.descriptor, // Now uncommented - database migration applied
         address1: house.address1,
         address2: house.address2,
         suburb: house.suburb,

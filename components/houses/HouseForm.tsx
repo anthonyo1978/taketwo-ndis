@@ -41,7 +41,7 @@ export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormP
   const handleFormSubmit = async (data: HouseCreateSchemaType) => {
     try {
       await onSubmit(data)
-      reset()
+      // Don't reset form here - let the page handle redirect
     } catch (error) {
       console.error('Form submission error:', error)
     }
