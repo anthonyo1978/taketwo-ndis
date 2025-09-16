@@ -7,11 +7,12 @@ import { HouseService } from "../../../../lib/supabase/services/houses"
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const houseService = new HouseService()
-    const house = await houseService.getById(params.id)
+    const house = await houseService.getById(id)
     
     if (!house) {
       return NextResponse.json(
@@ -35,7 +36,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const body = await request.json()
@@ -53,10 +54,11 @@ export async function PUT(
       )
     }
 
+    const { id } = await params
     const houseService = new HouseService()
     
     // Check if house exists
-    const existingHouse = await houseService.getById(params.id)
+    const existingHouse = await houseService.getById(id)
     if (!existingHouse) {
       return NextResponse.json(
         { success: false, error: "House not found" },
@@ -65,7 +67,7 @@ export async function PUT(
     }
 
     // Update the house
-    const updatedHouse = await houseService.update(params.id, {
+    const updatedHouse = await houseService.update(id, {
       ...validation.data,
       // Preserve audit fields
       createdAt: existingHouse.createdAt,
@@ -89,7 +91,7 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const houseService = new HouseService()
