@@ -4,10 +4,11 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
-import { ResidentForm } from "components/residents/ResidentForm"
-import { ResidentTable } from "components/residents/ResidentTable"
-import type { House } from "types/house"
-import type { Resident } from "types/resident"
+import { ResidentForm } from "../../../../components/residents/ResidentForm"
+import { ResidentTable } from "../../../../components/residents/ResidentTable"
+import { HouseImageUpload } from "../../../../components/houses/HouseImageUpload"
+import type { House } from "../../../../types/house"
+import type { Resident } from "../../../../types/resident"
 
 interface ApiResponse {
   success: boolean
@@ -52,6 +53,14 @@ export default function HouseDetailPage() {
   const handleResidentAdded = (_newResident: Resident) => {
     // Trigger refresh of resident table
     setResidentRefreshTrigger(prev => prev + 1)
+  }
+
+  const handleImageUploaded = (imageUrl: string) => {
+    setHouse(prev => prev ? { ...prev, imageUrl } : null)
+  }
+
+  const handleImageRemoved = () => {
+    setHouse(prev => prev ? { ...prev, imageUrl: undefined } : null)
   }
 
   if (loading) {
@@ -222,6 +231,17 @@ export default function HouseDetailPage() {
 
           {/* Additional Details */}
           <div className="space-y-6">
+            {/* Image Upload */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">House Image</h3>
+              <HouseImageUpload
+                houseId={house.id}
+                currentImageUrl={house.imageUrl}
+                onImageUploaded={handleImageUploaded}
+                onImageRemoved={handleImageRemoved}
+              />
+            </div>
+
             {/* Property Details */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Property Details</h3>
