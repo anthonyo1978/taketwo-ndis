@@ -94,10 +94,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const houseService = new HouseService()
     
     // Check if house exists
-    const existingHouse = await houseService.getById(params.id)
+    const existingHouse = await houseService.getById(id)
     if (!existingHouse) {
       return NextResponse.json(
         { success: false, error: "House not found" },
@@ -106,7 +107,7 @@ export async function DELETE(
     }
 
     // Delete the house
-    await houseService.delete(params.id)
+    await houseService.delete(id)
 
     return NextResponse.json({ success: true, message: "House deleted successfully" })
   } catch (error) {

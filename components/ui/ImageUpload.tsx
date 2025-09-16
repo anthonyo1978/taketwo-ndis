@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Button } from "./Button"
+import { Button } from "../Button/Button"
 import { createClient } from "../../lib/supabase/client"
 import { toast } from "react-hot-toast"
 
