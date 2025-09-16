@@ -102,17 +102,25 @@ export default function HouseDetailPage() {
               Houses
             </Link>
             <span>/</span>
-            <span className="text-gray-900">{house.id}</span>
+            <span className="text-gray-900">
+              {house.descriptor || `${house.address1}, ${house.suburb}`}
+            </span>
           </nav>
           
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {house.address1}
-                {house.unit && `, ${house.unit}`}
+                {house.descriptor || `${house.address1}${house.unit ? `, ${house.unit}` : ''}`}
               </h1>
               <p className="text-gray-600">
-                {house.suburb}, {house.state} {house.postcode}, {house.country}
+                {house.descriptor ? (
+                  <>
+                    {house.address1}{house.unit && `, ${house.unit}`}<br />
+                    {house.suburb}, {house.state} {house.postcode}, {house.country}
+                  </>
+                ) : (
+                  `${house.suburb}, ${house.state} ${house.postcode}, ${house.country}`
+                )}
               </p>
             </div>
             

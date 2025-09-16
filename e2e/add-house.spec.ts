@@ -138,7 +138,10 @@ test.describe("Add New House", () => {
     await page.waitForURL(/\/houses\/[a-f0-9-]{36}/, { timeout: 20000 })
     
     // Verify we're on the detail page with correct data
-    await expect(page.getByRole("heading", { name: /123 Test Street, Apt 2B/i })).toBeVisible()
+    // Now shows descriptor as main heading
+    await expect(page.getByRole("heading", { name: /Main Office/i })).toBeVisible()
+    // Address should be shown as secondary info
+    await expect(page.getByText("123 Test Street, Apt 2B")).toBeVisible()
     await expect(page.getByText("Sydney, NSW 2000, AU")).toBeVisible()
     await expect(page.getByText("Active").first()).toBeVisible()
     await expect(page.getByText("John Doe")).toBeVisible()
