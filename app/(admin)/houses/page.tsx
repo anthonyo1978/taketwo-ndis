@@ -306,7 +306,7 @@ export default function HousesPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    House ID
+                    House Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Address
@@ -333,7 +333,12 @@ export default function HousesPage() {
                         href={`/houses/${house.id}`}
                         className="text-blue-600 hover:text-blue-900 font-medium"
                       >
-                        {house.id}
+                        <div className="font-medium">
+                          {house.descriptor || `${house.address1}, ${house.suburb}`}
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          ID: {house.id}
+                        </div>
                       </Link>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

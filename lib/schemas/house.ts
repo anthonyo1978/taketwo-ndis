@@ -1,6 +1,11 @@
 import { z } from "zod"
 
 export const houseCreateSchema = z.object({
+  descriptor: z.string()
+    .min(3, "House descriptor must be at least 3 characters")
+    .max(100, "House descriptor must be no more than 100 characters")
+    .optional(),
+  
   address1: z.string()
     .min(3, "Address must be at least 3 characters")
     .max(120, "Address must be no more than 120 characters"),

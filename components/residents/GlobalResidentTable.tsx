@@ -78,7 +78,8 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
   // Get house name for a resident
   const getHouseName = (houseId: string): string => {
     const house = houses.find(h => h.id === houseId)
-    return house ? house.name : 'Unknown House'
+    if (!house) return 'Unknown House'
+    return house.descriptor || `${house.address1}, ${house.suburb}`
   }
 
   // Loading state with skeleton table

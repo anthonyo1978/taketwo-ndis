@@ -22,6 +22,9 @@ test.describe("Add New House", () => {
   test("displays all form fields with correct labels", async ({ page }) => {
     await page.goto("/houses/new")
     
+    // House descriptor section
+    await expect(page.getByLabel(/house descriptor/i)).toBeVisible()
+    
     // Address section
     await expect(page.getByLabel(/address line 1/i)).toBeVisible()
     await expect(page.getByLabel(/unit\/apartment/i)).toBeVisible()
@@ -78,11 +81,45 @@ test.describe("Add New House", () => {
     await expect(page.getByText(/postcode must be exactly 4 digits/i)).not.toBeVisible()
   })
 
+  test("validates descriptor field length", async ({ page }) => {
+    await page.goto("/houses/new")
+    
+    // Fill required fields first
+    await page.getByLabel(/address line 1/i).fill("123 Test Street")
+    await page.getByLabel(/suburb\/city/i).fill("Test City")
+    await page.getByLabel(/state/i).selectOption("NSW")
+    await page.getByLabel(/postcode/i).fill("2000")
+    await page.getByLabel(/go-live date/i).fill("2024-01-15")
+    
+    // Test minimum length validation
+    await page.getByLabel(/house descriptor/i).fill("AB")
+    await page.getByRole("button", { name: /create house/i }).click()
+    
+    // Should show validation error
+    await expect(page.getByText(/house descriptor must be at least 3 characters/i)).toBeVisible()
+    
+    // Test maximum length validation
+    await page.getByLabel(/house descriptor/i).fill("A".repeat(101)) // 101 characters
+    await page.getByRole("button", { name: /create house/i }).click()
+    
+    // Should show validation error
+    await expect(page.getByText(/house descriptor must be no more than 100 characters/i)).toBeVisible()
+    
+    // Test valid length
+    await page.getByLabel(/house descriptor/i).fill("Main Office")
+    await page.getByRole("button", { name: /create house/i }).click()
+    
+    // Should not show validation errors
+    await expect(page.getByText(/house descriptor must be at least 3 characters/i)).not.toBeVisible()
+    await expect(page.getByText(/house descriptor must be no more than 100 characters/i)).not.toBeVisible()
+  })
+
   test("successfully creates house with valid data - happy path", async ({ page }) => {
     test.setTimeout(60000) // Increase timeout for this test
     await page.goto("/houses/new")
     
-    // Fill in all required fields
+    // Fill in all required fields including descriptor
+    await page.getByLabel(/house descriptor/i).fill("Main Office")
     await page.getByLabel(/address line 1/i).fill("123 Test Street")
     await page.getByLabel(/unit\/apartment/i).fill("Apt 2B")
     await page.getByLabel(/suburb\/city/i).fill("Sydney")

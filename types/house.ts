@@ -9,6 +9,7 @@ export type HouseStatus = 'Active' | 'Vacant' | 'Under maintenance'
  */
 export interface House {
   id: string
+  descriptor?: string
   address1: string
   unit?: string
   suburb: string
@@ -29,6 +30,7 @@ export interface House {
  * Input data for creating a new house.
  */
 export interface HouseCreateInput {
+  descriptor?: string
   address1: string
   unit?: string
   suburb: string

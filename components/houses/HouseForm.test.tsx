@@ -14,6 +14,9 @@ describe('HouseForm', () => {
   it('should render all form fields', () => {
     render(<HouseForm onSubmit={mockOnSubmit} />)
 
+    // House descriptor field
+    expect(screen.getByLabelText(/house descriptor/i)).toBeInTheDocument()
+
     // Address fields
     expect(screen.getByLabelText(/address line 1/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/unit\/apartment/i)).toBeInTheDocument()
@@ -209,6 +212,68 @@ describe('HouseForm', () => {
     expect(screen.getByLabelText(/suburb\/city/i)).toHaveValue('')
     expect(screen.getByLabelText(/country/i)).toHaveValue('AU') // Default value
     expect(screen.getByLabelText(/status/i)).toHaveValue('Active') // Default value
+  })
+
+  it('should validate descriptor field length', async () => {
+    const user = userEvent.setup()
+    render(<HouseForm onSubmit={mockOnSubmit} />)
+
+    const descriptorField = screen.getByLabelText(/house descriptor/i)
+    
+    // Test minimum length validation
+    await user.type(descriptorField, 'AB')
+    await user.tab() // Trigger validation
+    
+    await waitFor(() => {
+      expect(screen.getByText(/house descriptor must be at least 3 characters/i)).toBeInTheDocument()
+    })
+
+    // Test maximum length validation
+    await user.clear(descriptorField)
+    await user.type(descriptorField, 'A'.repeat(101)) // 101 characters
+    await user.tab() // Trigger validation
+    
+    await waitFor(() => {
+      expect(screen.getByText(/house descriptor must be no more than 100 characters/i)).toBeInTheDocument()
+    })
+
+    // Test valid length
+    await user.clear(descriptorField)
+    await user.type(descriptorField, 'Main Office')
+    await user.tab() // Trigger validation
+    
+    await waitFor(() => {
+      expect(screen.queryByText(/house descriptor must be at least 3 characters/i)).not.toBeInTheDocument()
+      expect(screen.queryByText(/house descriptor must be no more than 100 characters/i)).not.toBeInTheDocument()
+    })
+  })
+
+  it('should submit form with descriptor field', async () => {
+    const user = userEvent.setup()
+    render(<HouseForm onSubmit={mockOnSubmit} />)
+
+    // Fill in all required fields plus descriptor
+    await user.type(screen.getByLabelText(/house descriptor/i), 'Main Office')
+    await user.type(screen.getByLabelText(/address line 1/i), '123 Main Street')
+    await user.type(screen.getByLabelText(/suburb\/city/i), 'Sydney')
+    await user.selectOptions(screen.getByLabelText(/state/i), 'NSW')
+    await user.type(screen.getByLabelText(/postcode/i), '2000')
+    await user.type(screen.getByLabelText(/go-live date/i), '2024-01-15')
+
+    // Submit form
+    await user.click(screen.getByRole('button', { name: /create house/i }))
+
+    await waitFor(() => {
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          descriptor: 'Main Office',
+          address1: '123 Main Street',
+          suburb: 'Sydney',
+          state: 'NSW',
+          postcode: '2000'
+        })
+      )
+    })
   })
 
   it('should have proper accessibility attributes', () => {

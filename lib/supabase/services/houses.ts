@@ -16,6 +16,7 @@ export class HouseService {
   private convertDbHouseToFrontend(dbHouse: any): House {
     return {
       id: dbHouse.id,
+      descriptor: dbHouse.descriptor,
       address1: dbHouse.address1,
       address2: dbHouse.address2,
       suburb: dbHouse.suburb,
@@ -178,6 +179,7 @@ export class HouseService {
     try {
       // Convert camelCase to snake_case for database
       const dbHouse = {
+        descriptor: house.descriptor,
         address1: house.address1,
         address2: house.address2,
         suburb: house.suburb,

@@ -652,3 +652,7 @@ ACCESSIBILITY:
 
 **Recommendation:**
 This PRP provides everything needed for successful one-pass implementation using Claude Code. The existing codebase provides proven patterns, comprehensive testing validates functionality, and modern best practices ensure maintainable code. The detailed context and validation loops minimize implementation risk.
+
+** Update ****
+
+Currently when creating a house, each house is assigned a unique ID, this is sort of like a primary key. This is called the house ID. The challenge i have with this is that this is a very technical identifier. Humans would not describe a house in this way. Is there a way that the database generates and keeps this house ID in the background, but the user adds a filed lable or a way to describe the house on the front end. I know that this is kind of the primary key, but keen to keep the identifier, but allow the descriptor or the way that the human creating the house has described it, be the "Main" thing.

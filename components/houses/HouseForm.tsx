@@ -52,6 +52,32 @@ export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormP
   return (
     <div className={className}>
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+        {/* House Descriptor Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-medium text-gray-900">House Information</h3>
+          
+          <div>
+            <label htmlFor="descriptor" className="block text-sm font-medium text-gray-700 mb-1">
+              House Descriptor <span className="text-gray-500">(Optional)</span>
+            </label>
+            <Input
+              id="descriptor"
+              {...register("descriptor")}
+              placeholder="e.g., 'Main Office', 'Client House A', 'Family Home'"
+              className={errors.descriptor ? "border-red-500" : ""}
+              disabled={submitDisabled}
+            />
+            {errors.descriptor && (
+              <p className="mt-1 text-sm text-red-600" role="alert">
+                {errors.descriptor.message}
+              </p>
+            )}
+            <p className="mt-1 text-sm text-gray-500">
+              A friendly name to identify this house (e.g., "Main Office", "Client House A")
+            </p>
+          </div>
+        </div>
+
         {/* Address Section */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900">Address Details</h3>
