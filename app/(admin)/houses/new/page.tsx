@@ -30,7 +30,10 @@ export default function NewHousePage() {
       if (result.success && result.data) {
         const newHouse = result.data as House
         
-        toast.success(`House ${newHouse.id} created successfully!`, {
+        // Show human-friendly identifier instead of technical UUID
+        const houseIdentifier = newHouse.descriptor || `${newHouse.address1}, ${newHouse.suburb}`
+        
+        toast.success(`House "${houseIdentifier}" created successfully!`, {
           duration: 4000,
         })
         
