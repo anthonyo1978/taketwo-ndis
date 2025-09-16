@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { houseCreateSchema } from "@/lib/schemas/house"
-import { HouseService } from "@/lib/supabase/services/houses"
+import { houseCreateSchema } from "../../../lib/schemas/house"
+import { HouseService } from "../../../lib/supabase/services/houses"
 
 /**
  * GET /api/houses/[id] - Get a specific house by ID

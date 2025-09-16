@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import { Button } from "./Button"
-import { createClient } from "@/lib/supabase/client"
+import { createClient } from "../../lib/supabase/client"
 import { toast } from "react-hot-toast"
 
 interface ImageUploadProps {
