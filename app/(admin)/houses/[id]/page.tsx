@@ -108,23 +108,54 @@ export default function HouseDetailPage() {
           </nav>
           
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {house.descriptor || `${house.address1}${house.unit ? `, ${house.unit}` : ''}`}
-              </h1>
-              <p className="text-gray-600">
-                {house.descriptor ? (
-                  <>
-                    {house.address1}{house.unit && `, ${house.unit}`}<br />
-                    {house.suburb}, {house.state} {house.postcode}, {house.country}
-                  </>
+            <div className="flex items-start space-x-6">
+              {/* House Image */}
+              <div className="flex-shrink-0">
+                {house.imageUrl ? (
+                  <img
+                    src={house.imageUrl}
+                    alt={house.descriptor || `${house.address1}, ${house.suburb}`}
+                    className="w-24 h-24 rounded-lg object-cover border border-gray-200"
+                  />
                 ) : (
-                  `${house.suburb}, ${house.state} ${house.postcode}, ${house.country}`
+                  <div className="w-24 h-24 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21l4-7 4 7" />
+                    </svg>
+                  </div>
                 )}
-              </p>
+              </div>
+              
+              {/* House Details */}
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {house.descriptor || `${house.address1}${house.unit ? `, ${house.unit}` : ''}`}
+                </h1>
+                <p className="text-gray-600">
+                  {house.descriptor ? (
+                    <>
+                      {house.address1}{house.unit && `, ${house.unit}`}<br />
+                      {house.suburb}, {house.state} {house.postcode}, {house.country}
+                    </>
+                  ) : (
+                    `${house.suburb}, ${house.state} ${house.postcode}, ${house.country}`
+                  )}
+                </p>
+              </div>
             </div>
             
             <div className="flex items-center gap-3">
+              <Link
+                href={`/houses/${house.id}/edit`}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors inline-flex items-center gap-2"
+              >
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit House
+              </Link>
+              
               <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
                 house.status === 'Active' 
                   ? 'bg-green-100 text-green-800'

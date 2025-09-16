@@ -20,6 +20,7 @@ export interface House {
   notes?: string
   goLiveDate: Date
   resident?: string
+  imageUrl?: string
   createdAt: Date
   createdBy: string
   updatedAt: Date
@@ -41,4 +42,5 @@ export interface HouseCreateInput {
   notes?: string
   goLiveDate: Date
   resident?: string
+  imageUrl?: string
 }

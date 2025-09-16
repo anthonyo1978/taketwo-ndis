@@ -28,6 +28,7 @@ export class HouseService {
       notes: dbHouse.notes,
       goLiveDate: dbHouse.go_live_date, // Convert snake_case to camelCase
       resident: dbHouse.resident,
+      imageUrl: dbHouse.image_url || undefined, // Handle missing image_url field
       createdAt: new Date(dbHouse.created_at),
       createdBy: 'system', // Default value since we don't have this in DB yet
       updatedAt: new Date(dbHouse.updated_at),
@@ -190,7 +191,8 @@ export class HouseService {
         status: house.status,
         notes: house.notes,
         go_live_date: house.goLiveDate, // Convert camelCase to snake_case
-        resident: house.resident
+        resident: house.resident,
+        image_url: house.imageUrl // Add image URL support
       }
 
       const supabase = await this.getSupabase()
@@ -243,6 +245,54 @@ export class HouseService {
       const { data, error } = await supabase
         .from('houses')
         .update(dbUpdates)
+        .eq('id', id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating house:', error)
+        throw new Error(`Failed to update house: ${error.message}`)
+      }
+
+      return this.convertDbHouseToFrontend(data)
+    } catch (error) {
+      console.error('HouseService.update error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update a house by ID.
+   * 
+   * @param id - The house ID to update
+   * @param house - The updated house data
+   * @returns Promise resolving to updated house
+   * @throws Error if update fails
+   */
+  async update(id: string, house: Omit<House, 'id' | 'createdAt' | 'createdBy'>): Promise<House> {
+    try {
+      // Convert camelCase to snake_case for database
+      const dbHouse = {
+        descriptor: house.descriptor,
+        address1: house.address1,
+        address2: house.address2,
+        suburb: house.suburb,
+        state: house.state,
+        postcode: house.postcode,
+        unit: house.unit,
+        country: house.country,
+        status: house.status,
+        notes: house.notes,
+        go_live_date: house.goLiveDate, // Convert camelCase to snake_case
+        resident: house.resident,
+        image_url: house.imageUrl, // Add image URL support
+        updated_at: house.updatedAt.toISOString()
+      }
+
+      const supabase = await this.getSupabase()
+      const { data, error } = await supabase
+        .from('houses')
+        .update(dbHouse)
         .eq('id', id)
         .select()
         .single()

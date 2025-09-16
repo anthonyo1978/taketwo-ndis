@@ -37,7 +37,9 @@ export const houseCreateSchema = z.object({
     errorMap: () => ({ message: "Please select a valid go-live date" })
   }),
   
-  resident: z.string().optional()
+  resident: z.string().optional(),
+  
+  imageUrl: z.string().url("Must be a valid image URL").optional()
 })
 
 export const houseSchema = houseCreateSchema.extend({

@@ -306,6 +306,9 @@ export default function HousesPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Image
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     House Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -328,19 +331,37 @@ export default function HousesPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {houses.map((house) => (
                   <tr key={house.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link 
-                        href={`/houses/${house.id}`}
-                        className="text-blue-600 hover:text-blue-900 font-medium"
-                      >
-                        <div className="font-medium">
-                          {house.descriptor || `${house.address1}, ${house.suburb}`}
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {house.imageUrl ? (
+                        <img
+                          src={house.imageUrl}
+                          alt={house.descriptor || `${house.address1}, ${house.suburb}`}
+                          className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21l4-7 4 7" />
+                          </svg>
                         </div>
-                        <div className="text-xs text-gray-500 font-mono">
-                          ID: {house.id}
-                        </div>
-                      </Link>
-                    </td>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Link 
+                      href={`/houses/${house.id}`}
+                      className="text-blue-600 hover:text-blue-900 font-medium"
+                    >
+                      <div className="font-medium">
+                        {house.descriptor || `${house.address1}, ${house.suburb}`}
+                      </div>
+                      <div className="text-xs text-gray-500 font-mono">
+                        ID: {house.id}
+                      </div>
+                    </Link>
+                  </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">
                         {house.address1}{house.unit && `, ${house.unit}`}
