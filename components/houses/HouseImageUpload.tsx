@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef } from "react"
-import { Button } from "../Button/Button"
 import { createClient } from "../../lib/supabase/client"
 import { toast } from "react-hot-toast"
 
@@ -21,25 +20,35 @@ export function HouseImageUpload({
   const [loading, setLoading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(currentImageUrl || null)
   const [error, setError] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
-    if (!file) return
+    if (!file) {
+      setSelectedFile(null)
+      setPreviewUrl(currentImageUrl || null)
+      return
+    }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
       setError('Please select an image file')
+      setSelectedFile(null)
+      setPreviewUrl(currentImageUrl || null)
       return
     }
 
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
       setError('Image size must be less than 5MB')
+      setSelectedFile(null)
+      setPreviewUrl(currentImageUrl || null)
       return
     }
 
     setError(null)
+    setSelectedFile(file)
     
     // Create preview URL
     const reader = new FileReader()
@@ -50,8 +59,7 @@ export function HouseImageUpload({
   }
 
   const handleUpload = async () => {
-    const file = fileInputRef.current?.files?.[0]
-    if (!file) return
+    if (!selectedFile) return
 
     setLoading(true)
     setError(null)
@@ -60,13 +68,13 @@ export function HouseImageUpload({
       const supabase = createClient()
       
       // Generate unique filename
-      const fileExt = file.name.split('.').pop()
+      const fileExt = selectedFile.name.split('.').pop()
       const fileName = `${houseId}-${Date.now()}.${fileExt}`
       
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from('house-images')
-        .upload(fileName, file, {
+        .upload(fileName, selectedFile, {
           cacheControl: '3600',
           upsert: false
         })
@@ -83,19 +91,30 @@ export function HouseImageUpload({
 
       const imageUrl = urlData.publicUrl
       
-      // Update house record with new image URL
-      const { error: updateError } = await supabase
-        .from('houses')
-        .update({ image_url: imageUrl })
-        .eq('id', houseId)
+      // Update house record with new image URL via API
+      const response = await fetch(`/api/houses/${houseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageUrl }),
+      })
 
-      if (updateError) {
-        console.error('Update error:', updateError)
-        throw new Error(`Failed to update house: ${updateError.message}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`Failed to update house: ${errorData.error || 'Unknown error'}`)
       }
 
+      // Update local state
+      setPreviewUrl(imageUrl)
+      setSelectedFile(null)
       onImageUploaded(imageUrl)
       toast.success('House image uploaded successfully!')
+      
+      // Clear file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       
     } catch (error) {
       console.error('Upload error:', error)
@@ -124,18 +143,22 @@ export function HouseImageUpload({
           .remove([fileName])
       }
 
-      // Update house record to remove image URL
-      const { error: updateError } = await supabase
-        .from('houses')
-        .update({ image_url: null })
-        .eq('id', houseId)
+      // Update house record to remove image URL via API
+      const response = await fetch(`/api/houses/${houseId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageUrl: null }),
+      })
 
-      if (updateError) {
-        console.error('Update error:', updateError)
-        throw new Error(`Failed to remove image: ${updateError.message}`)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`Failed to remove image: ${errorData.error || 'Unknown error'}`)
       }
 
       setPreviewUrl(null)
+      setSelectedFile(null)
       onImageRemoved()
       toast.success('House image removed successfully!')
       
@@ -150,6 +173,7 @@ export function HouseImageUpload({
 
   const handleCancel = () => {
     setPreviewUrl(currentImageUrl || null)
+    setSelectedFile(null)
     setError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -168,7 +192,7 @@ export function HouseImageUpload({
           />
           <div className="flex-1">
             <p className="text-sm text-gray-600">
-              {currentImageUrl ? 'Current house image' : 'New image preview'}
+              {selectedFile ? 'New image preview' : 'Current house image'}
             </p>
           </div>
         </div>
@@ -197,34 +221,33 @@ export function HouseImageUpload({
 
       {/* Action Buttons */}
       <div className="flex space-x-2">
-        {previewUrl && previewUrl !== currentImageUrl && (
+        {selectedFile && (
           <>
-            <Button
+            <button
               onClick={handleUpload}
               disabled={loading}
-              className="bg-blue-600 text-white hover:bg-blue-700"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Uploading...' : 'Upload Image'}
-            </Button>
-            <Button
+            </button>
+            <button
               onClick={handleCancel}
               disabled={loading}
-              variant="outline"
+              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Cancel
-            </Button>
+            </button>
           </>
         )}
         
-        {currentImageUrl && (
-          <Button
+        {currentImageUrl && !selectedFile && (
+          <button
             onClick={handleRemove}
             disabled={loading}
-            variant="outline"
-            className="text-red-600 border-red-300 hover:bg-red-50"
+            className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Removing...' : 'Remove Image'}
-          </Button>
+          </button>
         )}
       </div>
     </div>

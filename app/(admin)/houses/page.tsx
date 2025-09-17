@@ -338,6 +338,13 @@ export default function HousesPage() {
                           src={house.imageUrl}
                           alt={house.descriptor || `${house.address1}, ${house.suburb}`}
                           className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                          onError={(e) => {
+                            console.error('Image failed to load:', house.imageUrl, e);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                          onLoad={() => {
+                            console.log('Image loaded successfully:', house.imageUrl);
+                          }}
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">

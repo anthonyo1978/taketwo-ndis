@@ -6,12 +6,12 @@ import {
   getTransactionBalancePreview,
   getTransactionsFromStorage,
   saveTransactionsToStorage
-} from '@/lib/utils/transaction-storage'
-import { generateId as generateTransactionId } from '@/lib/utils/transaction-id-generator'
-import { processDrawdownTransaction } from '@/lib/utils/drawdown-validation'
+} from '../../../lib/utils/transaction-storage'
+import { generateId as generateTransactionId } from '../../../lib/utils/transaction-id-generator'
+import { processDrawdownTransaction } from '../../../lib/utils/drawdown-validation'
 
 // Mock the transaction utilities
-vi.mock('@/lib/utils/transaction-storage', () => ({
+vi.mock('../../../lib/utils/transaction-storage', () => ({
   getTransactionsList: vi.fn(),
   createTransaction: vi.fn(),
   getTransactionBalancePreview: vi.fn(),
@@ -19,11 +19,11 @@ vi.mock('@/lib/utils/transaction-storage', () => ({
   saveTransactionsToStorage: vi.fn()
 }))
 
-vi.mock('@/lib/utils/transaction-id-generator', () => ({
+vi.mock('../../../lib/utils/transaction-id-generator', () => ({
   generateId: vi.fn()
 }))
 
-vi.mock('@/lib/utils/drawdown-validation', () => ({
+vi.mock('../../../lib/utils/drawdown-validation', () => ({
   processDrawdownTransaction: vi.fn()
 }))
 

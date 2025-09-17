@@ -40,20 +40,6 @@ export async function PUT(
 ) {
   try {
     const body = await request.json()
-    
-    // Validate the request body
-    const validation = houseCreateSchema.safeParse(body)
-    if (!validation.success) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: "Validation failed", 
-          details: validation.error.issues 
-        },
-        { status: 400 }
-      )
-    }
-
     const { id } = await params
     const houseService = new HouseService()
     
@@ -66,7 +52,31 @@ export async function PUT(
       )
     }
 
-    // Update the house
+    // If only imageUrl is being updated, handle it as a partial update
+    if (Object.keys(body).length === 1 && 'imageUrl' in body) {
+      const updatedHouse = await houseService.update(id, {
+        ...existingHouse,
+        imageUrl: body.imageUrl,
+        updatedAt: new Date(),
+        updatedBy: 'system' // TODO: Get from auth context
+      })
+      return NextResponse.json({ success: true, data: updatedHouse })
+    }
+
+    // For full updates, validate the request body
+    const validation = houseCreateSchema.safeParse(body)
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: "Validation failed", 
+          details: validation.error.issues 
+        },
+        { status: 400 }
+      )
+    }
+
+    // Update the house with full validation
     const updatedHouse = await houseService.update(id, {
       ...validation.data,
       // Preserve audit fields
