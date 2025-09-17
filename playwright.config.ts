@@ -71,10 +71,9 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120000, // 2 minutes to start server
     env: {
-      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "https://your-project.supabase.co",
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "your-anon-key",
-      // If your app truly needs it at runtime server-side:
-      // SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY || "",
+      NEXT_PUBLIC_SUPABASE_URL: "https://ogluakwuphoowglqpblt.supabase.co",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nbHVha3d1cGhvb3dnbHFwYmx0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2NTAyNTksImV4cCI6MjA3MzIyNjI1OX0.8NuAqfn-JckucX7AXgciQ1RCKUTD9B0RXC6PqmQLvrs",
+      SUPABASE_SERVICE_ROLE_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9nbHVha3d1cGhvb3dnbHFwYmx0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzY1MDI1OSwiZXhwIjoyMDczMjI2MjU5fQ.GPnR4VlCwN-nNArlaGC9iur6jm14g6-TOur7mzEYJyw",
     },
   },
 });
