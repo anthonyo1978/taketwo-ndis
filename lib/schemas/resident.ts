@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 // Status validation with transition rules
-export const residentStatusSchema = z.enum(['Draft', 'Active', 'Deactivated'] as const)
+export const residentStatusSchema = z.enum(['Prospect', 'Active', 'Deactivated'] as const)
 
 export const fundingTypeSchema = z.enum(['NDIS', 'Government', 'Private', 'Family', 'Other'] as const)
 
@@ -154,7 +154,7 @@ export const residentCreateSchema = z.object({
     .max(500, "Notes must be no more than 500 characters")
     .optional(),
   
-  status: residentStatusSchema.default('Draft'),
+  status: residentStatusSchema.default('Prospect'),
   preferences: preferencesSchema.optional(),
   emergencyContact: emergencyContactSchema.optional()
 })
@@ -206,7 +206,7 @@ export const statusTransitionSchema = z.object({
   newStatus: residentStatusSchema
 }).refine((data) => {
   const validTransitions = {
-    'Draft': ['Active', 'Deactivated'],
+    'Prospect': ['Active', 'Deactivated'],
     'Active': ['Deactivated'],
     'Deactivated': ['Active'] // Allow reactivation
   }

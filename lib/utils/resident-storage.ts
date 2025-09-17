@@ -126,7 +126,7 @@ export const addResidentToStorage = (residentData: ResidentCreateInput, id: stri
     id,
     houseId,
     ...residentData,
-    status: residentData.status || 'Draft',
+    status: residentData.status || 'Prospect',
     fundingInformation: [],
     preferences: residentData.preferences || {},
     detailedNotes: residentData.notes,
@@ -180,10 +180,12 @@ export const updateResidentInStorage = (id: string, updates: ResidentUpdateInput
     }
   })
   
-  // Update the resident
+  // Update the resident, preserving photoBase64 if not being updated
   const updatedResident: Resident = {
     ...existingResident,
     ...updates,
+    // Preserve photoBase64 if not being explicitly updated
+    photoBase64: updates.photoBase64 !== undefined ? updates.photoBase64 : existingResident.photoBase64,
     auditTrail: [...existingResident.auditTrail, ...auditEntries],
     updatedAt: now,
     updatedBy: mockUser
@@ -210,7 +212,7 @@ export const changeResidentStatus = (id: string, newStatus: ResidentStatus): Res
   
   // Validate status transition
   const validTransitions = {
-    'Draft': ['Active', 'Deactivated'],
+    'Prospect': ['Active', 'Deactivated'],
     'Active': ['Deactivated'],
     'Deactivated': ['Active']
   }
@@ -233,10 +235,12 @@ export const changeResidentStatus = (id: string, newStatus: ResidentStatus): Res
     userEmail: 'admin@example.com'
   }
   
-  // Update the resident
+  // Update the resident, preserving photoBase64
   const updatedResident: Resident = {
     ...existingResident,
     status: newStatus,
+    // Preserve photoBase64 during status changes
+    photoBase64: existingResident.photoBase64,
     auditTrail: [...existingResident.auditTrail, statusChangeAudit],
     updatedAt: now,
     updatedBy: mockUser

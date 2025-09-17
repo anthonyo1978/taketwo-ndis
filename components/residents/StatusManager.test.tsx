@@ -17,7 +17,7 @@ const mockResident: Resident = {
   gender: 'Male',
   phone: '0412345678',
   email: 'john@example.com',
-  status: 'Draft',
+  status: 'Prospect',
   fundingInformation: [],
   preferences: {},
   auditTrail: [],
@@ -37,11 +37,11 @@ describe('StatusManager', () => {
   it('displays current status correctly', () => {
     render(<StatusManager resident={mockResident} onStatusChange={mockOnStatusChange} />)
     
-    expect(screen.getByText('Draft')).toBeInTheDocument()
-    expect(screen.getByText('Initial resident entry, editing allowed')).toBeInTheDocument()
+    expect(screen.getByText('Prospect')).toBeInTheDocument()
+    expect(screen.getByText('Potential resident, under consideration')).toBeInTheDocument()
   })
 
-  it('shows valid status transitions for Draft status', () => {
+  it('shows valid status transitions for Prospect status', () => {
     render(<StatusManager resident={mockResident} onStatusChange={mockOnStatusChange} />)
     
     expect(screen.getByText('Change to Active')).toBeInTheDocument()
@@ -53,7 +53,7 @@ describe('StatusManager', () => {
     render(<StatusManager resident={activeResident} onStatusChange={mockOnStatusChange} />)
     
     expect(screen.getByText('Change to Deactivated')).toBeInTheDocument()
-    expect(screen.queryByText('Change to Draft')).not.toBeInTheDocument()
+    expect(screen.queryByText('Change to Prospect')).not.toBeInTheDocument()
   })
 
   it('opens confirmation dialog when status change is requested', async () => {
@@ -67,7 +67,7 @@ describe('StatusManager', () => {
     })
     
     const dialog = screen.getByRole('dialog')
-    expect(dialog).toHaveTextContent('Are you sure you want to change John Doe\'s status from Draft to Active')
+    expect(dialog).toHaveTextContent('Are you sure you want to change John Doe\'s status from Prospect to Active')
   })
 
   it('calls API and updates status on confirmation', async () => {
@@ -148,7 +148,7 @@ describe('StatusManager', () => {
     expect(screen.getByText('Change to Deactivated')).toBeInTheDocument()
     
     // But if we mock it with a status that has no transitions
-    const noTransitionResident = { ...mockResident, status: 'Completed' as 'Draft' | 'Active' | 'Deactivated' }
+    const noTransitionResident = { ...mockResident, status: 'Completed' as 'Prospect' | 'Active' | 'Deactivated' }
     render(<StatusManager resident={noTransitionResident} onStatusChange={mockOnStatusChange} />)
   })
 

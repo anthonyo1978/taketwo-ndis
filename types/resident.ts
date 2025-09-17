@@ -2,7 +2,7 @@
 export type Gender = 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say'
 
 /** Status options for residents. */
-export type ResidentStatus = 'Draft' | 'Active' | 'Deactivated'
+export type ResidentStatus = 'Prospect' | 'Active' | 'Deactivated'
 
 /** Types of funding available for residents. */
 export type FundingType = 'NDIS' | 'Government' | 'Private' | 'Family' | 'Other'

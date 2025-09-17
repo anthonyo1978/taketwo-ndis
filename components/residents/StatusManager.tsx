@@ -17,19 +17,19 @@ interface ApiResponse {
 }
 
 const statusTransitions = {
-  'Draft': ['Active', 'Deactivated'],
+  'Prospect': ['Active', 'Deactivated'],
   'Active': ['Deactivated'],
   'Deactivated': ['Active']
 } as const
 
 const statusColors = {
-  'Draft': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+  'Prospect': 'bg-blue-100 text-blue-800 border-blue-200',
   'Active': 'bg-green-100 text-green-800 border-green-200', 
   'Deactivated': 'bg-red-100 text-red-800 border-red-200'
 }
 
 const statusDescriptions = {
-  'Draft': 'Initial resident entry, editing allowed',
+  'Prospect': 'Potential resident, under consideration',
   'Active': 'Resident is currently living in house',
   'Deactivated': 'Resident has moved out or been removed'
 }

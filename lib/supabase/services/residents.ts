@@ -54,7 +54,7 @@ export class ResidentService {
       ndis_id: frontendResident.ndisId || null,
       photo_base64: frontendResident.photoBase64 || null,
       notes: frontendResident.notes || null,
-      status: frontendResident.status || 'Draft',
+      status: frontendResident.status || 'Prospect',
       detailed_notes: frontendResident.detailedNotes || null,
       preferences: frontendResident.preferences || null,
       emergency_contact: frontendResident.emergencyContact || null,

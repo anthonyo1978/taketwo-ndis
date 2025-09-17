@@ -20,7 +20,7 @@ const mockAuditEntries: AuditLogEntry[] = [
     timestamp: new Date('2024-01-16T14:30:00Z'),
     userEmail: 'manager@example.com',
     field: 'status',
-    oldValue: 'Draft',
+    oldValue: 'Prospect',
     newValue: 'Active'
   },
   {
@@ -65,7 +65,7 @@ describe('AuditTrail', () => {
     
     expect(screen.getByText('Audit Trail (5 entries)')).toBeInTheDocument()
     expect(screen.getByText('created')).toBeInTheDocument()
-    expect(screen.getByText('Changed status from Draft to Active')).toBeInTheDocument()
+    expect(screen.getByText('Changed status from Prospect to Active')).toBeInTheDocument()
     expect(screen.getByText('Added funding: NDIS: $1500')).toBeInTheDocument()
     expect(screen.getByText('Updated phone from "0412345678" to "0423456789"')).toBeInTheDocument()
     expect(screen.getByText('Removed funding: Family: $500')).toBeInTheDocument()
@@ -114,7 +114,7 @@ describe('AuditTrail', () => {
       expect(screen.getByText('Audit Trail (1 entries)')).toBeInTheDocument()
     })
     
-    expect(screen.getByText('Changed status from Draft to Active')).toBeInTheDocument()
+    expect(screen.getByText('Changed status from Prospect to Active')).toBeInTheDocument()
     expect(screen.queryByText('created')).not.toBeInTheDocument()
   })
 
