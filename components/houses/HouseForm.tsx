@@ -73,7 +73,7 @@ export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormP
               </p>
             )}
             <p className="mt-1 text-sm text-gray-500">
-              A friendly name to identify this house (e.g., "Main Office", "Client House A")
+              A name to refer to the house by
             </p>
           </div>
         </div>
