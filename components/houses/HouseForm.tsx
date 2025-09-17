@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form"
 
 import { Button } from "components/Button/Button"
 import { Input } from "components/ui/Input"
-import { AUSTRALIAN_STATES, DEFAULT_COUNTRY, HOUSE_STATUSES } from "lib/constants"
+import { AUSTRALIAN_STATES, HOUSE_STATUSES } from "lib/constants"
 import { houseCreateSchema, type HouseCreateSchemaType } from "lib/schemas/house"
 
 /**
@@ -32,7 +32,6 @@ export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormP
   } = useForm<HouseCreateSchemaType>({
     resolver: zodResolver(houseCreateSchema),
     defaultValues: {
-      country: DEFAULT_COUNTRY,
       status: 'Active',
       goLiveDate: new Date(),
     },
@@ -179,17 +178,6 @@ export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormP
             </div>
           </div>
 
-          <div>
-            <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
-              Country <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="country"
-              {...register("country")}
-              placeholder="AU"
-              disabled={submitDisabled}
-            />
-          </div>
         </div>
 
         {/* Property Details Section */}
@@ -245,18 +233,6 @@ export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormP
         {/* Additional Information Section */}
         <div className="space-y-4">
           <h3 className="text-lg font-medium text-gray-900">Additional Information</h3>
-          
-          <div>
-            <label htmlFor="resident" className="block text-sm font-medium text-gray-700 mb-1">
-              Current Resident
-            </label>
-            <Input
-              id="resident"
-              {...register("resident")}
-              placeholder="John Doe"
-              disabled={submitDisabled}
-            />
-          </div>
           
           <div>
             <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">

@@ -24,8 +24,8 @@ export const houseCreateSchema = z.object({
     .regex(/^\d{4}$/, "Postcode must be exactly 4 digits"),
   
   country: z.string()
-    .min(1, "Country is required")
-    .default("AU"),
+    .default("AU")
+    .optional(),
   
   status: z.enum(['Active', 'Vacant', 'Under maintenance'] as const, {
     errorMap: () => ({ message: "Please select a valid status" })
@@ -36,8 +36,6 @@ export const houseCreateSchema = z.object({
   goLiveDate: z.coerce.date({
     errorMap: () => ({ message: "Please select a valid go-live date" })
   }),
-  
-  resident: z.string().optional(),
   
   imageUrl: z.string().url("Must be a valid image URL").optional()
 })

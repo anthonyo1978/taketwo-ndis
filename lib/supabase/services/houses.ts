@@ -23,7 +23,7 @@ export class HouseService {
       state: dbHouse.state,
       postcode: dbHouse.postcode,
       unit: dbHouse.unit,
-      country: dbHouse.country,
+      country: dbHouse.country || 'AU', // Default to AU if not provided
       status: dbHouse.status,
       notes: dbHouse.notes,
       goLiveDate: dbHouse.go_live_date, // Convert snake_case to camelCase
@@ -187,7 +187,7 @@ export class HouseService {
         state: house.state,
         postcode: house.postcode,
         unit: house.unit,
-        country: house.country,
+        country: house.country || 'AU', // Default to AU if not provided
         status: house.status,
         notes: house.notes,
         go_live_date: house.goLiveDate, // Convert camelCase to snake_case
@@ -280,7 +280,7 @@ export class HouseService {
         state: house.state,
         postcode: house.postcode,
         unit: house.unit,
-        country: house.country,
+        country: house.country || 'AU', // Default to AU if not provided
         status: house.status,
         notes: house.notes,
         go_live_date: house.goLiveDate, // Convert camelCase to snake_case
