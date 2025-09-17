@@ -157,7 +157,7 @@ export default function HouseDetailPage() {
             <div className="flex items-center gap-3">
               <Link
                 href={`/houses/${house.id}/edit`}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors inline-flex items-center gap-2"
+                className="bg-blue-50 text-blue-700 border border-blue-200 px-4 py-2 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-colors inline-flex items-center gap-2 text-sm font-medium"
               >
                 <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -232,8 +232,22 @@ export default function HouseDetailPage() {
           {/* Additional Details */}
           <div className="space-y-6">
             {/* Image Upload */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">House Image</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold text-gray-900">House Image</h3>
+                {house.imageUrl && (
+                  <button
+                    onClick={() => {
+                      if (confirm('Are you sure you want to remove this image?')) {
+                        handleImageRemoved()
+                      }
+                    }}
+                    className="text-red-500 hover:text-red-700 text-sm font-medium transition-colors"
+                  >
+                    Remove Image
+                  </button>
+                )}
+              </div>
               <HouseImageUpload
                 houseId={house.id}
                 currentImageUrl={house.imageUrl}

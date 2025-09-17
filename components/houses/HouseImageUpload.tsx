@@ -181,14 +181,14 @@ export function HouseImageUpload({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Current Image Display */}
       {previewUrl && (
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-3">
           <img
             src={previewUrl}
             alt="House preview"
-            className="w-24 h-24 rounded-lg object-cover border border-gray-200"
+            className="w-16 h-16 rounded-lg object-cover border border-gray-200"
           />
           <div className="flex-1">
             <p className="text-sm text-gray-600">
@@ -220,36 +220,24 @@ export function HouseImageUpload({
       )}
 
       {/* Action Buttons */}
-      <div className="flex space-x-2">
-        {selectedFile && (
-          <>
-            <button
-              onClick={handleUpload}
-              disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Uploading...' : 'Upload Image'}
-            </button>
-            <button
-              onClick={handleCancel}
-              disabled={loading}
-              className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-          </>
-        )}
-        
-        {currentImageUrl && !selectedFile && (
+      {selectedFile && (
+        <div className="flex space-x-2">
           <button
-            onClick={handleRemove}
+            onClick={handleUpload}
             disabled={loading}
-            className="px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Removing...' : 'Remove Image'}
+            {loading ? 'Uploading...' : 'Upload Image'}
           </button>
-        )}
-      </div>
+          <button
+            onClick={handleCancel}
+            disabled={loading}
+            className="px-3 py-1.5 text-gray-600 border border-gray-300 rounded text-sm hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   )
 }
