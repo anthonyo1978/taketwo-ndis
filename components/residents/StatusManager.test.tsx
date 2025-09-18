@@ -56,6 +56,14 @@ describe('StatusManager', () => {
     expect(screen.queryByText('Change to Prospect')).not.toBeInTheDocument()
   })
 
+  it('shows only Prospect transition for Deactivated status', () => {
+    const deactivatedResident = { ...mockResident, status: 'Deactivated' as const }
+    render(<StatusManager resident={deactivatedResident} onStatusChange={mockOnStatusChange} />)
+    
+    expect(screen.getByText('Change to Prospect')).toBeInTheDocument()
+    expect(screen.queryByText('Change to Active')).not.toBeInTheDocument()
+  })
+
   it('opens confirmation dialog when status change is requested', async () => {
     const user = userEvent.setup()
     render(<StatusManager resident={mockResident} onStatusChange={mockOnStatusChange} />)

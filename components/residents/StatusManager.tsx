@@ -19,7 +19,7 @@ interface ApiResponse {
 const statusTransitions = {
   'Prospect': ['Active', 'Deactivated'],
   'Active': ['Deactivated'],
-  'Deactivated': ['Active']
+  'Deactivated': ['Prospect'] // Allow reactivation through Prospect for circular flow
 } as const
 
 const statusColors = {

@@ -97,6 +97,161 @@ Learn more in our [documentation (docs.blazity.com)][docs] how to quickstart wit
 #### All-time contributors
 [bmstefanski](https://github.com/bmstefanski)
 
+## Troubleshooting
+
+### Common Webpack/Module Resolution Issues
+
+This section covers frequent webpack-related issues that can occur during development, especially when working with complex module dependencies and hot reloading.
+
+#### Issue: Webpack Module Resolution Errors
+
+**Symptoms:**
+- Errors like `Module not found` or `Cannot resolve module`
+- Stale webpack cache errors
+- Circular dependency warnings
+- Hot reload failures
+- `reduce@[native code]` webpack errors in browser console
+
+**Root Causes:**
+1. **Circular Dependencies**: Functions calling each other before they're defined
+2. **Stale Webpack Cache**: Old module references persisting after code changes
+3. **Import Order Issues**: Modules imported in incorrect order
+4. **Hot Reload Conflicts**: Development server state conflicts
+
+**Solutions:**
+
+##### 1. Clear Webpack Cache (Most Common Fix)
+```bash
+# Stop the development server
+pkill -f "next dev" || true
+
+# Clear Next.js cache
+rm -rf .next
+
+# Clear node modules cache
+rm -rf node_modules/.cache
+
+# Restart development server
+pnpm run dev
+```
+
+##### 2. Fix Circular Dependencies
+If you see circular dependency warnings, reorganize your code:
+
+```typescript
+// ❌ BAD: Function called before definition
+export const functionA = () => {
+  return functionB() // functionB not defined yet
+}
+
+export const functionB = () => {
+  return "hello"
+}
+
+// ✅ GOOD: Define functions before using them
+export const functionB = () => {
+  return "hello"
+}
+
+export const functionA = () => {
+  return functionB() // functionB is now defined
+}
+```
+
+##### 3. Fix Import Order Issues
+Ensure imports follow the correct order:
+
+```typescript
+// ✅ GOOD: External libraries first, then internal modules
+import React from 'react'
+import { NextRequest } from 'next/server'
+
+import { localFunction } from './local-module'
+import type { LocalType } from './types'
+```
+
+##### 4. Development Server Reset
+For persistent issues, perform a full reset:
+
+```bash
+# Clear all caches
+rm -rf .next
+rm -rf node_modules/.cache
+rm -rf node_modules
+
+# Reinstall dependencies
+pnpm install
+
+# Restart development server
+pnpm run dev
+```
+
+##### 5. Check for Missing Exports
+Ensure all imported functions are properly exported:
+
+```typescript
+// lib/utils/example.ts
+export const myFunction = () => {
+  // implementation
+}
+
+// ✅ GOOD: Properly exported
+export { myFunction }
+
+// ❌ BAD: Missing export
+const myFunction = () => {
+  // implementation
+}
+```
+
+#### Issue: Hot Reload Failures
+
+**Symptoms:**
+- Changes not reflecting in browser
+- "Fast Refresh" warnings in console
+- Components not updating after edits
+
+**Solutions:**
+1. Clear webpack cache (see above)
+2. Restart development server
+3. Check for syntax errors in modified files
+4. Ensure components are properly exported
+
+#### Issue: TypeScript Module Resolution
+
+**Symptoms:**
+- TypeScript errors about missing modules
+- Import path resolution failures
+
+**Solutions:**
+1. Check `tsconfig.json` path mapping
+2. Verify import paths are correct
+3. Restart TypeScript server in your IDE
+4. Run `pnpm run build` to check for compilation errors
+
+#### Prevention Tips
+
+1. **Avoid Circular Dependencies**: Structure code so dependencies flow in one direction
+2. **Use Consistent Import Patterns**: Follow the project's import order conventions
+3. **Regular Cache Clearing**: Clear caches when switching branches or after major changes
+4. **Monitor Console Warnings**: Address webpack warnings promptly
+5. **Use TypeScript Strict Mode**: Catch module issues at compile time
+
+#### When to Use Each Solution
+
+- **First Try**: Clear webpack cache (solves 80% of issues)
+- **If Cache Clearing Fails**: Check for circular dependencies
+- **If Issues Persist**: Full development server reset
+- **For Build Issues**: Check TypeScript configuration and import paths
+
+#### Getting Help
+
+If you continue experiencing webpack issues:
+1. Check the browser console for specific error messages
+2. Look at the terminal output for webpack warnings
+3. Search for the exact error message in the project issues
+4. Consider if recent changes introduced the issue
+
 ## License
 
 MIT

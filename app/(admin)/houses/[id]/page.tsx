@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
-import { ResidentForm } from "../../../../components/residents/ResidentForm"
+import { ResidentSelectionModal } from "../../../../components/residents/ResidentSelectionModal"
 import { ResidentTable } from "../../../../components/residents/ResidentTable"
 import { HouseImageUpload } from "../../../../components/houses/HouseImageUpload"
 import type { House } from "../../../../types/house"
@@ -23,8 +23,9 @@ export default function HouseDetailPage() {
   const [house, setHouse] = useState<House | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showResidentForm, setShowResidentForm] = useState(false)
+  const [showResidentSelection, setShowResidentSelection] = useState(false)
   const [residentRefreshTrigger, setResidentRefreshTrigger] = useState(0)
+  const [currentResidents, setCurrentResidents] = useState<Resident[]>([])
 
   useEffect(() => {
     const fetchHouse = async () => {
@@ -32,7 +33,7 @@ export default function HouseDetailPage() {
       
       try {
         const response = await fetch(`/api/houses/${id}`)
-        const result: ApiResponse = await response.json()
+        const result = await response.json() as ApiResponse
         
         if (result.success && result.data) {
           setHouse(result.data)
@@ -50,9 +51,35 @@ export default function HouseDetailPage() {
     fetchHouse()
   }, [id])
 
-  const handleResidentAdded = (_newResident: Resident) => {
-    // Trigger refresh of resident table
-    setResidentRefreshTrigger(prev => prev + 1)
+  const handleResidentAssigned = async (resident: Resident) => {
+    try {
+      const response = await fetch(`/api/houses/${id}/residents/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ residentId: resident.id })
+      })
+
+      const result = await response.json() as { success: boolean; message?: string; error?: string }
+
+      if (result.success) {
+        // Close the modal first
+        setShowResidentSelection(false)
+        // Small delay to ensure database is updated
+        await new Promise(resolve => setTimeout(resolve, 200))
+        // Trigger refresh of resident table
+        setResidentRefreshTrigger(prev => prev + 1)
+        // You could add a toast notification here
+        console.log(result.message)
+      } else {
+        console.error('Failed to assign resident:', result.error)
+        // You could add error toast notification here
+      }
+    } catch (error) {
+      console.error('Error assigning resident:', error)
+      // You could add error toast notification here
+    }
   }
 
   const handleImageUploaded = (imageUrl: string) => {
@@ -307,19 +334,31 @@ export default function HouseDetailPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">Residents</h2>
             <button
-              onClick={() => setShowResidentForm(true)}
+              onClick={() => setShowResidentSelection(true)}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
             >
               <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Add Resident
+              Assign Resident
             </button>
           </div>
           
           <ResidentTable 
             houseId={id} 
             refreshTrigger={residentRefreshTrigger}
+            onResidentsLoaded={(residents) => {
+              // Only update if the residents list has actually changed
+              setCurrentResidents(prev => {
+                const prevIds = prev.map(r => r.id).sort()
+                const newIds = residents.map(r => r.id).sort()
+                if (prevIds.length !== newIds.length || !prevIds.every((id, index) => id === newIds[index])) {
+                  return residents
+                }
+                return prev
+              })
+            }}
+            onResidentRemoved={() => setResidentRefreshTrigger(prev => prev + 1)}
           />
         </div>
 
@@ -333,12 +372,14 @@ export default function HouseDetailPage() {
           </button>
         </div>
 
-        {/* Resident Form Modal */}
-        <ResidentForm
+        {/* Resident Selection Modal */}
+        <ResidentSelectionModal
+          open={showResidentSelection}
+          onClose={() => setShowResidentSelection(false)}
+          onSelect={handleResidentAssigned}
           houseId={id}
-          open={showResidentForm}
-          onClose={() => setShowResidentForm(false)}
-          onSuccess={handleResidentAdded}
+          excludeResidentIds={currentResidents.map(r => r.id)}
+          key={`modal-${residentRefreshTrigger}`}
         />
       </div>
     </div>

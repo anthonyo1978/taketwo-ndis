@@ -297,7 +297,7 @@ describe("resident schemas", () => {
       ndisId: "12345678",
       photoBase64: "data:image/jpeg;base64,/9j/4AAQSkZJRg",
       notes: "Test notes",
-      status: "Draft" as const,
+      status: "Prospect" as const,
       fundingInformation: [],
       auditTrail: [],
       createdAt: new Date("2024-01-01"),

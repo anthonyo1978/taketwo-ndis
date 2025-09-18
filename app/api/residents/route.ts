@@ -52,18 +52,11 @@ export async function POST(request: NextRequest) {
       notes: formData.get('notes') as string || undefined,
     }
 
-    // Get houseId from form data (required for global creation)
+    // Get houseId from form data (optional for global creation)
     const houseId = formData.get('houseId') as string
 
-    if (!houseId) {
-      return NextResponse.json(
-        { 
-          success: false, 
-          error: "House ID is required" 
-        },
-        { status: 400 }
-      )
-    }
+    // If no houseId provided, we'll create a Prospect resident without house assignment
+    // This allows residents to be created and assigned to houses later
 
     // Verify house exists (we'll need to import houseService for this)
     // For now, we'll skip this validation and let the database handle it
@@ -109,7 +102,7 @@ export async function POST(request: NextRequest) {
 
     // Prepare data for Supabase
     const residentData = {
-      houseId,
+      houseId: houseId || null, // Allow null for Prospect residents without house assignment
       firstName: validation.data.firstName,
       lastName: validation.data.lastName,
       dateOfBirth: validation.data.dateOfBirth,

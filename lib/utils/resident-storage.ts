@@ -214,7 +214,7 @@ export const changeResidentStatus = (id: string, newStatus: ResidentStatus): Res
   const validTransitions = {
     'Prospect': ['Active', 'Deactivated'],
     'Active': ['Deactivated'],
-    'Deactivated': ['Active']
+    'Deactivated': ['Prospect'] // Allow reactivation through Prospect for circular flow
   }
   
   const allowedTransitions = validTransitions[existingResident.status]
@@ -410,18 +410,6 @@ export const removeFundingFromResident = (residentId: string, fundingId: string)
   return updatedResident
 }
 
-export const getResidentByIdFromStorage = (id: string): Resident | null => {
-  const residents = getResidentsFromStorage()
-  const resident = residents.find(resident => resident.id === id) || null
-  
-  if (resident) {
-    // Update contract balances before returning
-    return updateContractBalances(resident)
-  }
-  
-  return null
-}
-
 // Update contract balances for all funding information
 export const updateContractBalances = (resident: Resident): Resident => {
   const updatedFunding = resident.fundingInformation.map(funding => ({
@@ -434,6 +422,18 @@ export const updateContractBalances = (resident: Resident): Resident => {
     ...resident,
     fundingInformation: updatedFunding
   }
+}
+
+export const getResidentByIdFromStorage = (id: string): Resident | null => {
+  const residents = getResidentsFromStorage()
+  const resident = residents.find(resident => resident.id === id) || null
+  
+  if (resident) {
+    // Update contract balances before returning
+    return updateContractBalances(resident)
+  }
+  
+  return null
 }
 
 // Update contract status with validation and audit logging

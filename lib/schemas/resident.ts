@@ -187,6 +187,11 @@ export const residentUpdateSchema = z.object({
     .optional()
     .or(z.literal('')),
   
+  notes: z.string()
+    .max(500, "Notes must be no more than 500 characters")
+    .optional()
+    .or(z.literal('')),
+  
   photoBase64: z.string().optional(),
   
   status: residentStatusSchema.optional(),
@@ -208,7 +213,7 @@ export const statusTransitionSchema = z.object({
   const validTransitions = {
     'Prospect': ['Active', 'Deactivated'],
     'Active': ['Deactivated'],
-    'Deactivated': ['Active'] // Allow reactivation
+    'Deactivated': ['Prospect'] // Allow reactivation through Prospect for circular flow
   }
   
   return validTransitions[data.currentStatus]?.includes(data.newStatus) ?? false

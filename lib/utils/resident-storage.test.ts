@@ -35,7 +35,7 @@ const mockResident: Resident = {
   email: "john.doe@example.com",
   ndisId: "12345678",
   notes: "Test resident",
-  status: "Draft",
+  status: "Prospect",
   fundingInformation: [],
   auditTrail: [],
   createdAt: new Date("2024-01-01"),

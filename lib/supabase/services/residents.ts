@@ -26,7 +26,7 @@ export class ResidentService {
       ndisId: dbResident.ndis_id || undefined,
       photoBase64: dbResident.photo_base64 || undefined,
       notes: dbResident.notes || undefined,
-      status: dbResident.status,
+      status: dbResident.status === 'Draft' ? 'Prospect' : dbResident.status,
       detailedNotes: dbResident.detailed_notes || undefined,
       preferences: dbResident.preferences || {},
       emergencyContact: dbResident.emergency_contact || undefined,
@@ -44,7 +44,7 @@ export class ResidentService {
    */
   private convertFrontendResidentToDb(frontendResident: any): any {
     return {
-      house_id: frontendResident.houseId,
+      house_id: frontendResident.houseId || null,
       first_name: frontendResident.firstName,
       last_name: frontendResident.lastName,
       date_of_birth: frontendResident.dateOfBirth,
@@ -54,7 +54,7 @@ export class ResidentService {
       ndis_id: frontendResident.ndisId || null,
       photo_base64: frontendResident.photoBase64 || null,
       notes: frontendResident.notes || null,
-      status: frontendResident.status || 'Prospect',
+      status: frontendResident.status === 'Prospect' ? 'Draft' : frontendResident.status || 'Draft',
       detailed_notes: frontendResident.detailedNotes || null,
       preferences: frontendResident.preferences || null,
       emergency_contact: frontendResident.emergencyContact || null,
@@ -155,7 +155,7 @@ export class ResidentService {
    * @returns Promise resolving to created resident
    * @throws Error if creation fails
    */
-  async create(resident: ResidentCreateInput & { houseId: string }): Promise<Resident> {
+  async create(resident: ResidentCreateInput & { houseId: string | null }): Promise<Resident> {
     try {
       const dbResident = this.convertFrontendResidentToDb({
         ...resident,
@@ -192,10 +192,23 @@ export class ResidentService {
    */
   async update(id: string, updates: ResidentUpdateInput): Promise<Resident> {
     try {
-      const dbUpdates = this.convertFrontendResidentToDb({
-        ...updates,
-        updatedBy: 'system'
-      })
+      // Convert only the fields that are being updated to avoid overwriting existing data
+      const dbUpdates: any = {
+        updated_by: 'system'
+      }
+
+      // Only include fields that are actually being updated
+      if (updates.houseId !== undefined) dbUpdates.house_id = updates.houseId
+      if (updates.firstName !== undefined) dbUpdates.first_name = updates.firstName
+      if (updates.lastName !== undefined) dbUpdates.last_name = updates.lastName
+      if (updates.phone !== undefined) dbUpdates.phone = updates.phone || null
+      if (updates.email !== undefined) dbUpdates.email = updates.email || null
+      if (updates.status !== undefined) {
+        dbUpdates.status = updates.status === 'Prospect' ? 'Draft' : updates.status
+      }
+      if (updates.detailedNotes !== undefined) dbUpdates.detailed_notes = updates.detailedNotes || null
+      if (updates.preferences !== undefined) dbUpdates.preferences = updates.preferences || null
+      if (updates.emergencyContact !== undefined) dbUpdates.emergency_contact = updates.emergencyContact || null
 
       const supabase = await this.getSupabase()
       const { data, error } = await supabase

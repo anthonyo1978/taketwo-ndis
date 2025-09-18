@@ -126,6 +126,7 @@ export interface ResidentCreateInput {
  * Input data for updating an existing resident.
  */
 export interface ResidentUpdateInput {
+  houseId?: string | null
   firstName?: string
   lastName?: string
   phone?: string

@@ -706,3 +706,64 @@ This PRP provides comprehensive context for one-pass implementation success:
 - ✅ Comprehensive error handling and user experience considerations
 
 The slight uncertainty (8/10 vs 9/10) comes from the complexity of funding information management and the need to ensure proper integration with existing resident avatars and house associations, but all patterns are well-established in the codebase.
+
+
+Resident Improvement list
+
+A. I noticed a bug where by, when i m,ove a resident from draft to active, that resident profile picture disappears, can you please correct that?
+B. I also would like it if we could change the state transation flow of a resident from "draft" to "prosepct" so the end to end flow would be "Prospect", "Active" , "Deactivated"
+C. Discovered this bug when testing the residents module fixes to A & B above. In this case, when creating a new resident the modal that appears for resident creation has a section at the bottom called "House Assignment" This is currently a mandatory field. This is actually not required because there will be times when resident are created in propect mode without being allocated a house. In short, resident are alllocated or linked to houses in the houses module, not in the reident module, can you please remove this logic here, then when this is removed i can re test A and B
+D. Editting a resident. The current editting of a resident modal that pops up looks and feels noting like the current creation flow, even the fileds are different. This may hav ebeen a place hioolder, but can you please fix up this edit process. What is desirable is that basically the same form used for creation appears and that a user can update a record. This edit flow works regardless of the status of the resident btw
+E. From a state transition issue, can you please update the flow such that deactivated can only move back to prospect. My thinking here is that this creates a bit of a circular flow where it is then possible to cycle between the full status journey and the user is never locked out
+F. Residentts and house to add them to a house. This update is one that spans two areas, tying them together. Put simply, a resident (in any state (prospect, active, deactivated)) can only be added to a house through the house record itself. The "+add resident" button currently creates a new resident, but this is what the residents tab is for! How i originally intended this button to work is that when in the house record, and i coick this button, a list of the residents is returned. I can select one and click save, and then that residesnt is assocoated to that House.
+
+## ✅ IMPLEMENTED: Resident-House Assignment System
+
+### **What Was Implemented:**
+- **ResidentSelectionModal**: A comprehensive modal that displays all existing residents with search, filtering, and selection capabilities
+- **Assignment APIs**: New API endpoints for assigning and unassigning residents to houses
+- **Enhanced House Interface**: Updated house detail page to use resident selection instead of creation
+- **Remove Functionality**: Added "Remove from House" action to ResidentTable
+
+### **Key Features:**
+1. **Resident Selection Modal** (`components/residents/ResidentSelectionModal.tsx`)
+   - Search residents by name or ID
+   - Filter by status (Prospect, Active, Deactivated)
+   - Show current house assignment for each resident
+   - Exclude residents already assigned to the current house
+   - Clean, intuitive selection interface
+
+2. **Assignment APIs**
+   - `POST /api/houses/[id]/residents/assign` - Assign resident to house
+   - `DELETE /api/houses/[id]/residents/unassign` - Remove resident from house
+   - Proper validation and error handling
+   - Prevents duplicate assignments
+
+3. **Enhanced House Management**
+   - "Assign Resident" button (replaces "Add Resident")
+   - ResidentTable now includes "Remove" action for each resident
+   - Real-time updates when residents are assigned/unassigned
+
+### **Technical Implementation:**
+- **Status Independence**: Works with residents in any status (Prospect, Active, Deactivated)
+- **Data Validation**: Server-side validation prevents invalid assignments
+- **User Experience**: Confirmation dialogs for destructive actions
+- **Error Handling**: Comprehensive error messages and user feedback
+- **Real-time Updates**: Automatic refresh of resident lists after changes
+
+### **Business Logic:**
+- ✅ Residents can only be assigned to one house at a time
+- ✅ Assignment works regardless of resident status
+- ✅ Unassignment sets houseId to null but preserves resident status
+- ✅ Proper audit trail for all assignment changes
+- ✅ Prevents duplicate house assignments
+
+### **Files Created/Modified:**
+- `components/residents/ResidentSelectionModal.tsx` - New selection modal
+- `app/api/houses/[id]/residents/assign/route.ts` - Assignment API
+- `app/api/houses/[id]/residents/unassign/route.ts` - Unassignment API
+- `app/(admin)/houses/[id]/page.tsx` - Updated house detail page
+- `components/residents/ResidentTable.tsx` - Added remove functionality
+
+This implementation provides a complete resident-house assignment system that integrates seamlessly with the existing house and resident management workflows.
+

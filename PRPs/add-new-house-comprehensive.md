@@ -661,4 +661,74 @@ Currently when creating a house, each house is assigned a unique ID, this is sor
 
 When creating a house, it might be very cool to add an image of the house. So not when initially creating the house, but if you go back in and edit, then make a way to upload a single image. Then on the houses grid next to House Name but before address the image is there in s amll circle like the resident(s) column.
 
-These images 
+To add the image, view the house record itself (post initial creation) and without editting the main record there is a simple upload image benathe where the picture is, users can easily add then and there once insode the created record.ß
+
+---
+
+## ✅ IMPLEMENTED: Resident-House Assignment System Integration
+
+### **Overview:**
+The house management system has been enhanced with a comprehensive resident assignment feature that allows administrators to assign existing residents to houses directly from the house detail page.
+
+### **Key Integration Points:**
+
+#### **1. House Detail Page Enhancement** (`app/(admin)/houses/[id]/page.tsx`)
+- **"Assign Resident" Button**: Replaced the "Add Resident" button with "Assign Resident"
+- **ResidentSelectionModal Integration**: Opens a modal to select from existing residents
+- **Real-time Updates**: Automatically refreshes resident list after assignments
+
+#### **2. Resident Selection Modal** (`components/residents/ResidentSelectionModal.tsx`)
+- **Search & Filter**: Find residents by name, ID, or status
+- **Status Independence**: Works with Prospect, Active, and Deactivated residents
+- **Current Assignment Display**: Shows which house each resident is currently assigned to
+- **Exclusion Logic**: Prevents selecting residents already assigned to the current house
+
+#### **3. Assignment APIs**
+- **`POST /api/houses/[id]/residents/assign`**: Assigns a resident to a house
+- **`DELETE /api/houses/[id]/residents/unassign`**: Removes a resident from a house
+- **Validation**: Prevents duplicate assignments and validates house/resident existence
+- **Error Handling**: Comprehensive error messages and status codes
+
+#### **4. Enhanced ResidentTable** (`components/residents/ResidentTable.tsx`)
+- **Remove Action**: Each resident row now has a "Remove" button
+- **Confirmation Dialog**: Prevents accidental removals
+- **Real-time Updates**: Automatically refreshes after removal
+
+### **Business Logic:**
+- ✅ **One-to-One Assignment**: Residents can only be assigned to one house at a time
+- ✅ **Status Agnostic**: Assignment works regardless of resident status
+- ✅ **Audit Trail**: All assignment changes are logged
+- ✅ **Data Integrity**: Prevents orphaned assignments and duplicate house assignments
+
+### **User Experience:**
+1. **From House Detail Page**: Click "Assign Resident" → Select from modal → Resident is assigned
+2. **Remove Residents**: Click "Remove" in resident table → Confirm → Resident is unassigned
+3. **Search & Filter**: Easily find residents by name, ID, or status
+4. **Visual Feedback**: Clear indication of current assignments and status
+
+### **Technical Architecture:**
+```
+House Detail Page
+├── Assign Resident Button → ResidentSelectionModal
+├── ResidentTable (with Remove actions)
+└── Real-time refresh triggers
+
+ResidentSelectionModal
+├── Search/Filter functionality
+├── Status badges and house assignments
+└── Selection confirmation
+
+Assignment APIs
+├── POST /assign (with validation)
+├── DELETE /unassign (with confirmation)
+└── Error handling and responses
+```
+
+### **Integration Benefits:**
+- **Centralized Management**: All resident-house assignments happen from house records
+- **Consistent UX**: Follows established modal and table patterns
+- **Data Integrity**: Prevents conflicts and maintains referential integrity
+- **Scalability**: Handles large numbers of residents with search and filtering
+- **Audit Compliance**: All changes are tracked and logged
+
+This integration creates a seamless workflow where house management and resident assignment work together as a unified system, following the principle that "residents are allocated or linked to houses in the houses module, not in the resident module."

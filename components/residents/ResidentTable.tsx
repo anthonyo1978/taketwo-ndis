@@ -12,9 +12,11 @@ interface ApiResponse {
 interface ResidentTableProps {
   houseId: string
   refreshTrigger?: number // Used to trigger re-fetch when new resident added
+  onResidentsLoaded?: (residents: Resident[]) => void // Callback to pass residents to parent
+  onResidentRemoved?: () => void // Callback for when a resident is removed
 }
 
-export function ResidentTable({ houseId, refreshTrigger }: ResidentTableProps) {
+export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onResidentRemoved }: ResidentTableProps) {
   const [residents, setResidents] = useState<Resident[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -23,11 +25,13 @@ export function ResidentTable({ houseId, refreshTrigger }: ResidentTableProps) {
     try {
       setLoading(true)
       const response = await fetch(`/api/houses/${houseId}/residents`)
-      const result: ApiResponse = await response.json()
+      const result = await response.json() as ApiResponse
       
       if (result.success && result.data) {
         setResidents(result.data)
         setError(null)
+        // Notify parent component of loaded residents
+        onResidentsLoaded?.(result.data)
       } else {
         setError(result.error || 'Failed to load residents')
       }
@@ -46,6 +50,38 @@ export function ResidentTable({ houseId, refreshTrigger }: ResidentTableProps) {
   const retryFetch = () => {
     setError(null)
     fetchResidents()
+  }
+
+  const handleRemoveResident = async (residentId: string, residentName: string) => {
+    if (!confirm(`Are you sure you want to remove ${residentName} from this house?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/houses/${houseId}/residents/unassign`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ residentId })
+      })
+
+      const result = await response.json() as { success: boolean; message?: string; error?: string }
+
+      if (result.success) {
+        // Refresh the resident table
+        fetchResidents()
+        // Notify parent component
+        onResidentRemoved?.()
+        console.log(result.message)
+      } else {
+        console.error('Failed to remove resident:', result.error)
+        alert(`Failed to remove resident: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error removing resident:', error)
+      alert('Error removing resident. Please try again.')
+    }
   }
 
   // Loading state with skeleton table
@@ -187,6 +223,9 @@ export function ResidentTable({ houseId, refreshTrigger }: ResidentTableProps) {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Created
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -237,6 +276,15 @@ export function ResidentTable({ houseId, refreshTrigger }: ResidentTableProps) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(resident.createdAt).toLocaleDateString()}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <button
+                    onClick={() => handleRemoveResident(resident.id, `${resident.firstName} ${resident.lastName}`)}
+                    className="text-red-600 hover:text-red-900 transition-colors"
+                    title="Remove from house"
+                  >
+                    Remove
+                  </button>
                 </td>
               </tr>
             ))}

@@ -6,7 +6,9 @@ import { ErrorBoundary } from "components/ErrorBoundary"
 import { AuditTrail } from "components/residents/AuditTrail"
 import { ContractManagementTile } from "components/residents/ContractManagementTile"
 import { ResidentBalanceWidget } from "components/residents/ResidentBalanceWidget"
+import { ResidentEditForm } from "components/residents/ResidentEditForm"
 import { StatusManager } from "components/residents/StatusManager"
+import { Button } from "components/Button/Button"
 import { type TabItem, Tabs } from "components/ui/Tabs"
 import type { FundingInformation, Resident } from "types/resident"
 
@@ -26,6 +28,7 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [residentId, setResidentId] = useState<string>('')
+  const [showEditForm, setShowEditForm] = useState(false)
 
   useEffect(() => {
     const getParams = async () => {
@@ -142,6 +145,11 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
 
   const handleStatusChange = (updatedResident: Resident) => {
     setResident(updatedResident)
+  }
+
+  const handleEditSuccess = (updatedResident: Resident) => {
+    setResident(updatedResident)
+    setShowEditForm(false)
   }
 
   const handleFundingChange = (updatedFunding: FundingInformation[]) => {
@@ -522,13 +530,13 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
             
             {/* Action Buttons */}
             <div className="flex space-x-3">
-              <Link
-                href={`/residents/${resident.id}/edit`}
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+              <Button
+                onClick={() => setShowEditForm(true)}
+                className="flex items-center space-x-2"
               >
                 <span>✏️</span>
                 <span>Edit Profile</span>
-              </Link>
+              </Button>
             </div>
           </div>
         </div>
@@ -537,6 +545,16 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
         <div className="bg-white rounded-lg border shadow-sm">
           <Tabs items={tabItems} defaultTab="overview" />
         </div>
+
+        {/* Edit Form Modal */}
+        {resident && (
+          <ResidentEditForm
+            resident={resident}
+            open={showEditForm}
+            onClose={() => setShowEditForm(false)}
+            onSuccess={handleEditSuccess}
+          />
+        )}
       </div>
     </div>
   )
