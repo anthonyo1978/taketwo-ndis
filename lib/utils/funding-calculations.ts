@@ -1,67 +1,11 @@
-import { addDays, addMonths, addWeeks, differenceInDays, differenceInMonths, differenceInWeeks, isAfter } from 'date-fns'
-import type { ContractBalanceSummary, ContractStatus, DrawdownRate, FundingInformation } from 'types/resident'
+import { differenceInDays, differenceInWeeks, differenceInMonths } from 'date-fns'
+import type { FundingInformation } from '@/types/resident'
 
 /**
- * Calculate the current balance for a funding contract based on elapsed time and drawdown rate.
- * 
- * @param contract - The funding contract to calculate balance for
- * @returns The current remaining balance after drawdown calculations
+ * Calculate the number of elapsed periods based on the drawdown rate
  */
-export function calculateCurrentBalance(contract: FundingInformation): number {
-  const contractStatus = contract.contractStatus || 'Draft'
-  const autoDrawdown = contract.autoDrawdown ?? true
-  const originalAmount = contract.originalAmount || contract.amount || 0
-  
-  // If contract is not active or auto-drawdown is disabled, return original amount
-  if (contractStatus !== 'Active' || !autoDrawdown) {
-    return originalAmount
-  }
-
-  const now = new Date()
-  const startDate = new Date(contract.startDate)
-  const endDate = contract.endDate ? new Date(contract.endDate) : null
-
-  // If no end date, return full amount (ongoing contract)
-  if (!endDate) {
-    return originalAmount
-  }
-
-  // If contract hasn't started yet, return full amount
-  if (isAfter(startDate, now)) {
-    return originalAmount
-  }
-
-  // If contract has expired, return 0
-  if (isAfter(now, endDate)) {
-    return 0
-  }
-
-  const drawdownRate = contract.drawdownRate || 'monthly'
-  const elapsed = getElapsedPeriods(startDate, now, drawdownRate)
-  const totalPeriods = getElapsedPeriods(startDate, endDate, drawdownRate)
-
-  if (totalPeriods === 0) {
-    // If same start and end date, contract should be fully drawn down
-    return 0
-  }
-
-  // Calculate linear drawdown based on elapsed time
-  const drawdownPercentage = Math.min(1, elapsed / totalPeriods)
-  const drawnDown = originalAmount * drawdownPercentage
-
-  return Math.max(0, originalAmount - drawnDown)
-}
-
-/**
- * Get the number of elapsed periods between two dates based on drawdown rate.
- * 
- * @param startDate - The start date for the calculation
- * @param endDate - The end date for the calculation
- * @param rate - The drawdown rate (daily, weekly, monthly)
- * @returns The number of elapsed periods
- */
-export function getElapsedPeriods(startDate: Date, endDate: Date, rate: DrawdownRate): number {
-  switch (rate) {
+function getElapsedPeriods(startDate: Date, endDate: Date, drawdownRate: 'daily' | 'weekly' | 'monthly'): number {
+  switch (drawdownRate) {
     case 'daily':
       return differenceInDays(endDate, startDate)
     case 'weekly':
@@ -74,239 +18,163 @@ export function getElapsedPeriods(startDate: Date, endDate: Date, rate: Drawdown
 }
 
 /**
- * Calculate the amount drawn down from the original allocation.
- * 
- * @param contract - The funding contract to calculate drawdown for
- * @returns The total amount that has been drawn down
+ * Calculate the current balance for a funding contract based on elapsed time
+ * @param contract - The funding contract
+ * @returns The current calculated balance
+ */
+export function calculateCurrentBalance(contract: FundingInformation): number {
+  // If contract is not active or auto-drawdown is disabled, return original amount
+  if (contract.contractStatus !== 'Active' || !contract.autoDrawdown) {
+    return contract.originalAmount
+  }
+
+  const now = new Date()
+  const endDate = contract.endDate || now
+  
+  // Calculate elapsed time and total contract period
+  const elapsedPeriods = getElapsedPeriods(contract.startDate, now, contract.drawdownRate)
+  const totalPeriods = getElapsedPeriods(contract.startDate, endDate, contract.drawdownRate)
+  
+  // Avoid division by zero
+  if (totalPeriods === 0) {
+    return contract.originalAmount
+  }
+  
+  // Calculate drawdown percentage (linear drawdown over time)
+  const drawdownPercentage = Math.min(1, Math.max(0, elapsedPeriods / totalPeriods))
+  const drawnDownAmount = contract.originalAmount * drawdownPercentage
+  
+  // Return remaining balance (original - drawn down)
+  return Math.max(0, contract.originalAmount - drawnDownAmount)
+}
+
+/**
+ * Calculate the total amount that has been drawn down from a contract
+ * @param contract - The funding contract
+ * @returns The amount that has been drawn down
  */
 export function calculateDrawdownAmount(contract: FundingInformation): number {
   const currentBalance = calculateCurrentBalance(contract)
-  const originalAmount = contract.originalAmount || contract.amount || 0
-  return originalAmount - currentBalance
+  return contract.originalAmount - currentBalance
 }
 
 /**
- * Check if a contract is expiring soon (within specified days).
- * 
- * @param contract - The funding contract to check
- * @param daysThreshold - Number of days to check for expiry (default: 30)
+ * Check if a contract is expiring soon (within the specified days)
+ * @param contract - The funding contract
+ * @param daysThreshold - Number of days to consider "soon" (default: 30)
  * @returns True if contract expires within the threshold
  */
 export function isContractExpiringSoon(contract: FundingInformation, daysThreshold: number = 30): boolean {
-  const contractStatus = contract.contractStatus || 'Draft'
-  if (!contract.endDate || contractStatus !== 'Active') {
+  if (!contract.endDate) {
     return false
   }
-
+  
   const now = new Date()
-  const endDate = new Date(contract.endDate)
-  const daysUntilExpiry = differenceInDays(endDate, now)
-
-  return daysUntilExpiry <= daysThreshold && daysUntilExpiry > 0
+  const daysUntilExpiry = differenceInDays(contract.endDate, now)
+  return daysUntilExpiry <= daysThreshold && daysUntilExpiry >= 0
 }
 
 /**
- * Generate a renewal contract based on an existing contract.
- * 
- * @param existingContract - The original contract to renew
- * @param renewalData - The renewal configuration data
- * @returns A new contract object without id, createdAt, updatedAt
+ * Generate a renewal contract based on an expiring contract
+ * @param expiringContract - The contract that needs renewal
+ * @returns A new contract object for renewal
  */
-export function generateContractRenewal(
-  existingContract: FundingInformation,
-  renewalData: {
-    amount: number
-    startDate: Date
-    endDate?: Date
-    description?: string
-    drawdownRate?: DrawdownRate
-    autoDrawdown?: boolean
-  }
-): Omit<FundingInformation, 'id' | 'createdAt' | 'updatedAt'> {
-  const renewalStartDate = renewalData.startDate || new Date()
-
+export function generateContractRenewal(expiringContract: FundingInformation): Partial<FundingInformation> {
+  const now = new Date()
+  const nextYear = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate())
+  
   return {
-    type: existingContract.type,
-    amount: renewalData.amount,
-    startDate: renewalStartDate,
-    endDate: renewalData.endDate,
-    description: renewalData.description || existingContract.description,
-    isActive: true,
-    contractStatus: 'Draft' as ContractStatus,
-    originalAmount: renewalData.amount,
-    currentBalance: renewalData.amount, // Full amount for new contract
-    drawdownRate: renewalData.drawdownRate || existingContract.drawdownRate,
-    autoDrawdown: renewalData.autoDrawdown ?? existingContract.autoDrawdown,
-    lastDrawdownDate: undefined,
-    renewalDate: undefined,
-    parentContractId: existingContract.id
+    type: expiringContract.type,
+    originalAmount: expiringContract.originalAmount,
+    currentBalance: expiringContract.originalAmount, // Reset to full amount
+    amount: expiringContract.originalAmount,
+    startDate: now,
+    endDate: nextYear,
+    drawdownRate: expiringContract.drawdownRate,
+    autoDrawdown: expiringContract.autoDrawdown,
+    contractStatus: 'Draft',
+    parentContractId: expiringContract.id,
+    description: `Renewal of contract ${expiringContract.id}`,
+    isActive: false // Will be activated separately
   }
 }
 
 /**
- * Calculate balance summary for multiple contracts.
- * 
- * @param contracts - Array of funding contracts to summarize
- * @returns Summary of total balances and contract counts
+ * Calculate contract balance summary across multiple contracts
+ * @param contracts - Array of funding contracts
+ * @returns Summary of all contract balances
  */
-export function calculateBalanceSummary(contracts: FundingInformation[]): ContractBalanceSummary {
-  let totalOriginal = 0
-  let totalCurrent = 0
-  let activeContracts = 0
-  let expiringSoon = 0
+export function calculateBalanceSummary(contracts: FundingInformation[]) {
+  const summary = {
+    totalOriginal: 0,
+    totalCurrent: 0,
+    totalDrawnDown: 0,
+    activeContracts: 0,
+    expiringSoon: 0
+  }
 
-  for (const contract of contracts) {
-    totalOriginal += contract.originalAmount
+  contracts.forEach(contract => {
     const currentBalance = calculateCurrentBalance(contract)
-    totalCurrent += currentBalance
-
+    const drawnDown = contract.originalAmount - currentBalance
+    
+    summary.totalOriginal += contract.originalAmount
+    summary.totalCurrent += currentBalance
+    summary.totalDrawnDown += drawnDown
+    
     if (contract.contractStatus === 'Active') {
-      activeContracts++
-
-      if (isContractExpiringSoon(contract)) {
-        expiringSoon++
-      }
+      summary.activeContracts++
     }
-  }
+    
+    if (isContractExpiringSoon(contract)) {
+      summary.expiringSoon++
+    }
+  })
 
-  const totalDrawnDown = totalOriginal - totalCurrent
-
-  return {
-    totalOriginal,
-    totalCurrent,
-    totalDrawnDown,
-    activeContracts,
-    expiringSoon
-  }
+  return summary
 }
 
 /**
- * Get the next drawdown date based on the current date and rate.
- * 
- * @param lastDate - The last drawdown date
+ * Get the drawdown rate display text
  * @param rate - The drawdown rate
- * @returns The next scheduled drawdown date
+ * @returns Human-readable text for the rate
  */
-export function getNextDrawdownDate(lastDate: Date, rate: DrawdownRate): Date {
+export function getDrawdownRateText(rate: 'daily' | 'weekly' | 'monthly'): string {
   switch (rate) {
     case 'daily':
-      return addDays(lastDate, 1)
+      return 'Daily'
     case 'weekly':
-      return addWeeks(lastDate, 1)
+      return 'Weekly'
     case 'monthly':
-      return addMonths(lastDate, 1)
+      return 'Monthly'
     default:
-      return lastDate
+      return 'Unknown'
   }
 }
 
 /**
- * Calculate the daily drawdown rate for a contract.
- * 
- * @param contract - The funding contract to calculate rate for
- * @returns The daily drawdown amount
+ * Calculate the percentage of contract that has been drawn down
+ * @param contract - The funding contract
+ * @returns Percentage (0-100) of contract drawn down
  */
-export function getDailyDrawdownRate(contract: FundingInformation): number {
-  if (!contract.endDate || contract.contractStatus !== 'Active') {
-    return 0
-  }
-
-  const startDate = new Date(contract.startDate)
-  const endDate = new Date(contract.endDate)
-  const totalDays = differenceInDays(endDate, startDate)
-
-  if (totalDays <= 0) {
-    return 0
-  }
-
-  return contract.originalAmount / totalDays
+export function getDrawdownPercentage(contract: FundingInformation): number {
+  const drawnDown = calculateDrawdownAmount(contract)
+  if (contract.originalAmount === 0) return 0
+  return Math.min(100, (drawnDown / contract.originalAmount) * 100)
 }
 
 /**
- * Get a user-friendly description of the drawdown rate.
- * 
- * @param rate - The drawdown rate to describe
- * @returns Human-readable description of the rate
+ * Check if a contract needs renewal (expired or expiring soon)
+ * @param contract - The funding contract
+ * @returns True if contract needs renewal
  */
-export function getDrawdownRateDescription(rate: DrawdownRate): string {
-  const descriptions = {
-    'daily': 'Daily drawdown - funds reduce each day',
-    'weekly': 'Weekly drawdown - funds reduce each week', 
-    'monthly': 'Monthly drawdown - funds reduce each month'
+export function needsRenewal(contract: FundingInformation): boolean {
+  if (!contract.endDate) {
+    return false
   }
-
-  return descriptions[rate] || 'Unknown drawdown rate'
-}
-
-/**
- * Calculate the percentage of contract completion.
- * 
- * @param contract - The funding contract to check
- * @returns Completion percentage (0-100)
- */
-export function getContractCompletionPercentage(contract: FundingInformation): number {
-  const contractStatus = contract.contractStatus || 'Draft'
-  if (contractStatus !== 'Active' || !contract.endDate) {
-    return 0
-  }
-
+  
   const now = new Date()
-  const startDate = new Date(contract.startDate)
-  const endDate = new Date(contract.endDate)
-
-  // If contract hasn't started, return 0
-  if (isAfter(startDate, now)) {
-    return 0
-  }
-
-  // If contract has ended, return 100
-  if (isAfter(now, endDate)) {
-    return 100
-  }
-
-  const totalDuration = differenceInDays(endDate, startDate)
-  const elapsed = differenceInDays(now, startDate)
-
-  if (totalDuration <= 0) {
-    return 0
-  }
-
-  return Math.min(100, Math.max(0, (elapsed / totalDuration) * 100))
-}
-
-/**
- * Validate contract status transitions.
- * 
- * @param currentStatus - The current contract status
- * @param newStatus - The desired new status
- * @returns True if the transition is valid
- */
-export function isValidStatusTransition(currentStatus: ContractStatus, newStatus: ContractStatus): boolean {
-  const validTransitions: Record<ContractStatus, ContractStatus[]> = {
-    'Draft': ['Active', 'Cancelled'],
-    'Active': ['Expired', 'Cancelled'],
-    'Expired': ['Renewed', 'Cancelled'],
-    'Cancelled': [], // Terminal state
-    'Renewed': ['Active'] // New contract created
-  }
-
-  return validTransitions[currentStatus]?.includes(newStatus) ?? false
-}
-
-/**
- * Get valid status transitions for a contract.
- * 
- * @param currentStatus - The current contract status
- * @returns Array of valid next statuses
- */
-export function getValidStatusTransitions(currentStatus: ContractStatus): ContractStatus[] {
-  const validTransitions: Record<ContractStatus, ContractStatus[]> = {
-    'Draft': ['Active', 'Cancelled'],
-    'Active': ['Expired', 'Cancelled'],
-    'Expired': ['Renewed', 'Cancelled'],
-    'Cancelled': [],
-    'Renewed': ['Active']
-  }
-
-  return validTransitions[currentStatus] || []
+  const daysUntilExpiry = differenceInDays(contract.endDate, now)
+  
+  // Needs renewal if expired or expiring within 30 days
+  return daysUntilExpiry <= 30
 }

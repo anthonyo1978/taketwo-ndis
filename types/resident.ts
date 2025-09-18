@@ -4,8 +4,8 @@ export type Gender = 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say'
 /** Status options for residents. */
 export type ResidentStatus = 'Prospect' | 'Active' | 'Deactivated'
 
-/** Types of funding available for residents. */
-export type FundingType = 'NDIS' | 'Government' | 'Private' | 'Family' | 'Other'
+/** Funding model types for residents. */
+export type FundingModel = 'Draw Down' | 'Capture & Invoice' | 'Hybrid'
 
 /** Status options for funding contracts. */
 export type ContractStatus = 'Draft' | 'Active' | 'Expired' | 'Cancelled' | 'Renewed'
@@ -18,7 +18,7 @@ export type DrawdownRate = 'daily' | 'weekly' | 'monthly'
  */
 export interface FundingInformation {
   id: string
-  type: FundingType
+  type: FundingModel
   amount: number
   startDate: Date
   endDate?: Date

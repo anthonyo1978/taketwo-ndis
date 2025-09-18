@@ -3,7 +3,7 @@ import { z } from "zod"
 // Status validation with transition rules
 export const residentStatusSchema = z.enum(['Prospect', 'Active', 'Deactivated'] as const)
 
-export const fundingTypeSchema = z.enum(['NDIS', 'Government', 'Private', 'Family', 'Other'] as const)
+export const fundingModelSchema = z.enum(['Draw Down', 'Capture & Invoice', 'Hybrid'] as const)
 
 // Contract status and drawdown rate schemas
 export const contractStatusSchema = z.enum(['Draft', 'Active', 'Expired', 'Cancelled', 'Renewed'] as const)
@@ -12,7 +12,7 @@ export const drawdownRateSchema = z.enum(['daily', 'weekly', 'monthly'] as const
 // Funding information schema with contract fields
 export const fundingInformationSchema = z.object({
   id: z.string().optional(), // Optional for create, required for update
-  type: fundingTypeSchema,
+  type: fundingModelSchema,
   amount: z.number()
     .min(0, "Funding amount must be positive")
     .max(999999.99, "Funding amount must be less than $1,000,000")
@@ -138,7 +138,7 @@ export const residentCreateSchema = z.object({
       // Client-side: validate FileList
       if (!files || (files as FileList).length === 0) return true
       const file = (files as FileList)[0]
-      return file.size <= 5 * 1024 * 1024 // 5MB limit
+      return file?.size <= 5 * 1024 * 1024 // 5MB limit
     }, "Photo must be less than 5MB")
     .refine((files) => {
       // Server-side: photo will be handled differently
@@ -147,7 +147,7 @@ export const residentCreateSchema = z.object({
       // Client-side: validate FileList
       if (!files || (files as FileList).length === 0) return true
       const file = (files as FileList)[0]
-      return file.type.startsWith('image/')
+      return file?.type.startsWith('image/')
     }, "Please select a valid image file"),
   
   notes: z.string()

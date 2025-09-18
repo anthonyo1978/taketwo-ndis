@@ -6,7 +6,7 @@ import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "components/ui/Dialog"
 import { Input } from "components/ui/Input"
-import type { ContractStatus, DrawdownRate, FundingInformation, FundingType } from "types/resident"
+import type { ContractStatus, DrawdownRate, FundingInformation, FundingModel } from "types/resident"
 
 interface FundingManagerProps {
   residentId: string
@@ -23,7 +23,7 @@ interface ApiResponse {
 }
 
 const fundingFormSchema = z.object({
-  type: z.enum(['NDIS', 'Government', 'Private', 'Family', 'Other'] as const),
+  type: z.enum(['Draw Down', 'Capture & Invoice', 'Hybrid'] as const),
   amount: z.number()
     .min(0, "Funding amount must be positive")
     .max(999999.99, "Funding amount must be less than $1,000,000")
@@ -35,7 +35,7 @@ const fundingFormSchema = z.object({
     .optional()
     .or(z.literal('')),
   isActive: z.boolean().default(true),
-  drawdownRate: z.enum(['daily', 'weekly', 'fortnightly', 'monthly'] as const).default('monthly'),
+  drawdownRate: z.enum(['daily', 'weekly', 'monthly'] as const).default('monthly'),
   autoDrawdown: z.boolean().default(true),
   renewalDate: z.coerce.date().optional(),
   supportItemCode: z.string()
@@ -58,18 +58,15 @@ const fundingFormSchema = z.object({
 
 type FundingFormData = z.infer<typeof fundingFormSchema>
 
-const fundingTypeOptions: { value: FundingType; label: string; description: string }[] = [
-  { value: 'NDIS', label: 'NDIS', description: 'National Disability Insurance Scheme' },
-  { value: 'Government', label: 'Government', description: 'Other government assistance' },
-  { value: 'Private', label: 'Private', description: 'Private insurance or funding' },
-  { value: 'Family', label: 'Family', description: 'Family-provided financial support' },
-  { value: 'Other', label: 'Other', description: 'Custom funding source' }
+const fundingModelOptions: { value: FundingModel; label: string; description: string }[] = [
+  { value: 'Draw Down', label: 'Draw Down', description: 'Funding reduces over time based on contract period' },
+  { value: 'Capture & Invoice', label: 'Capture & Invoice', description: 'Funding captured and invoiced post-service delivery' },
+  { value: 'Hybrid', label: 'Hybrid', description: 'Combination of draw down and capture & invoice models' }
 ]
 
 const drawdownRateOptions: { value: DrawdownRate; label: string; description: string }[] = [
   { value: 'daily', label: 'Daily', description: 'Funds reduce daily over contract period' },
   { value: 'weekly', label: 'Weekly', description: 'Funds reduce weekly over contract period' },
-  { value: 'fortnightly', label: 'Fortnightly', description: 'Funds reduce fortnightly over contract period' },
   { value: 'monthly', label: 'Monthly', description: 'Funds reduce monthly over contract period' }
 ]
 
@@ -93,7 +90,7 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       renewalDate: editingContract.renewalDate,
       supportItemCode: editingContract.supportItemCode || ''
     } : {
-      type: 'NDIS',
+      type: 'Draw Down',
       amount: 0,
       startDate: new Date(),
       isActive: true,
@@ -416,7 +413,7 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
                     {...field}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    {fundingTypeOptions.map(option => (
+                    {fundingModelOptions.map(option => (
                       <option key={option.value} value={option.value}>
                         {option.label} - {option.description}
                       </option>
