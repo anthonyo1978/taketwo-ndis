@@ -56,7 +56,7 @@ export const contractStatusTransitionSchema = z.object({
 
 // Contract creation schema (excludes calculated fields)
 export const contractCreateSchema = z.object({
-  type: z.enum(['NDIS', 'Government', 'Private', 'Family', 'Other'] as const),
+  type: z.enum(['Draw Down', 'Capture & Invoice', 'Hybrid'] as const),
   amount: z.number()
     .min(0, "Funding amount must be positive")
     .max(999999.99, "Funding amount must be less than $1,000,000")

@@ -54,7 +54,7 @@ test.describe('Funding Contracts Workflow', () => {
     await page.click('text=Add Contract')
     
     // Fill contract form
-    await page.selectOption('select[name="type"]', 'NDIS')
+    await page.selectOption('select[name="type"]', 'Draw Down')
     await page.fill('input[name="amount"]', '24000')
     await page.fill('input[name="startDate"]', '2024-01-01')
     await page.fill('input[name="endDate"]', '2024-12-31')
@@ -298,7 +298,7 @@ test.describe('Funding Contracts Workflow', () => {
       
       // Fix validation and submit successfully
       await page.fill('input[name="endDate"]', '2025-12-31')
-      await page.selectOption('select[name="type"]', 'NDIS')
+      await page.selectOption('select[name="type"]', 'Draw Down')
       await page.click('button[type="submit"]')
       
       // Should close form and show new contract

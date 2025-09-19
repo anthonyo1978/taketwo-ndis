@@ -60,7 +60,7 @@ export async function POST(
     
     // Validate funding information with contract fields
     const createFundingSchema = z.object({
-      type: z.enum(['NDIS', 'Government', 'Private', 'Family', 'Other'] as const),
+      type: z.enum(['Draw Down', 'Capture & Invoice', 'Hybrid'] as const),
       amount: z.number()
         .min(0, "Funding amount must be positive")
         .max(999999.99, "Funding amount must be less than $1,000,000")
@@ -164,7 +164,7 @@ export async function PUT(
     
     // Validate funding updates - create a partial schema manually
     const partialFundingSchema = z.object({
-      type: z.enum(['NDIS', 'Government', 'Private', 'Family', 'Other'] as const).optional(),
+      type: z.enum(['Draw Down', 'Capture & Invoice', 'Hybrid'] as const).optional(),
       amount: z.number()
         .min(0, "Funding amount must be positive")
         .max(999999.99, "Funding amount must be less than $1,000,000")

@@ -69,7 +69,7 @@ test.describe('Resident Editing and Management', () => {
         await expect(page.locator('text=Add Funding Information')).toBeVisible()
         
         // Fill form
-        await page.locator('select[name*="type"], select:has(option:text("NDIS"))').selectOption('NDIS')
+        await page.locator('select[name*="type"], select:has(option:text("Draw Down"))').selectOption('Draw Down')
         await page.locator('input[name*="amount"], input[type="number"]').fill('1000')
         await page.locator('input[name*="startDate"], input[type="date"]').fill('2024-01-01')
         

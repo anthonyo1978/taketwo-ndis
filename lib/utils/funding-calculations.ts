@@ -1,5 +1,5 @@
 import { differenceInDays, differenceInWeeks, differenceInMonths } from 'date-fns'
-import type { FundingInformation } from '@/types/resident'
+import type { FundingInformation, ContractStatus } from '@/types/resident'
 
 /**
  * Calculate the number of elapsed periods based on the drawdown rate
@@ -181,4 +181,22 @@ export function needsRenewal(contract: FundingInformation): boolean {
   
   // Needs renewal if expired or expiring within 30 days
   return daysUntilExpiry <= 30
+}
+
+/**
+ * Check if a contract status transition is valid
+ * @param currentStatus - Current contract status
+ * @param newStatus - Desired new status
+ * @returns True if transition is valid
+ */
+export function isValidStatusTransition(currentStatus: ContractStatus, newStatus: ContractStatus): boolean {
+  const validTransitions: Record<ContractStatus, ContractStatus[]> = {
+    'Draft': ['Active', 'Cancelled'],
+    'Active': ['Expired', 'Cancelled'],
+    'Expired': ['Renewed'],
+    'Cancelled': [], // No transitions from cancelled
+    'Renewed': ['Active', 'Expired', 'Cancelled'] // Renewed contracts can be activated or cancelled
+  }
+  
+  return validTransitions[currentStatus]?.includes(newStatus) ?? false
 }
