@@ -28,16 +28,20 @@ export function calculateCurrentBalance(contract: FundingInformation): number {
     return contract.originalAmount
   }
 
+  // If no end date, return original amount (no drawdown)
+  if (!contract.endDate) {
+    return contract.originalAmount
+  }
+
   const now = new Date()
-  const endDate = contract.endDate || now
   
   // Calculate elapsed time and total contract period
   const elapsedPeriods = getElapsedPeriods(contract.startDate, now, contract.drawdownRate)
-  const totalPeriods = getElapsedPeriods(contract.startDate, endDate, contract.drawdownRate)
+  const totalPeriods = getElapsedPeriods(contract.startDate, contract.endDate, contract.drawdownRate)
   
-  // Avoid division by zero
+  // Handle same-day contracts - they should be fully drawn down
   if (totalPeriods === 0) {
-    return contract.originalAmount
+    return 0
   }
   
   // Calculate drawdown percentage (linear drawdown over time)

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { FundingInformation, ContractStatus } from '@/types/resident'
-import { Button } from '@/components/Button/Button'
+import { Button } from 'components/Button/Button'
 
 interface ContractStatusManagerProps {
   contract: FundingInformation
