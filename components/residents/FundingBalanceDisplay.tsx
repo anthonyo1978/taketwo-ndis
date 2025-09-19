@@ -1,8 +1,8 @@
 'use client'
 
 import { useMemo } from 'react'
-import type { FundingInformation } from '@/types/resident'
-import { calculateBalanceSummary, getDrawdownPercentage, needsRenewal } from '@/lib/utils/funding-calculations'
+import type { FundingInformation } from 'types/resident'
+import { calculateBalanceSummary, getDrawdownPercentage, needsRenewal } from 'lib/utils/funding-calculations'
 
 interface FundingBalanceDisplayProps {
   contracts: FundingInformation[]

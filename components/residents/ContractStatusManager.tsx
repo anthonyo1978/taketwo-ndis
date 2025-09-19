@@ -186,27 +186,6 @@ export function ContractStatusManager({
         </div>
       </div>
       
-      {/* Status Transition Buttons */}
-      {validTransitions.length > 0 && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Available Actions:
-          </label>
-          {validTransitions.map(status => (
-            <button
-              key={status}
-              onClick={() => setShowConfirmation(status)}
-              disabled={disabled || isChanging}
-              className="w-full text-left px-3 py-2 rounded-md border hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <div className="flex items-center justify-between">
-                <span>{statusTransitionLabels[status]}</span>
-                {getStatusBadge(status)}
-              </div>
-            </button>
-          ))}
-        </div>
-      )}
       
       {/* Confirmation Dialog */}
       {showConfirmation && <ConfirmationDialog status={showConfirmation} />}

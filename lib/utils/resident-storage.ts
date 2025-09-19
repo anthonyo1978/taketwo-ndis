@@ -11,7 +11,7 @@ import type {
   ResidentStatus,
   ResidentUpdateInput
 } from "types/resident"
-import { calculateBalanceSummary, calculateCurrentBalance, isValidStatusTransition } from "./funding-calculations"
+import { calculateBalanceSummary, calculateCurrentBalance } from "./funding-calculations"
 
 const STORAGE_KEY = 'residents_data'
 
@@ -457,7 +457,15 @@ export const updateContractStatus = (residentId: string, fundingId: string, newS
   const currentContract = existingResident.fundingInformation[fundingIndex]
   
   // Validate status transition
-  if (!isValidStatusTransition(currentContract.contractStatus, newStatus)) {
+  const validTransitions: Record<string, string[]> = {
+    'Draft': ['Active', 'Cancelled'],
+    'Active': ['Expired', 'Cancelled'],
+    'Expired': ['Renewed'],
+    'Cancelled': [], // No transitions from cancelled
+    'Renewed': ['Active', 'Expired', 'Cancelled'] // Renewed contracts can be activated or cancelled
+  }
+  
+  if (!validTransitions[currentContract.contractStatus]?.includes(newStatus)) {
     throw new Error(`Invalid contract status transition from ${currentContract.contractStatus} to ${newStatus}`)
   }
   

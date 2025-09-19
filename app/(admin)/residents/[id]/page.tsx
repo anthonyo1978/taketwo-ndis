@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { ErrorBoundary } from "components/ErrorBoundary"
 import { AuditTrail } from "components/residents/AuditTrail"
-import { ContractManagementTile } from "components/residents/ContractManagementTile"
+import { FundingDashboard } from "components/residents/FundingDashboard"
 import { ResidentBalanceWidget } from "components/residents/ResidentBalanceWidget"
 import { ResidentEditForm } from "components/residents/ResidentEditForm"
 import { StatusManager } from "components/residents/StatusManager"
@@ -15,6 +15,12 @@ import type { FundingInformation, Resident } from "types/resident"
 interface ApiResponse {
   success: boolean
   data?: Resident
+  error?: string
+}
+
+interface FundingApiResponse {
+  success: boolean
+  data?: FundingInformation[]
   error?: string
 }
 
@@ -51,8 +57,8 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
           fetch(`/api/residents/${residentId}/funding`)
         ])
         
-        const residentResult: ApiResponse = await residentResponse.json()
-        const fundingResult = await fundingResponse.json()
+        const residentResult = await residentResponse.json() as ApiResponse
+        const fundingResult = await fundingResponse.json() as FundingApiResponse
         
         if (residentResult.success && residentResult.data) {
           setResident(residentResult.data)
@@ -91,8 +97,8 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
             fetch(`/api/residents/${residentId}/funding`)
           ])
           
-          const residentResult: ApiResponse = await residentResponse.json()
-          const fundingResult = await fundingResponse.json()
+          const residentResult = await residentResponse.json() as ApiResponse
+          const fundingResult = await fundingResponse.json() as FundingApiResponse
           
           if (residentResult.success && residentResult.data) {
             setResident(residentResult.data)
@@ -385,14 +391,11 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
     if (!resident) return null
     
     return (
-      <div className="space-y-6">
-        {/* Contract Management - Consolidated Tile */}
-        <ContractManagementTile
-          residentId={resident.id}
-          fundingInfo={fundingContracts}
-          onFundingChange={handleFundingChange}
-        />
-      </div>
+      <FundingDashboard
+        residentId={resident.id}
+        fundingInfo={fundingContracts}
+        onFundingChange={handleFundingChange}
+      />
     )
   }
 

@@ -115,7 +115,7 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
   const openAddForm = () => {
     setEditingFunding(null)
     form.reset({
-      type: 'NDIS',
+      type: 'Draw Down',
       amount: 0,
       startDate: new Date(),
       isActive: true,
@@ -174,6 +174,14 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
         dailySupportItemCost,
         contractStatus
       }
+      
+      // Remove undefined values to avoid validation issues
+      Object.keys(submissionData).forEach(key => {
+        if (submissionData[key as keyof typeof submissionData] === undefined) {
+          delete submissionData[key as keyof typeof submissionData]
+        }
+      })
+      
       
       if (editingFunding || editingContract) {
         const contractToEdit = editingFunding || editingContract!
@@ -252,13 +260,11 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
     }
   }
 
-  const getFundingTypeColor = (type: FundingType) => {
+  const getFundingTypeColor = (type: FundingModel) => {
     const colors = {
-      'NDIS': 'bg-blue-100 text-blue-800',
-      'Government': 'bg-green-100 text-green-800', 
-      'Private': 'bg-purple-100 text-purple-800',
-      'Family': 'bg-orange-100 text-orange-800',
-      'Other': 'bg-gray-100 text-gray-800'
+      'Draw Down': 'bg-blue-100 text-blue-800',
+      'Capture & Invoice': 'bg-green-100 text-green-800', 
+      'Hybrid': 'bg-purple-100 text-purple-800'
     }
     return colors[type]
   }

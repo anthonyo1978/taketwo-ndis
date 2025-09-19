@@ -58,6 +58,7 @@ export async function POST(
     const { id } = await params
     const body = await request.json()
     
+    
     // Validate funding information with contract fields
     const createFundingSchema = z.object({
       type: z.enum(['Draw Down', 'Capture & Invoice', 'Hybrid'] as const),
@@ -74,7 +75,14 @@ export async function POST(
       isActive: z.boolean().default(true),
       drawdownRate: z.enum(['daily', 'weekly', 'monthly'] as const).default('monthly'),
       autoDrawdown: z.boolean().default(true),
-      renewalDate: z.coerce.date().optional()
+      renewalDate: z.coerce.date().optional(),
+      // Additional contract fields
+      dailySupportItemCost: z.number().optional(),
+      contractStatus: z.enum(['Draft', 'Active', 'Expired', 'Cancelled', 'Renewed'] as const).optional(),
+      supportItemCode: z.string()
+        .max(50, "Support item code must be no more than 50 characters")
+        .optional()
+        .or(z.literal(''))
     }).refine(
       (data) => !data.endDate || data.startDate <= data.endDate,
       {
@@ -92,6 +100,7 @@ export async function POST(
     const validation = createFundingSchema.safeParse(body)
     
     if (!validation.success) {
+      console.log('Validation failed:', validation.error.issues)
       return NextResponse.json(
         { 
           success: false, 
