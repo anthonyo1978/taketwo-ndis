@@ -19,7 +19,7 @@ const createTransactionSchema = z.object({
   residentId: z.string().min(1, "Please select a resident"),
   contractId: z.string().min(1, "Please select a contract"),
   occurredAt: z.coerce.date(),
-  serviceCode: z.string().min(1, "Service code is required"),
+  serviceCode: z.string().optional(),
   serviceItemCode: z.string().optional(), // Required for Drawing Down mode
   description: z.string().optional(),
   quantity: z.number().positive("Quantity must be positive"),
@@ -46,6 +46,12 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
   const [houses, setHouses] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedContractInfo, setSelectedContractInfo] = useState<any>(null)
+  const [dateConstraints, setDateConstraints] = useState<{
+    minDate: string | null
+    maxDate: string | null
+  }>({ minDate: null, maxDate: null })
+  const [isDateOutOfBounds, setIsDateOutOfBounds] = useState(false)
+  const [dateWarning, setDateWarning] = useState<string | null>(null)
 
   const form = useForm<FormData>({
     resolver: zodResolver(createTransactionSchema),
@@ -59,7 +65,113 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
     }
   })
 
-  // Fetch residents and houses from API
+  // Function to filter residents based on eligibility criteria
+  const filterEligibleResidents = async (allResidents: any[], houses: any[]) => {
+    const eligibleResidents = []
+    
+    for (const resident of allResidents) {
+      // Check if resident has active status
+      if (resident.status !== 'Active') {
+        console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - status: ${resident.status}`)
+        continue
+      }
+      
+      // Check if resident is assigned to a house
+      if (!resident.houseId) {
+        console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - no house assignment`)
+        continue
+      }
+      
+      // Verify the house exists
+      const house = houses.find(h => h.id === resident.houseId)
+      if (!house) {
+        console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - house not found`)
+        continue
+      }
+      
+      // Check if resident has at least one active contract with money and valid date range
+      try {
+        const response = await fetch(`/api/residents/${resident.id}/funding`)
+        const result = await response.json() as { success: boolean; data?: any[] }
+        
+        if (result.success && result.data) {
+          const now = new Date()
+          const eligibleContracts = result.data.filter((contract: any) => {
+            // Must be active
+            if (contract.contractStatus !== 'Active') return false
+            
+            // Must have money (current balance > 0)
+            if (!contract.currentBalance || contract.currentBalance <= 0) return false
+            
+            // Must be within date range (if end date exists)
+            if (contract.endDate) {
+              const endDate = new Date(contract.endDate)
+              if (endDate < now) return false
+            }
+            
+            // Must have started (if start date exists)
+            if (contract.startDate) {
+              const startDate = new Date(contract.startDate)
+              if (startDate > now) return false
+            }
+            
+            return true
+          })
+          
+          if (eligibleContracts.length > 0) {
+            console.log(`Resident ${resident.firstName} ${resident.lastName} is eligible - has ${eligibleContracts.length} active contracts with money within date range`)
+            eligibleResidents.push({
+              ...resident,
+              house: house // Add house info for easier access
+            })
+          } else {
+            console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - no eligible contracts (active + money + within date range)`)
+          }
+        } else {
+          console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - no funding data`)
+        }
+      } catch (error) {
+        console.error(`Error checking contracts for resident ${resident.id}:`, error)
+        // Fallback to localStorage check
+        if (resident.fundingInformation && resident.fundingInformation.length > 0) {
+          const now = new Date()
+          const eligibleContracts = resident.fundingInformation.filter((contract: any) => {
+            // Must be active
+            if (contract.contractStatus !== 'Active') return false
+            
+            // Must have money (current balance > 0)
+            if (!contract.currentBalance || contract.currentBalance <= 0) return false
+            
+            // Must be within date range (if end date exists)
+            if (contract.endDate) {
+              const endDate = new Date(contract.endDate)
+              if (endDate < now) return false
+            }
+            
+            // Must have started (if start date exists)
+            if (contract.startDate) {
+              const startDate = new Date(contract.startDate)
+              if (startDate > now) return false
+            }
+            
+            return true
+          })
+          
+          if (eligibleContracts.length > 0) {
+            console.log(`Resident ${resident.firstName} ${resident.lastName} is eligible (fallback) - has ${eligibleContracts.length} eligible contracts`)
+            eligibleResidents.push({
+              ...resident,
+              house: house
+            })
+          }
+        }
+      }
+    }
+    
+    return eligibleResidents
+  }
+
+  // Fetch residents and houses from API with smart filtering
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -68,27 +180,37 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
           fetch('/api/houses')
         ])
         
-        const residentsData = await residentsResponse.json()
-        const housesData = await housesResponse.json()
+        const residentsData = await residentsResponse.json() as { success: boolean; data?: any[] }
+        const housesData = await housesResponse.json() as { success: boolean; data?: any[] }
         
-        if (residentsData.success) {
-          console.log('Residents loaded:', residentsData.data)
-          setResidents(residentsData.data)
-        }
-        if (housesData.success) {
+        if (residentsData.success && housesData.success) {
+          console.log('Raw residents loaded:', residentsData.data)
           console.log('Houses loaded:', housesData.data)
-          setHouses(housesData.data)
+          
+          // Filter residents to only show those who:
+          // 1. Have active status
+          // 2. Are assigned to a house
+          // 3. Have at least one active contract with money and valid date range
+          const eligibleResidents = await filterEligibleResidents(residentsData.data || [], housesData.data || [])
+          console.log('Eligible residents for transactions:', eligibleResidents)
+          
+          setResidents(eligibleResidents)
+          setHouses(housesData.data || [])
         }
       } catch (error) {
         console.error('Error fetching data:', error)
-        // Fallback to localStorage
+        // Fallback to localStorage with same filtering logic
         try {
-          const residents = getResidentsFromStorage()
-          const houses = getHousesFromStorage()
-          console.log('Fallback - Residents from localStorage:', residents)
-          console.log('Fallback - Houses from localStorage:', houses)
-          setResidents(residents)
-          setHouses(houses)
+          const allResidents = getResidentsFromStorage()
+          const allHouses = getHousesFromStorage()
+          console.log('Fallback - All residents from localStorage:', allResidents)
+          console.log('Fallback - All houses from localStorage:', allHouses)
+          
+          const eligibleResidents = await filterEligibleResidents(allResidents, allHouses)
+          console.log('Fallback - Eligible residents:', eligibleResidents)
+          
+          setResidents(eligibleResidents)
+          setHouses(allHouses)
         } catch (localError) {
           console.error('Error with localStorage fallback:', localError)
         }
@@ -116,12 +238,12 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
       const loadFundingContracts = async () => {
         try {
           const response = await fetch(`/api/residents/${watchedValues.residentId}/funding`)
-          const result = await response.json()
+          const result = await response.json() as { success: boolean; data?: any[] }
           
           if (result.success && result.data) {
             setFundingContracts(prev => ({
               ...prev,
-              [watchedValues.residentId]: result.data
+              [watchedValues.residentId]: result.data || []
             }))
           }
         } catch (error) {
@@ -159,16 +281,71 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
   useEffect(() => {
     form.setValue('contractId', '')
     setSelectedContractInfo(null)
+    setDateConstraints({ minDate: null, maxDate: null })
+    setIsDateOutOfBounds(false)
+    setDateWarning(null)
   }, [watchedValues.residentId, form])
 
-  // Handle contract selection to show contract details
+  // Watch for date changes and validate against contract boundaries
+  useEffect(() => {
+    if (watchedValues.occurredAt && selectedContractInfo) {
+      checkDateBounds(watchedValues.occurredAt, selectedContractInfo)
+    }
+  }, [watchedValues.occurredAt, selectedContractInfo])
+
+  // Handle contract selection to show contract details and set date constraints
   const handleContractChange = (contractId: string) => {
     if (selectedResident && contractId) {
-      const contract = selectedResident.fundingInformation.find((c: any) => c.id === contractId)
+      const contract = selectedResidentContracts.find((c: any) => c.id === contractId)
       setSelectedContractInfo(contract)
+      
+      // Set date constraints based on contract dates
+      if (contract) {
+        // Convert to local date format (YYYY-MM-DD) for HTML date input
+        const minDate = contract.startDate ? new Date(contract.startDate).toLocaleDateString('en-CA') : null
+        const maxDate = contract.endDate ? new Date(contract.endDate).toLocaleDateString('en-CA') : null
+        
+        setDateConstraints({ 
+          minDate: minDate || null, 
+          maxDate: maxDate || null 
+        })
+        
+        // Check if current date is out of bounds
+        const currentDate = form.getValues('occurredAt')
+        if (currentDate) {
+          checkDateBounds(currentDate, contract)
+        }
+      } else {
+        setDateConstraints({ minDate: null, maxDate: null })
+        setIsDateOutOfBounds(false)
+        setDateWarning(null)
+      }
     } else {
       setSelectedContractInfo(null)
+      setDateConstraints({ minDate: null, maxDate: null })
+      setIsDateOutOfBounds(false)
+      setDateWarning(null)
     }
+  }
+  
+  // Check if selected date is within contract boundaries
+  const checkDateBounds = (selectedDate: Date, contract: any) => {
+    const contractStart = contract.startDate ? new Date(contract.startDate) : null
+    const contractEnd = contract.endDate ? new Date(contract.endDate) : null
+    
+    let isOutOfBounds = false
+    let warning = null
+    
+    if (contractStart && selectedDate < contractStart) {
+      isOutOfBounds = true
+      warning = `Transaction date is before contract start date (${contractStart.toLocaleDateString()}). This will create an orphaned transaction that won't draw down from the contract.`
+    } else if (contractEnd && selectedDate > contractEnd) {
+      isOutOfBounds = true
+      warning = `Transaction date is after contract end date (${contractEnd.toLocaleDateString()}). This will create an orphaned transaction that won't draw down from the contract.`
+    }
+    
+    setIsDateOutOfBounds(isOutOfBounds)
+    setDateWarning(warning)
   }
 
   const onSubmit = async (data: FormData) => {
@@ -183,13 +360,29 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
         ...data,
         // Ensure date is properly formatted
         occurredAt: data.occurredAt instanceof Date ? data.occurredAt : new Date(data.occurredAt),
-        amount: calculatedAmount
+        amount: calculatedAmount,
+        // Ensure serviceCode is defined if provided
+        serviceCode: data.serviceCode || '',
+        // Pass the orphaned status from frontend validation
+        isOrphaned: isDateOutOfBounds
       }
 
-      // Create transaction using client-side function
-      const transaction = createTransaction(input, 'current-user')
-      
-      console.log('Created transaction:', transaction)
+      // Create transaction using API
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input)
+      })
+
+      const result = await response.json() as { success: boolean; data?: any; error?: string }
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to create transaction')
+      }
+
+      console.log('Created transaction:', result.data)
       onSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create transaction')
@@ -204,7 +397,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
   if (isLoading) {
     return (
       <Dialog open={true} onClose={onClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Transaction</DialogTitle>
           </DialogHeader>
@@ -221,9 +414,9 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
 
   return (
     <Dialog open={true} onClose={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className={mode === 'drawdown' ? 'text-xl font-bold text-blue-800' : ''}>
+          <DialogTitle>
             {mode === 'drawdown' ? '🎯 Drawing Down Transaction' : 'Create Transaction'}
           </DialogTitle>
           {mode === 'drawdown' && (
@@ -361,34 +554,61 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
                 type="date"
                 {...form.register('occurredAt')}
                 error={form.formState.errors.occurredAt?.message}
+                min={dateConstraints.minDate || undefined}
+                max={dateConstraints.maxDate || undefined}
               />
+              
+              {/* Contract Date Range Display */}
+              {selectedContractInfo && (selectedContractInfo.startDate || selectedContractInfo.endDate) && (
+                <div className="text-sm text-gray-600">
+                  <p className="font-medium">Contract Date Range:</p>
+                  <p>
+                    {selectedContractInfo.startDate 
+                      ? `From: ${new Date(selectedContractInfo.startDate).toLocaleDateString()}`
+                      : 'From: No start date'
+                    }
+                    {selectedContractInfo.endDate 
+                      ? ` To: ${new Date(selectedContractInfo.endDate).toLocaleDateString()}`
+                      : ' To: Ongoing (no end date)'
+                    }
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Date picker constraints: min={dateConstraints.minDate || 'none'}, max={dateConstraints.maxDate || 'none'}
+                  </p>
+                </div>
+              )}
+              
+              {/* Date Out of Bounds Warning */}
+              {isDateOutOfBounds && dateWarning && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-yellow-800">
+                        {dateWarning}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Service Code */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Service Code *
+                Service Code
               </label>
-              <select
+              <Input
                 {...form.register('serviceCode')}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select a service code...</option>
-                <option value="SDA_RENT">SDA_RENT - Specialist Disability Accommodation rental</option>
-                <option value="SIL_SUPPORT">SIL_SUPPORT - Supported Independent Living hours</option>
-                <option value="CORE_SUPPORT">CORE_SUPPORT - Core supports and services</option>
-                <option value="CAPACITY_BUILDING">CAPACITY_BUILDING - Capacity building supports</option>
-                <option value="TRANSPORT">TRANSPORT - Transportation assistance</option>
-                <option value="EQUIPMENT">EQUIPMENT - Assistive technology and equipment</option>
-                <option value="THERAPY">THERAPY - Allied health and therapy services</option>
-                <option value="RESPITE">RESPITE - Short-term accommodation and respite</option>
-                <option value="OTHER">OTHER - Other approved NDIS services</option>
-              </select>
-              {form.formState.errors.serviceCode && (
-                <p className="text-red-600 text-sm">{form.formState.errors.serviceCode.message}</p>
-              )}
+                placeholder="e.g., SDA_RENT, SIL_SUPPORT, CORE_SUPPORT, CAPACITY_BUILDING"
+                error={form.formState.errors.serviceCode?.message}
+              />
               <p className="text-xs text-gray-500">
-                Required: Select a service code for this transaction
+                Examples: SDA_RENT, SIL_SUPPORT, CORE_SUPPORT, CAPACITY_BUILDING, TRANSPORT, EQUIPMENT, THERAPY, RESPITE
               </p>
             </div>
           </div>
@@ -477,9 +697,11 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Quantity */}
             <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Quantity *
+              </label>
               <div className="flex items-center gap-2">
                 <Input
-                  label="Quantity *"
                   type="number"
                   step="1"
                   min="1"
@@ -487,7 +709,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
                   error={form.formState.errors.quantity?.message}
                   className="flex-1"
                 />
-                <div className="flex flex-col gap-1 mt-6">
+                <div className="flex flex-col gap-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -514,9 +736,11 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
 
             {/* Unit Price */}
             <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Unit Price *
+              </label>
               <div className="flex items-center gap-2">
                 <Input
-                  label="Unit Price *"
                   type="number"
                   step="10"
                   min="0"
@@ -524,7 +748,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
                   error={form.formState.errors.unitPrice?.message}
                   className="flex-1"
                 />
-                <div className="flex flex-col gap-1 mt-6">
+                <div className="flex flex-col gap-1">
                   <button
                     type="button"
                     onClick={() => {
@@ -556,14 +780,27 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
 
             {/* Amount */}
             <div className="space-y-2">
-              <Input
-                label="Amount *"
-                type="number"
-                step="0.01"
-                min="0"
-                {...form.register('amount', { valueAsNumber: true })}
-                error={form.formState.errors.amount?.message}
-              />
+              <label className="block text-sm font-medium text-gray-700">
+                Amount *
+              </label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...form.register('amount', { valueAsNumber: true })}
+                  error={form.formState.errors.amount?.message}
+                  className="flex-1"
+                />
+                <div className="flex flex-col gap-1">
+                  <div className="px-2 py-1 text-sm bg-gray-50 rounded border text-gray-400">
+                    Auto
+                  </div>
+                  <div className="px-2 py-1 text-sm bg-gray-50 rounded border text-gray-400">
+                    Calc
+                  </div>
+                </div>
+              </div>
               <p className="text-xs text-gray-500">
                 Auto-calculated from quantity × unit price
               </p>
@@ -632,7 +869,6 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
           <div className="flex justify-end space-x-3 pt-4 border-t">
             <Button
               type="button"
-              variant="outline"
               onClick={onClose}
               disabled={isSubmitting}
             >

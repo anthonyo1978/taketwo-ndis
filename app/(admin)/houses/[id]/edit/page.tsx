@@ -4,9 +4,9 @@ import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Link from "next/link"
 import { toast } from "react-hot-toast"
-import { HouseForm } from "../../../../../components/houses/HouseForm"
-import { ImageUpload } from "../../../../../components/ui/ImageUpload"
-import type { House, HouseCreateInput } from "../../../../../types/house"
+import { HouseForm } from "components/houses/HouseForm"
+import { ImageUpload } from "components/ui/ImageUpload"
+import type { House, HouseCreateInput } from "types/house"
 
 /**
  * Page for editing an existing house.

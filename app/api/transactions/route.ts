@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import {
-  getTransactionsList,
-  createTransaction,
-  getTransactionBalancePreview,
-  getTransactionsFromStorage,
-  saveTransactionsToStorage
-} from 'lib/utils/transaction-storage'
-import { generateId as generateTransactionId } from 'lib/utils/transaction-id-generator'
+import { transactionService } from 'lib/supabase/services/transactions'
 import { processDrawdownTransaction } from 'lib/utils/drawdown-validation'
+import { getTransactionBalancePreview } from 'lib/utils/transaction-storage'
 import type { 
   Transaction,
   TransactionCreateInput, 
@@ -48,9 +42,9 @@ const filtersSchema = z.object({
 // Validation schema for sorting
 const sortSchema = z.object({
   field: z.enum([
-    'occurredAt', 'amount', 'status', 'serviceCode', 
+    'id', 'occurredAt', 'amount', 'status', 'serviceCode', 
     'createdAt', 'residentName', 'houseName', 'contractType'
-  ]).default('occurredAt'),
+  ]).default('id'),
   direction: z.enum(['asc', 'desc']).default('desc')
 }).optional()
 
@@ -116,7 +110,7 @@ export async function GET(request: NextRequest) {
     
     // Parse and validate sorting
     const rawSort = {
-      field: searchParams.get('sortField') || 'occurredAt',
+      field: searchParams.get('sortField') || 'id',
       direction: searchParams.get('sortDirection') || 'desc'
     }
     
@@ -132,13 +126,13 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    const sort: TransactionSortConfig = sortResult.data || { field: 'occurredAt', direction: 'desc' }
+    const sort: TransactionSortConfig = sortResult.data || { field: 'id', direction: 'desc' }
     
     // Add delay for loading state demonstration
     await new Promise(resolve => setTimeout(resolve, 300))
     
-    // Get transactions
-    const result = getTransactionsList(filters, sort, page, pageSize)
+    // Get transactions from database
+    const result = await transactionService.getAll(filters, sort, page, pageSize)
     
     return NextResponse.json({
       success: true,
@@ -212,46 +206,14 @@ export async function POST(request: NextRequest) {
         balancePreview
       }, { status: 201 })
     } else {
-      // Regular transaction creation - use the old createTransaction function
-      const balancePreview = getTransactionBalancePreview(
-        input.contractId,
-        input.amount || (input.quantity * input.unitPrice)
-      )
+      // Regular transaction creation - use database service
+      const transaction = await transactionService.create(input, 'current-user')
       
-      // For regular transactions, create without Drawing Down validation
-      const transaction: Transaction = {
-        id: generateTransactionId(),
-        residentId: input.residentId,
-        contractId: input.contractId,
-        occurredAt: input.occurredAt,
-        serviceCode: input.serviceCode,
-        description: input.description,
-        quantity: input.quantity,
-        unitPrice: input.unitPrice,
-        amount: input.amount || (input.quantity * input.unitPrice),
-        status: 'draft',
-        note: input.note,
-        createdAt: new Date(),
-        createdBy: 'current-user',
-        // Drawing Down fields (optional for regular transactions)
-        serviceItemCode: input.serviceItemCode || undefined,
-        supportAgreementId: input.supportAgreementId || undefined,
-        isDrawdownTransaction: input.isDrawdownTransaction || false,
-        auditTrail: []
-      }
-      
-      // Save to storage
-      const transactions = getTransactionsFromStorage()
-      console.log('Before saving - current transaction count:', transactions.length)
-      transactions.push(transaction)
-      saveTransactionsToStorage(transactions)
-      console.log('After saving - new transaction count:', transactions.length)
-      console.log('Created transaction:', JSON.stringify(transaction, null, 2))
+      console.log('Created transaction in database:', transaction.id)
       
       return NextResponse.json({
         success: true,
-        data: transaction,
-        balancePreview
+        data: transaction
       }, { status: 201 })
     }
     

@@ -2,11 +2,13 @@
 
 ## Overview
 
-The Transactions system provides a comprehensive billing and contract drawdown management solution for NDIS accommodation providers. It serves as the central source of truth for all billable events, automatically reducing contract balances and providing operational visibility for reconciliation and payment claims.
+The Transactions system provides a comprehensive billing and contract drawdown management solution for Haven users. It serves as the central source of truth for all billable events, automatically logging transactions. Either reducing contract balances (if it is a draw down contract) or crating invoices (if it is a invoice contract) 
+
+Thie feature is the heart of the product providing financial visibility for reconciliation and payment claims thereefter.
 
 ## Problem Statement
 
-NDIS providers need to:
+providers need to:
 - Track billable events against resident contracts with precision
 - Automatically drawdown contract balances as services are provided
 - Maintain audit trails for government compliance and claim processing
@@ -16,7 +18,7 @@ NDIS providers need to:
 
 ## Solution
 
-A dense, high-performance transactions table with inline balance calculations, comprehensive filtering, bulk operations, and deep integration with the existing resident/contract system.
+A simple, high-performance transactions table with inline balance calculations, comprehensive filtering, bulk operations, and deep integration with the existing resident/contract system.
 
 ## Key Features
 
@@ -38,19 +40,34 @@ A dense, high-performance transactions table with inline balance calculations, c
 - **Voided**: Reversed transaction, restores balance
 - **Validation**: Prevents negative balances, shows remaining after post
 
-### 4. Bulk Operations
+### 4. Contract Date Boundary Validation
+- **Date Constraints**: Transaction dates must fall within contract start and end dates
+- **Visual Indicators**: Date picker shows min/max constraints based on selected contract
+- **Orphaned Transactions**: Transactions outside contract boundaries are marked as "orphaned"
+- **Balance Protection**: Orphaned transactions don't affect contract balance drawdown
+- **User Warnings**: Clear visual feedback when dates are outside contract boundaries
+- **Flexible Boundaries**: Open-ended contracts (no end date) have no upper limit
+
+### 5. Sequential Transaction ID Generation
+- **TXN Prefix**: All transactions get unique IDs starting with "TXN-"
+- **Sequential Format**: TXN-A000001, TXN-A000002, etc.
+- **Letter Progression**: When reaching TXN-A999999, increments to TXN-B000001
+- **Database Integration**: Custom ID generation in transaction service
+- **Collision Prevention**: Ensures no duplicate transaction IDs
+
+### 6. Bulk Operations
 - **Bulk Post**: Convert multiple draft transactions to posted
 - **Bulk Void**: Reverse multiple posted transactions (with constraints)
 - **CSV Export**: Export selected or filtered transactions
 - **Bulk Select**: Checkbox-based row selection
 
-### 5. Contract Integration
+### 7. Contract Integration
 - **Balance Updates**: Automatic contract balance reduction on post
 - **Balance Restoration**: Automatic balance restoration on void
 - **Real-time Validation**: Show remaining balance preview before posting
 - **Active Contract Filtering**: Only show active contracts for new transactions
 
-### 6. Resident Page Integration
+### 8. Resident Page Integration
 - **Balance Widget**: Show active contracts with remaining balances
 - **Recent Transactions**: Last 5 transactions with link to full view
 - **Quick Actions**: Direct link to create transaction for resident
@@ -71,6 +88,7 @@ interface Transaction {
   unitPrice: number
   amount: number // quantity * unitPrice (can be overridden)
   status: 'draft' | 'posted' | 'voided'
+  isOrphaned?: boolean // Transaction outside contract date boundaries
   note?: string
   createdAt: Date
   createdBy: string
@@ -90,6 +108,7 @@ interface TransactionCreateInput {
   quantity: number
   unitPrice: number
   amount?: number // Optional override
+  isOrphaned?: boolean // Set by frontend validation
   note?: string
 }
 
@@ -122,11 +141,42 @@ Following existing localStorage pattern:
 - Maintains contract balance consistency
 - Atomic operations for balance updates
 
+## Contract Date Boundary Validation
+
+### Implementation Details
+
+The system enforces contract date boundaries to ensure transactions are only created within valid service agreement periods:
+
+#### Frontend Validation
+- **Date Picker Constraints**: HTML date input `min` and `max` attributes set based on contract dates
+- **Real-time Validation**: Date boundaries checked as user selects contract and changes dates
+- **Visual Indicators**: Clear warnings when dates fall outside contract boundaries
+- **Contract Information Display**: Shows contract start date, end date, and support item code
+
+#### Backend Validation
+- **Orphaned Transaction Detection**: Server-side validation checks if transaction date falls outside contract boundaries
+- **Balance Protection**: Orphaned transactions are marked but don't affect contract balance drawdown
+- **Database Storage**: `is_orphaned` field stored in transactions table
+
+#### User Experience
+- **Date Constraints**: Date picker automatically restricts selectable dates to contract period
+- **Warning Messages**: Clear feedback when attempting to create transactions outside boundaries
+- **Orphaned Badge**: Transactions outside boundaries show "Orphaned" status badge
+- **Flexible Boundaries**: Open-ended contracts (no end date) have no upper date limit
+
+#### Technical Flow
+1. User selects resident → loads active contracts
+2. User selects contract → sets date picker min/max constraints
+3. User selects date → validates against contract boundaries
+4. If outside boundaries → marks as orphaned, shows warning
+5. Transaction created with `isOrphaned` flag
+6. Orphaned transactions don't affect contract balance
+
 ## User Experience Flow
 
 ### Primary Workflow
 1. **View Transactions**: Dense table with all filtering options
-2. **Create Transaction**: Sheet/dialog with resident→contract selection
+2. **Create Transaction**: Sheet/dialog with resident→contract selection and date validation
 3. **Bulk Operations**: Select multiple rows, apply actions
 4. **Balance Monitoring**: Real-time balance updates and validation
 5. **Export**: CSV download for external processing
@@ -142,6 +192,9 @@ Following existing localStorage pattern:
 - ✅ Create draft transactions with validation
 - ✅ Post transactions with automatic balance deduction
 - ✅ Void transactions with balance restoration
+- ✅ Contract date boundary validation prevents invalid transactions
+- ✅ Orphaned transactions are properly marked and handled
+- ✅ Date picker constraints work correctly
 - ✅ Bulk operations work correctly with constraints
 - ✅ Filtering and sorting perform smoothly
 - ✅ CSV export produces correct data
@@ -169,11 +222,13 @@ Following existing localStorage pattern:
 3. Basic API routes (CRUD operations)
 4. Simple transactions table with mock data
 
-### Phase 2 (Table Enhancement)
-1. TanStack Table implementation with full feature set
-2. Filtering and sorting implementation
-3. Transaction creation dialog
-4. Status transitions (draft→posted→voided)
+### Phase 2 (Table Enhancement) ✅ COMPLETED
+1. ✅ TanStack Table implementation with full feature set
+2. ✅ Filtering and sorting implementation
+3. ✅ Transaction creation dialog with contract date validation
+4. ✅ Status transitions (draft→posted→voided)
+5. ✅ Contract date boundary validation system
+6. ✅ Orphaned transaction handling
 
 ### Phase 3 (Integration & Polish)
 1. Resident page balance widgets
@@ -255,4 +310,15 @@ Enhancement & Bug Updates
    - for the selected contract, these variabel are: Contract start date, contract end date & contract support item code
  - Change Date Occurred to Date of Delivery & make this field mandatory
  - Try and fix the alignment on quantity section, the options feel all different sizes
+
+FIXED & Uplifts
+
+A. On the transactions screen, there is no need for more than one " Crate Transactiopn" button. Please remove the "Drawing Down" button, also, please remove the "+create" button.
+B. Please remove the "+ create button" next to the Eport .CSV button
+C. When creating a transaction, can you please explain the logic that determines who is retruend as someone you can create a transaction against? I can currently only see "Bill Hat" not sure that is correct - i thought the logic was active contract with money within date
+D. When a transaction is created, it gets like a primary key which is a unique identifier. The prefix is "TXN" and this uniquely identifioes each and every record, you can never have duplicateds. Please implemenet
+E I am not sure how this wwould work, BUT, when the user is creating a transaction, does the sysem on the UI at that point have context of the boundaries of the contract? I am interested in the diea that the user can only create transactions within the boundaruies of the dates of that service agreement is that makes sense? So for example if the date boundaries of the service agreement are between the start and end date (Start Date 01/01//2025) and the end date (01/01/2026) .... the default data is today... but if the user tries to create a txn in the past, then this must be = to or greater then the contract start date. It cannot be less. Also, if a transactipon is created after 01/01/2026 then this is also not allowed. I am not sure how to prevent this, but please have a think and let  meknow what options you have before we code!
+F Lets focus a little on editting of TXN. When a user deits a TXN, this has an impact back on that residents contract totals. When editting a TXN, the same behaviours need to apply as thoise that apply when creatinging the tXN. What i mean is that the run time formual for amount calculation needs to apply. SO in edit mode, the user can edit service ccode ( this doesnt really impact the contract, this is fine). The user can edit date of delivery, but again, this data cannot be outisde of the boundaries of the contract (start date > end date) of the agreement from which it draws down. So there may need to be a similar patten here that we deployed on txn creation, perhaps an even simpler flow here? ( keep it super simple) Quantity can be editted butß changing this is now touching the Amount calculation, and this should display in runtime. The formula again is amount = QTY * Unit price = total, therefore, touching qty or unit price will immediately affect the amount. The users can only edit quantity or unit proce but not qty. NOte can be updated.
+G. When i create a TXN, i have the option to add a "description" to the description filed. This is great. When i then edit that transaction, i firstly open that TXN and see the filed which was previouosly called "description" now presented but it is called "Note" The desription not text persists, but i wonder if this filed name could please be consistent. Also, without bloating the UI, could we please think of  way to lock down earlier comments (these really matter for auditting i think as we essentially changing MONEY) so allow the user to add comments ( in fact force at least 10 character entry) and then when this change is made, please captire the comment and time stamp. Later we will think about system wide auditting!
+
 

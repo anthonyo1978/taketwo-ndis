@@ -4,11 +4,11 @@ import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useEffect, useState } from "react"
 
-import { ResidentSelectionModal } from "../../../../components/residents/ResidentSelectionModal"
-import { ResidentTable } from "../../../../components/residents/ResidentTable"
-import { HouseImageUpload } from "../../../../components/houses/HouseImageUpload"
-import type { House } from "../../../../types/house"
-import type { Resident } from "../../../../types/resident"
+import { ResidentSelectionModal } from "components/residents/ResidentSelectionModal"
+import { ResidentTable } from "components/residents/ResidentTable"
+import { HouseImageUpload } from "components/houses/HouseImageUpload"
+import type { House } from "types/house"
+import type { Resident } from "types/resident"
 
 interface ApiResponse {
   success: boolean

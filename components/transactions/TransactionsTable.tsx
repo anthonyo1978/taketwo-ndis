@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { format } from "date-fns"
+import { Button } from "components/Button/Button"
 import {
   useReactTable,
   getCoreRowModel,
@@ -14,19 +15,17 @@ import {
   type VisibilityState,
   type RowSelectionState,
 } from "@tanstack/react-table"
-import { Button } from "components/Button/Button"
 import type { 
   Transaction, 
   TransactionFilters, 
   TransactionListResponse 
 } from "types/transaction"
-import { getResidentsFromStorage } from "lib/utils/resident-storage"
-import { getHousesFromStorage } from "lib/utils/house-storage"
-import { getTransactionsList } from "lib/utils/transaction-storage"
+// Removed localStorage imports - now using API calls
 
 interface TransactionsTableProps {
   filters: TransactionFilters
   onCreateTransaction: () => void
+  refreshTrigger?: number
 }
 
 const columnHelper = createColumnHelper<Transaction & { 
@@ -35,26 +34,32 @@ const columnHelper = createColumnHelper<Transaction & {
   contractType: string
 }>()
 
-export function TransactionsTable({ filters, onCreateTransaction }: TransactionsTableProps) {
+export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger }: TransactionsTableProps) {
   const [data, setData] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sorting, setSorting] = useState<SortingState>([
-    { id: 'occurredAt', desc: true }
+    { id: 'id', desc: true }
   ])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
   const [pagination, setPagination] = useState({
     pageIndex: 0,
     pageSize: 25,
   })
   const [totalCount, setTotalCount] = useState(0)
-  const [selectedAction, setSelectedAction] = useState<'post' | 'void' | null>(null)
-  const [bulkLoading, setBulkLoading] = useState(false)
-
-  // Get lookup data
-  const residents = getResidentsFromStorage()
-  const houses = getHousesFromStorage()
+  const [residents, setResidents] = useState<any[]>([])
+  const [houses, setHouses] = useState<any[]>([])
+  const [lookupLoading, setLookupLoading] = useState(true)
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const [showTransactionModal, setShowTransactionModal] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editFormData, setEditFormData] = useState<Partial<Transaction>>({})
+  const [editContractInfo, setEditContractInfo] = useState<any>(null)
+  const [editDateConstraints, setEditDateConstraints] = useState<{
+    minDate?: string
+    maxDate?: string
+  }>({})
+  const [editDateWarning, setEditDateWarning] = useState<string>('')
 
   // Create lookup maps
   const residentLookup = useMemo(() => 
@@ -78,20 +83,70 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
   // Enhance data with lookup information
   const enhancedData = useMemo(() => {
     return data.map(tx => {
-      const resident = residentLookup.get(tx.residentId)
-      const contract = contractLookup.get(tx.contractId)
-      const house = resident ? houseLookup.get(resident.houseId) : null
+      try {
+        const resident = residentLookup.get(tx.residentId)
+        const contract = contractLookup.get(tx.contractId)
+        const house = resident?.house || (resident ? houseLookup.get(resident.houseId) : null)
 
-      return {
-        ...tx,
-        residentName: resident ? `${resident.firstName} ${resident.lastName}` : 'Unknown',
-        houseName: house?.name || 'Unknown',
-        contractType: contract?.type || 'Unknown'
+        return {
+          ...tx,
+          residentName: resident ? `${resident.firstName || ''} ${resident.lastName || ''}`.trim() || 'Unknown' : 'Unknown',
+          houseName: house?.name || 'Unknown',
+          contractType: contract?.type || 'Unknown',
+          isOrphaned: tx.isOrphaned || false, // Ensure isOrphaned is always defined
+          quantity: tx.quantity || 0,
+          unitPrice: tx.unitPrice || 0,
+          amount: tx.amount || 0,
+          status: tx.status || 'draft',
+          serviceCode: tx.serviceCode || ''
+        }
+      } catch (error) {
+        console.error('Error enhancing transaction data:', error, tx)
+        return {
+          ...tx,
+          residentName: 'Unknown',
+          houseName: 'Unknown',
+          contractType: 'Unknown',
+          isOrphaned: false,
+          quantity: 0,
+          unitPrice: 0,
+          amount: 0,
+          status: 'draft',
+          serviceCode: ''
+        }
       }
     })
   }, [data, residentLookup, houseLookup, contractLookup])
 
-  // Fetch transactions using client-side storage
+  // Fetch lookup data from API
+  const fetchLookupData = async () => {
+    try {
+      setLookupLoading(true)
+      
+      // Fetch residents and houses in parallel
+      const [residentsResponse, housesResponse] = await Promise.all([
+        fetch('/api/residents'),
+        fetch('/api/houses')
+      ])
+      
+      const residentsResult = await residentsResponse.json()
+      const housesResult = await housesResponse.json()
+      
+      if (residentsResult.success) {
+        setResidents(residentsResult.data || [])
+      }
+      
+      if (housesResult.success) {
+        setHouses(housesResult.data || [])
+      }
+    } catch (err) {
+      console.error('Error fetching lookup data:', err)
+    } finally {
+      setLookupLoading(false)
+    }
+  }
+
+  // Fetch transactions using API
   const fetchTransactions = async () => {
     try {
       setLoading(true)
@@ -101,61 +156,92 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
       const sortConfig = sorting.length > 0 ? {
         field: sorting[0].id as keyof Transaction,
         direction: sorting[0].desc ? 'desc' as const : 'asc' as const
-      } : { field: 'occurredAt' as keyof Transaction, direction: 'desc' as const }
+      } : { field: 'id' as keyof Transaction, direction: 'desc' as const }
 
-      // Get transactions using client-side function
-      const result = getTransactionsList(
-        filters,
-        sortConfig,
-        pagination.pageIndex + 1,
-        pagination.pageSize
-      )
+      // Build query parameters
+      const params = new URLSearchParams()
+      params.append('page', (pagination.pageIndex + 1).toString())
+      params.append('pageSize', pagination.pageSize.toString())
+      params.append('sortField', sortConfig.field)
+      params.append('sortDirection', sortConfig.direction)
 
-      setData(result.transactions)
-      setTotalCount(result.total)
+      // Add filters
+      if (filters.dateRange?.from) {
+        params.append('dateFrom', filters.dateRange.from.toISOString())
+      }
+      if (filters.dateRange?.to) {
+        params.append('dateTo', filters.dateRange.to.toISOString())
+      }
+      if (filters.residentIds && filters.residentIds.length > 0) {
+        params.append('residentIds', filters.residentIds.join(','))
+      }
+      if (filters.contractIds && filters.contractIds.length > 0) {
+        params.append('contractIds', filters.contractIds.join(','))
+      }
+      if (filters.statuses && filters.statuses.length > 0) {
+        params.append('statuses', filters.statuses.join(','))
+      }
+      if (filters.serviceCode) {
+        params.append('serviceCode', filters.serviceCode)
+      }
+      if (filters.search) {
+        params.append('search', filters.search)
+      }
+
+      // Fetch from API
+      const response = await fetch(`/api/transactions?${params.toString()}`)
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to fetch transactions')
+      }
+
+      setData(result.data.transactions)
+      setTotalCount(result.data.total)
     } catch (err) {
-      setError('Failed to load transactions from storage.')
+      setError('Failed to load transactions from API.')
       console.error('Error fetching transactions:', err)
     } finally {
       setLoading(false)
     }
   }
 
-  // Fetch data when filters, pagination, or sorting changes
+  // Fetch lookup data on component mount
   useEffect(() => {
-    fetchTransactions()
-  }, [filters, pagination, sorting])
+    fetchLookupData()
+  }, [])
 
-  // Table columns
+  // Fetch transactions when filters, pagination, or sorting changes
+  // Only fetch if lookup data is loaded
+  useEffect(() => {
+    if (!lookupLoading) {
+      fetchTransactions()
+    }
+  }, [filters, pagination, sorting, lookupLoading])
+
+  // Refresh data when refreshTrigger changes (e.g., after creating a transaction)
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      fetchLookupData()
+      fetchTransactions()
+    }
+  }, [refreshTrigger])
+
+  // Table columns - Only showing requested columns in specified order
   const columns = useMemo<ColumnDef<typeof enhancedData[0]>[]>(() => [
-    // Selection column
-    {
-      id: 'select',
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={table.getIsAllPageRowsSelected()}
-          onChange={(e) => table.toggleAllPageRowsSelected(e.target.checked)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
+    // TXN ID column
+    columnHelper.accessor('id', {
+      id: 'id',
+      header: 'TXN ID',
+      cell: (info) => (
+        <button
+          onClick={() => handleViewTransaction(info.getValue())}
+          className="font-mono text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+        >
+          {info.getValue()}
+        </button>
       ),
-      cell: ({ row }) => (
-        <input
-          type="checkbox"
-          checked={row.getIsSelected()}
-          onChange={(e) => row.toggleSelected(e.target.checked)}
-          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-        />
-      ),
-      enableSorting: false,
-      size: 50,
-    },
-    // Date column
-    columnHelper.accessor('occurredAt', {
-      id: 'occurredAt',
-      header: 'Date',
-      cell: (info) => format(new Date(info.getValue()), 'MMM d, yyyy'),
-      size: 120,
+      size: 150,
     }),
     // Resident column
     columnHelper.accessor('residentName', {
@@ -169,12 +255,6 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
       header: 'House',
       size: 120,
     }),
-    // Contract column
-    columnHelper.accessor('contractType', {
-      id: 'contractType',
-      header: 'Contract',
-      size: 100,
-    }),
     // Service Code column
     columnHelper.accessor('serviceCode', {
       id: 'serviceCode',
@@ -185,22 +265,31 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
     // Quantity column
     columnHelper.accessor('quantity', {
       id: 'quantity',
-      header: 'Qty',
-      cell: (info) => info.getValue().toLocaleString(),
+      header: 'QTY',
+      cell: (info) => {
+        const value = info.getValue()
+        return value ? value.toLocaleString() : '0'
+      },
       size: 80,
     }),
     // Unit Price column
     columnHelper.accessor('unitPrice', {
       id: 'unitPrice',
       header: 'Unit Price',
-      cell: (info) => `$${info.getValue().toFixed(2)}`,
+      cell: (info) => {
+        const value = info.getValue()
+        return value ? `$${value.toFixed(2)}` : '$0.00'
+      },
       size: 100,
     }),
     // Amount column
     columnHelper.accessor('amount', {
       id: 'amount',
       header: 'Amount',
-      cell: (info) => `$${info.getValue().toFixed(2)}`,
+      cell: (info) => {
+        const value = info.getValue()
+        return value ? `$${value.toFixed(2)}` : '$0.00'
+      },
       size: 100,
     }),
     // Status column
@@ -208,74 +297,28 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
       id: 'status',
       header: 'Status',
       cell: (info) => {
-        const status = info.getValue()
+        const status = info.getValue() || 'draft'
+        const isOrphaned = info.row.original.isOrphaned || false
         const colorMap = {
           draft: 'bg-gray-100 text-gray-800',
           posted: 'bg-green-100 text-green-800',
           voided: 'bg-red-100 text-red-800',
         }
         return (
-          <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${colorMap[status]}`}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </span>
+          <div className="flex flex-col gap-1">
+            <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${colorMap[status] || colorMap.draft}`}>
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </span>
+            {isOrphaned && (
+              <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                Orphaned
+              </span>
+            )}
+          </div>
         )
       },
       size: 100,
     }),
-    // Note column
-    columnHelper.accessor('note', {
-      id: 'note',
-      header: 'Note',
-      cell: (info) => info.getValue() || '-',
-      size: 200,
-    }),
-    // Actions column
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }) => (
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleViewTransaction(row.original.id)}
-          >
-            View
-          </Button>
-          {row.original.status === 'draft' && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEditTransaction(row.original.id)}
-              >
-                Edit
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handlePostTransaction(row.original.id)}
-                className="text-green-600 hover:text-green-700"
-              >
-                Post
-              </Button>
-            </>
-          )}
-          {row.original.status === 'posted' && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleVoidTransaction(row.original.id)}
-              className="text-red-600 hover:text-red-700"
-            >
-              Void
-            </Button>
-          )}
-        </div>
-      ),
-      enableSorting: false,
-      size: 200,
-    },
   ], [])
 
   const table = useReactTable({
@@ -287,27 +330,159 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
     getFilteredRowModel: getFilteredRowModel(),
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     onPaginationChange: setPagination,
     manualPagination: true,
     pageCount: Math.ceil(totalCount / pagination.pageSize),
     state: {
       sorting,
       columnVisibility,
-      rowSelection,
       pagination,
     },
   })
 
   // Action handlers
-  const handleViewTransaction = (id: string) => {
-    // TODO: Implement view transaction
-    console.log('View transaction:', id)
+  const handleViewTransaction = async (id: string) => {
+    try {
+      const response = await fetch(`/api/transactions/${id}`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setSelectedTransaction(result.data)
+        setEditFormData(result.data)
+        setIsEditing(false)
+        setShowTransactionModal(true)
+      } else {
+        setError(result.error || 'Failed to fetch transaction details')
+      }
+    } catch (err) {
+      setError('Failed to fetch transaction details')
+      console.error('Error fetching transaction:', err)
+    }
   }
 
-  const handleEditTransaction = (id: string) => {
-    // TODO: Implement edit transaction
-    console.log('Edit transaction:', id)
+  const handleEditTransaction = async () => {
+    if (selectedTransaction?.status === 'draft') {
+      setIsEditing(true)
+      
+      // Load contract information for date boundary validation
+      if (selectedTransaction.contractId) {
+        try {
+          const response = await fetch(`/api/residents/${selectedTransaction.residentId}/funding`)
+          if (response.ok) {
+            const result = await response.json()
+            if (result.success && result.data) {
+              const contract = result.data.find((c: any) => c.id === selectedTransaction.contractId)
+              if (contract) {
+                setEditContractInfo(contract)
+                
+                // Set date constraints
+                const minDate = contract.startDate ? new Date(contract.startDate).toISOString().split('T')[0] : undefined
+                const maxDate = contract.endDate ? new Date(contract.endDate).toISOString().split('T')[0] : undefined
+                setEditDateConstraints({ minDate, maxDate })
+                
+                // Check if current date is within bounds
+                checkEditDateBounds(selectedTransaction.occurredAt, contract)
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error loading contract info for edit:', error)
+        }
+      }
+    }
+  }
+
+  const handleSaveEdit = async () => {
+    if (!selectedTransaction) return
+
+    try {
+      // Determine if transaction is orphaned based on date bounds
+      const isOrphaned = editDateWarning.length > 0
+      
+      const updateData = {
+        ...editFormData,
+        isOrphaned
+      }
+
+      const response = await fetch(`/api/transactions/${selectedTransaction.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData)
+      })
+
+      const result = await response.json()
+      
+      if (result.success) {
+        setSelectedTransaction(result.data)
+        setEditFormData(result.data)
+        setIsEditing(false)
+        // Clear edit state
+        setEditContractInfo(null)
+        setEditDateConstraints({})
+        setEditDateWarning('')
+        // Refresh the transactions list
+        fetchTransactions()
+      } else {
+        setError(result.error || 'Failed to update transaction')
+      }
+    } catch (err) {
+      setError('Failed to update transaction')
+      console.error('Error updating transaction:', err)
+    }
+  }
+
+  const handleCancelEdit = () => {
+    if (selectedTransaction) {
+      setEditFormData(selectedTransaction)
+      setIsEditing(false)
+      // Clear edit state
+      setEditContractInfo(null)
+      setEditDateConstraints({})
+      setEditDateWarning('')
+    }
+  }
+
+  const checkEditDateBounds = (date: Date, contract: any) => {
+    if (!contract || !date) return
+    
+    const transactionDate = new Date(date)
+    const startDate = contract.startDate ? new Date(contract.startDate) : null
+    const endDate = contract.endDate ? new Date(contract.endDate) : null
+    
+    let warning = ''
+    
+    if (startDate && transactionDate < startDate) {
+      warning = `Date is before contract start date (${startDate.toLocaleDateString()})`
+    } else if (endDate && transactionDate > endDate) {
+      warning = `Date is after contract end date (${endDate.toLocaleDateString()})`
+    }
+    
+    setEditDateWarning(warning)
+  }
+
+  const handleInputChange = (field: string, value: any) => {
+    setEditFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      }
+      
+      // Real-time amount calculation when quantity or unit price changes
+      if (field === 'quantity' || field === 'unitPrice') {
+        const quantity = field === 'quantity' ? value : prev.quantity || 0
+        const unitPrice = field === 'unitPrice' ? value : prev.unitPrice || 0
+        newData.amount = quantity * unitPrice
+      }
+      
+      // Check date bounds when date changes
+      if (field === 'occurredAt' && editContractInfo) {
+        checkEditDateBounds(value, editContractInfo)
+      }
+      
+      return newData
+    })
   }
 
   const handlePostTransaction = async (id: string) => {
@@ -351,48 +526,6 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
     }
   }
 
-  // Bulk operations
-  const handleBulkOperation = async (action: 'post' | 'void') => {
-    const selectedRows = table.getFilteredSelectedRowModel().rows
-    const transactionIds = selectedRows.map(row => row.original.id)
-    
-    if (transactionIds.length === 0) {
-      alert('Please select transactions to ' + action)
-      return
-    }
-
-    let reason = ''
-    if (action === 'void') {
-      reason = window.prompt('Please provide a reason for voiding these transactions:') || ''
-      if (!reason) return
-    }
-
-    setBulkLoading(true)
-    try {
-      const response = await fetch('/api/transactions/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transactionIds,
-          action,
-          reason: reason || undefined
-        }),
-      })
-      const result = await response.json()
-      
-      if (result.success) {
-        setRowSelection({})
-        await fetchTransactions() // Refresh the table
-      } else {
-        setError(result.error || `Failed to ${action} transactions`)
-      }
-    } catch (err) {
-      setError('Network error. Please try again.')
-      console.error(`Error ${action}ing transactions:`, err)
-    } finally {
-      setBulkLoading(false)
-    }
-  }
 
   // CSV Export
   const handleExport = async () => {
@@ -419,7 +552,6 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
     }
   }
 
-  const selectedCount = Object.keys(rowSelection).length
 
   if (loading && data.length === 0) {
     return (
@@ -438,42 +570,16 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
 
   return (
     <div className="w-full">
-      {/* Table Header with Bulk Actions */}
+      {/* Table Header */}
       <div className="flex items-center justify-between p-6 border-b">
         <div className="flex items-center space-x-4">
           <h2 className="text-lg font-semibold">
             Transactions ({totalCount.toLocaleString()})
           </h2>
-          {selectedCount > 0 && (
-            <div className="flex items-center space-x-2">
-              <span className="text-sm text-gray-600">
-                {selectedCount} selected
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleBulkOperation('post')}
-                disabled={bulkLoading}
-              >
-                Bulk Post
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleBulkOperation('void')}
-                disabled={bulkLoading}
-              >
-                Bulk Void
-              </Button>
-            </div>
-          )}
         </div>
         <div className="flex items-center space-x-2">
           <Button variant="outline" onClick={handleExport}>
             Export CSV
-          </Button>
-          <Button onClick={onCreateTransaction}>
-            + Create
           </Button>
         </div>
       </div>
@@ -592,6 +698,205 @@ export function TransactionsTable({ filters, onCreateTransaction }: Transactions
             >
               Next
             </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Transaction Detail Modal */}
+      {showTransactionModal && selectedTransaction && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+                 <div className="flex items-center justify-between mb-4">
+                   <h3 className="text-lg font-semibold">Transaction Details</h3>
+                   <div className="flex items-center space-x-2">
+                     {selectedTransaction?.status === 'draft' && !isEditing && (
+                       <Button
+                         onClick={handleEditTransaction}
+                         variant="outline"
+                         size="sm"
+                       >
+                         Edit
+                       </Button>
+                     )}
+                     <button
+                       onClick={() => setShowTransactionModal(false)}
+                       className="text-gray-400 hover:text-gray-600"
+                     >
+                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                       </svg>
+                     </button>
+                   </div>
+                 </div>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">TXN ID</label>
+                    <p className="text-sm font-mono text-blue-600">{selectedTransaction.id}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Status</label>
+                    <div className="flex flex-col gap-2">
+                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                        selectedTransaction.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                        selectedTransaction.status === 'posted' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {selectedTransaction.status.charAt(0).toUpperCase() + selectedTransaction.status.slice(1)}
+                      </span>
+                      {(selectedTransaction.isOrphaned || false) && (
+                        <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          Orphaned (Outside Contract Date Range)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Resident</label>
+                    <p className="text-sm">{selectedTransaction.residentName || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">House</label>
+                    <p className="text-sm">{selectedTransaction.houseName || 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Service Code</label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={editFormData.serviceCode || ''}
+                        onChange={(e) => handleInputChange('serviceCode', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      />
+                    ) : (
+                      <p className="text-sm">{selectedTransaction.serviceCode || 'N/A'}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Date of Delivery</label>
+                    {isEditing ? (
+                      <div>
+                        <input
+                          type="date"
+                          value={editFormData.occurredAt ? new Date(editFormData.occurredAt).toISOString().split('T')[0] : ''}
+                          onChange={(e) => handleInputChange('occurredAt', new Date(e.target.value))}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                          min={editDateConstraints.minDate}
+                          max={editDateConstraints.maxDate}
+                        />
+                        {editDateWarning && (
+                          <p className="text-xs text-yellow-600 mt-1">
+                            ⚠️ {editDateWarning}
+                          </p>
+                        )}
+                        {editContractInfo && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Contract: {editContractInfo.startDate ? new Date(editContractInfo.startDate).toLocaleDateString() : 'No start date'} 
+                            {editContractInfo.endDate ? ` - ${new Date(editContractInfo.endDate).toLocaleDateString()}` : ' (Open-ended)'}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-sm">{new Date(selectedTransaction.occurredAt).toLocaleDateString()}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Quantity</label>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={editFormData.quantity || 0}
+                        onChange={(e) => handleInputChange('quantity', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        min="0"
+                        step="0.01"
+                      />
+                    ) : (
+                      <p className="text-sm">{selectedTransaction.quantity.toLocaleString()}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Unit Price</label>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={editFormData.unitPrice || 0}
+                        onChange={(e) => handleInputChange('unitPrice', parseFloat(e.target.value) || 0)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                        min="0"
+                        step="0.01"
+                      />
+                    ) : (
+                      <p className="text-sm">${selectedTransaction.unitPrice.toFixed(2)}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Amount (Auto-calculated)</label>
+                    {isEditing ? (
+                      <input
+                        type="number"
+                        value={editFormData.amount || 0}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm font-semibold bg-gray-50"
+                        min="0"
+                        step="0.01"
+                        readOnly
+                      />
+                    ) : (
+                      <p className="text-sm font-semibold">${selectedTransaction.amount.toFixed(2)}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Created</label>
+                    <p className="text-sm">{new Date(selectedTransaction.createdAt).toLocaleString()}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Note</label>
+                  {isEditing ? (
+                    <textarea
+                      value={editFormData.note || ''}
+                      onChange={(e) => handleInputChange('note', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      rows={3}
+                      placeholder="Add a note..."
+                    />
+                  ) : (
+                    <p className="text-sm bg-gray-50 p-3 rounded min-h-[60px]">
+                      {selectedTransaction.note || 'No note added'}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex justify-end mt-6 space-x-2">
+                {isEditing ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={handleCancelEdit}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSaveEdit}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                    >
+                      Save Changes
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowTransactionModal(false)}
+                  >
+                    Close
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}

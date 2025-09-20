@@ -33,6 +33,7 @@ export interface Transaction {
   participantId?: string // Direct participant reference (same as residentId but explicit)
   serviceItemCode?: string // NDIS service item code (required for new transactions)
   isDrawdownTransaction?: boolean // Flag for mandatory drawdown validation
+  isOrphaned?: boolean // Flag for transactions outside contract date boundaries
   drawdownValidation?: {
     isValid: boolean
     validationErrors: string[]
@@ -58,6 +59,7 @@ export interface TransactionCreateInput {
   note?: string
   supportAgreementId?: string
   isDrawdownTransaction?: boolean // Defaults to true for Drawing Down
+  isOrphaned?: boolean // Indicates if transaction is outside contract date boundaries
 }
 
 /**

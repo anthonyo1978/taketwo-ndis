@@ -83,6 +83,15 @@ export interface AuditLogEntry {
 export interface Resident {
   id: string
   houseId: string
+  house?: {
+    id: string
+    name: string
+    address1: string
+    address2?: string
+    city: string
+    state: string
+    postcode: string
+  }
   firstName: string
   lastName: string
   dateOfBirth: Date

@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import {
-  getTransactionById,
-  updateTransaction,
-  deleteTransaction
-} from 'lib/utils/transaction-storage'
+import { transactionService } from 'lib/supabase/services/transactions'
 import type { TransactionCreateInput } from 'types/transaction'
 
 // Validation schema for updating transactions
@@ -15,7 +11,8 @@ const updateTransactionSchema = z.object({
   quantity: z.number().positive().optional(),
   unitPrice: z.number().nonnegative().optional(),
   amount: z.number().nonnegative().optional(),
-  note: z.string().optional()
+  note: z.string().optional(),
+  isOrphaned: z.boolean().optional()
 })
 
 interface RouteParams {
@@ -37,7 +34,7 @@ export async function GET(
       )
     }
     
-    const transaction = getTransactionById(id)
+    const transaction = await transactionService.getById(id)
     
     if (!transaction) {
       return NextResponse.json(
@@ -45,9 +42,6 @@ export async function GET(
         { status: 404 }
       )
     }
-    
-    // Add delay for loading state demonstration
-    await new Promise(resolve => setTimeout(resolve, 150))
     
     return NextResponse.json({
       success: true,
@@ -99,11 +93,8 @@ export async function PUT(
     
     const updates = result.data
     
-    // Update the transaction
-    const transaction = updateTransaction(id, updates)
-    
-    // Add delay for loading state demonstration
-    await new Promise(resolve => setTimeout(resolve, 200))
+    // Update the transaction using the service
+    const transaction = await transactionService.update(id, updates, 'current-user')
     
     return NextResponse.json({
       success: true,

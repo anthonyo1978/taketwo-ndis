@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET, POST } from '../residents/route'
 import { GET as GET_BY_ID, PUT, DELETE } from '../residents/[id]/route'
-import { residentService } from '../../../../lib/supabase/services/residents'
-import { fileToBase64 } from '../../../../lib/utils/resident-storage'
+import { residentService } from 'lib/supabase/services/residents'
+import { fileToBase64 } from 'lib/utils/resident-storage'
 
 // Mock the resident service
-vi.mock('../../../../lib/supabase/services/residents', () => ({
+vi.mock('lib/supabase/services/residents', () => ({
   residentService: {
     getAll: vi.fn(),
     getById: vi.fn(),

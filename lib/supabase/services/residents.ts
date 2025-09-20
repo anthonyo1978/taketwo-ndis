@@ -17,6 +17,7 @@ export class ResidentService {
     return {
       id: dbResident.id,
       houseId: dbResident.house_id,
+      house: undefined, // Will be populated separately if needed
       firstName: dbResident.first_name,
       lastName: dbResident.last_name,
       dateOfBirth: new Date(dbResident.date_of_birth),

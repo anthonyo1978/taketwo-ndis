@@ -4,14 +4,13 @@ import { useState } from "react"
 import { TransactionsTable } from "components/transactions/TransactionsTable"
 import { TransactionFilters } from "components/transactions/TransactionFilters"
 import { CreateTransactionDialog } from "components/transactions/CreateTransactionDialog"
-import { DrawingDownDialog } from "components/transactions/DrawingDownDialog"
 import { Button } from "components/Button/Button"
 import { type TransactionFilters as TxFilters } from "types/transaction"
 
 export default function TransactionsPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [showDrawingDownDialog, setShowDrawingDownDialog] = useState(false)
   const [filters, setFilters] = useState<TxFilters>({})
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -27,16 +26,10 @@ export default function TransactionsPage() {
             </div>
             <div className="flex items-center space-x-4">
               <Button
-                onClick={() => setShowDrawingDownDialog(true)}
-                className="bg-green-600 text-white hover:bg-green-700"
-              >
-                🎯 Drawing Down
-              </Button>
-              <Button
                 onClick={() => setShowCreateDialog(true)}
                 className="bg-blue-600 text-white hover:bg-blue-700"
               >
-                + Create Transaction
+                Create Transaction
               </Button>
             </div>
           </div>
@@ -55,6 +48,7 @@ export default function TransactionsPage() {
           <TransactionsTable 
             filters={filters}
             onCreateTransaction={() => setShowCreateDialog(true)}
+            refreshTrigger={refreshTrigger}
           />
         </div>
         
@@ -64,21 +58,12 @@ export default function TransactionsPage() {
             onClose={() => setShowCreateDialog(false)}
             onSuccess={() => {
               setShowCreateDialog(false)
-              // Table will refresh via its own state management
+              // Trigger refresh of the transactions table
+              setRefreshTrigger(prev => prev + 1)
             }}
           />
         )}
 
-        {/* Drawing Down Dialog */}
-        {showDrawingDownDialog && (
-          <DrawingDownDialog
-            onClose={() => setShowDrawingDownDialog(false)}
-            onSuccess={() => {
-              setShowDrawingDownDialog(false)
-              // Table will refresh via its own state management
-            }}
-          />
-        )}
       </div>
     </div>
   )

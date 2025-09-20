@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { GET, POST } from '../houses/route'
 import { GET as GET_BY_ID } from '../houses/[id]/route'
-import { houseService } from '../../../../lib/supabase/services/houses'
+import { houseService } from 'lib/supabase/services/houses'
 
 // Mock the house service
-vi.mock('../../../../lib/supabase/services/houses', () => ({
+vi.mock('lib/supabase/services/houses', () => ({
   houseService: {
     getAll: vi.fn(),
     getById: vi.fn(),
