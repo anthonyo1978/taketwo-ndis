@@ -68,25 +68,32 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
   const filterEligibleResidents = async (allResidents: any[], houses: any[]) => {
     const eligibleResidents = []
     
+    console.log(`🔍 Filtering ${allResidents.length} residents for transaction eligibility...`)
+    
     for (const resident of allResidents) {
+      console.log(`\n👤 Checking resident: ${resident.firstName} ${resident.lastName} (ID: ${resident.id})`)
+      
       // Check if resident has active status
       if (resident.status !== 'Active') {
-        console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - status: ${resident.status}`)
+        console.log(`❌ Filtered out - Status: ${resident.status} (required: Active)`)
         continue
       }
+      console.log(`✅ Status check passed: ${resident.status}`)
       
       // Check if resident is assigned to a house
       if (!resident.houseId) {
-        console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - no house assignment`)
+        console.log(`❌ Filtered out - No house assignment`)
         continue
       }
+      console.log(`✅ House assignment check passed: ${resident.houseId}`)
       
       // Verify the house exists
       const house = houses.find(h => h.id === resident.houseId)
       if (!house) {
-        console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - house not found`)
+        console.log(`❌ Filtered out - House not found for ID: ${resident.houseId}`)
         continue
       }
+      console.log(`✅ House found: ${house.descriptor || house.address1}`)
       
       // Check if resident has at least one active contract with money and valid date range
       try {
@@ -94,40 +101,61 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
         const result = await response.json() as { success: boolean; data?: any[] }
         
         if (result.success && result.data) {
+          console.log(`📋 Found ${result.data.length} contracts for ${resident.firstName} ${resident.lastName}`)
+          
           const now = new Date()
-          const eligibleContracts = result.data.filter((contract: any) => {
+          const eligibleContracts = result.data.filter((contract: any, index: number) => {
+            console.log(`\n  📄 Contract ${index + 1}: ${contract.type || 'Unknown Type'}`)
+            console.log(`     Status: ${contract.contractStatus}`)
+            console.log(`     Current Balance: $${contract.currentBalance || 0}`)
+            console.log(`     Start Date: ${contract.startDate || 'None'}`)
+            console.log(`     End Date: ${contract.endDate || 'None'}`)
+            
             // Must be active
-            if (contract.contractStatus !== 'Active') return false
+            if (contract.contractStatus !== 'Active') {
+              console.log(`     ❌ Not eligible - Status is ${contract.contractStatus}, need Active`)
+              return false
+            }
             
             // Must have money (current balance > 0)
-            if (!contract.currentBalance || contract.currentBalance <= 0) return false
+            if (!contract.currentBalance || contract.currentBalance <= 0) {
+              console.log(`     ❌ Not eligible - No money (balance: $${contract.currentBalance || 0})`)
+              return false
+            }
             
             // Must be within date range (if end date exists)
             if (contract.endDate) {
               const endDate = new Date(contract.endDate)
-              if (endDate < now) return false
+              if (endDate < now) {
+                console.log(`     ❌ Not eligible - Contract expired (end date: ${contract.endDate})`)
+                return false
+              }
             }
             
             // Must have started (if start date exists)
             if (contract.startDate) {
               const startDate = new Date(contract.startDate)
-              if (startDate > now) return false
+              if (startDate > now) {
+                console.log(`     ❌ Not eligible - Contract not started yet (start date: ${contract.startDate})`)
+                return false
+              }
             }
             
+            console.log(`     ✅ Contract is eligible!`)
             return true
           })
           
           if (eligibleContracts.length > 0) {
-            console.log(`Resident ${resident.firstName} ${resident.lastName} is eligible - has ${eligibleContracts.length} active contracts with money within date range`)
+            console.log(`🎉 Resident ${resident.firstName} ${resident.lastName} is ELIGIBLE - has ${eligibleContracts.length} active contracts with money within date range`)
             eligibleResidents.push({
               ...resident,
               house: house // Add house info for easier access
             })
           } else {
-            console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - no eligible contracts (active + money + within date range)`)
+            console.log(`❌ Resident ${resident.firstName} ${resident.lastName} filtered out - no eligible contracts (active + money + within date range)`)
           }
         } else {
-          console.log(`Resident ${resident.firstName} ${resident.lastName} filtered out - no funding data`)
+          console.log(`❌ Resident ${resident.firstName} ${resident.lastName} filtered out - no funding data (API call failed or no data)`)
         }
       } catch (error) {
         console.error(`Error checking contracts for resident ${resident.id}:`, error)
@@ -167,6 +195,11 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
       }
     }
     
+    console.log(`\n🎯 FILTERING SUMMARY:`)
+    console.log(`📊 Total residents checked: ${allResidents.length}`)
+    console.log(`✅ Eligible residents found: ${eligibleResidents.length}`)
+    console.log(`📝 Eligible residents: ${eligibleResidents.map(r => `${r.firstName} ${r.lastName}`).join(', ')}`)
+    
     return eligibleResidents
   }
 
@@ -176,7 +209,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
       try {
         const [residentsResponse, housesResponse] = await Promise.all([
           fetch('/api/residents'),
-          fetch('/api/houses')
+          fetch('/api/houses?limit=1000') // Get ALL houses, not just first 10
         ])
         
         const residentsData = await residentsResponse.json() as { success: boolean; data?: any[] }
@@ -184,7 +217,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
         
         if (residentsData.success && housesData.success) {
           console.log('Raw residents loaded:', residentsData.data)
-          console.log('Houses loaded:', housesData.data)
+          console.log('All houses loaded (should be all houses, not just first 10):', housesData.data)
           
           // Filter residents to only show those who:
           // 1. Have active status
