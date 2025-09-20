@@ -51,7 +51,7 @@ export interface TransactionCreateInput {
   residentId: string
   contractId: string
   occurredAt: Date
-  serviceCode: string
+  serviceCode?: string
   serviceItemCode?: string // Optional for regular transactions, required for Drawing Down
   note?: string // Renamed from description for consistency
   quantity: number

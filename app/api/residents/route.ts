@@ -4,18 +4,97 @@ import { residentCreateSchema } from "lib/schemas/resident"
 import { residentService } from "lib/supabase/services/residents"
 import { fileToBase64 } from "lib/utils/resident-storage"
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     // Add delay to simulate realistic API behavior
     await new Promise((resolve) => setTimeout(resolve, 300))
 
+    // Parse query parameters
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '25')
+    const search = searchParams.get('search') || ''
+    const status = searchParams.get('status') || ''
+    const sortBy = searchParams.get('sortBy') || 'created_at'
+    const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
+
     // Get all residents from Supabase
     const residents = await residentService.getAll()
+
+    // Apply client-side filtering and sorting (for now)
+    // TODO: Move this to server-side for better performance
+    let filteredResidents = residents
+
+    // Apply search filter
+    if (search) {
+      const searchLower = search.toLowerCase()
+      filteredResidents = filteredResidents.filter(resident =>
+        resident.firstName?.toLowerCase().includes(searchLower) ||
+        resident.lastName?.toLowerCase().includes(searchLower) ||
+        resident.email?.toLowerCase().includes(searchLower) ||
+        resident.phone?.includes(search)
+      )
+    }
+
+    // Apply status filter
+    if (status) {
+      filteredResidents = filteredResidents.filter(resident => resident.status === status)
+    }
+
+    // Apply sorting
+    filteredResidents.sort((a, b) => {
+      let aValue: any
+      let bValue: any
+
+      switch (sortBy) {
+        case 'firstName':
+          aValue = a.firstName || ''
+          bValue = b.firstName || ''
+          break
+        case 'lastName':
+          aValue = a.lastName || ''
+          bValue = b.lastName || ''
+          break
+        case 'status':
+          aValue = a.status || ''
+          bValue = b.status || ''
+          break
+        case 'email':
+          aValue = a.email || ''
+          bValue = b.email || ''
+          break
+        case 'created_at':
+        default:
+          aValue = new Date(a.createdAt).getTime()
+          bValue = new Date(b.createdAt).getTime()
+          break
+      }
+
+      if (sortOrder === 'asc') {
+        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
+      } else {
+        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
+      }
+    })
+
+    // Apply pagination
+    const total = filteredResidents.length
+    const totalPages = Math.ceil(total / limit)
+    const offset = (page - 1) * limit
+    const paginatedResidents = filteredResidents.slice(offset, offset + limit)
 
     return NextResponse.json(
       { 
         success: true, 
-        data: residents 
+        data: paginatedResidents,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
+        }
       },
       { status: 200 }
     )

@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useMemo } from "react"
 import { format } from "date-fns"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "components/Button/Button"
+import { Pagination } from "components/ui/Pagination"
 import {
   useReactTable,
   getCoreRowModel,
@@ -35,6 +37,9 @@ const columnHelper = createColumnHelper<Transaction & {
 }>()
 
 export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger }: TransactionsTableProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  
   const [data, setData] = useState<Transaction[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -42,9 +47,11 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
     { id: 'id', desc: true }
   ])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  
+  // Initialize pagination from URL params
   const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 25,
+    pageIndex: parseInt(searchParams.get('page') || '1') - 1,
+    pageSize: parseInt(searchParams.get('pageSize') || '25'),
   })
   const [totalCount, setTotalCount] = useState(0)
   const [residents, setResidents] = useState<any[]>([])
@@ -61,6 +68,14 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   }>({})
   const [editDateWarning, setEditDateWarning] = useState<string>('')
   const [auditComment, setAuditComment] = useState<string>('')
+
+  // Function to update URL params when pagination changes
+  const updateUrlParams = (newPagination: typeof pagination) => {
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('page', (newPagination.pageIndex + 1).toString())
+    params.set('pageSize', newPagination.pageSize.toString())
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
 
   // Create lookup maps
   const residentLookup = useMemo(() => 
@@ -85,14 +100,14 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   const enhancedData = useMemo(() => {
     return data.map(tx => {
       try {
-        const resident = residentLookup.get(tx.residentId)
-        const contract = contractLookup.get(tx.contractId)
+      const resident = residentLookup.get(tx.residentId)
+      const contract = contractLookup.get(tx.contractId)
         const house = resident?.house || (resident ? houseLookup.get(resident.houseId) : null)
 
-        return {
-          ...tx,
+      return {
+        ...tx,
           residentName: resident ? `${resident.firstName || ''} ${resident.lastName || ''}`.trim() || 'Unknown' : 'Unknown',
-          houseName: house?.name || 'Unknown',
+        houseName: house?.name || 'Unknown',
           contractType: contract?.type || 'Unknown',
           isOrphaned: tx.isOrphaned || false, // Ensure isOrphaned is always defined
           quantity: tx.quantity || 0,
@@ -224,7 +239,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
       fetchLookupData()
-      fetchTransactions()
+    fetchTransactions()
     }
   }, [refreshTrigger])
 
@@ -308,8 +323,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         return (
           <div className="flex flex-col gap-1">
             <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${colorMap[status] || colorMap.draft}`}>
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-            </span>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
             {isOrphaned && (
               <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                 Orphaned
@@ -698,29 +713,50 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
 
       {/* Pagination */}
       {totalCount > 0 && (
-        <div className="flex items-center justify-between px-6 py-4 border-t">
+        <div className="px-6 py-4 border-t bg-gray-50">
+          <div className="flex items-center justify-between">
+            {/* Results Info */}
+            <div className="flex items-center space-x-4">
           <div className="text-sm text-gray-700">
             Showing {pagination.pageIndex * pagination.pageSize + 1} to{' '}
             {Math.min((pagination.pageIndex + 1) * pagination.pageSize, totalCount)} of{' '}
-            {totalCount} results
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
-            >
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
-            >
-              Next
-            </Button>
+                {totalCount.toLocaleString()} results
+              </div>
+              
+              {/* Page Size Selector */}
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-600">Show:</label>
+                <select
+                  value={pagination.pageSize}
+                  onChange={(e) => {
+                    const newPageSize = Number(e.target.value)
+                    const newPagination = { pageSize: newPageSize, pageIndex: 0 }
+                    setPagination(newPagination)
+                    updateUrlParams(newPagination)
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-600">per page</span>
+              </div>
+            </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={pagination.pageIndex + 1}
+              totalPages={Math.ceil(totalCount / pagination.pageSize)}
+              onPageChange={(page) => {
+                const newPagination = { ...pagination, pageIndex: page - 1 }
+                setPagination(newPagination)
+                updateUrlParams(newPagination)
+              }}
+              showFirstLast={true}
+              maxVisiblePages={5}
+            />
           </div>
         </div>
       )}
@@ -732,12 +768,12 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
             <div className="p-6">
                  <div className="flex items-center justify-between mb-4">
                    <h3 className="text-lg font-semibold">Transaction Details</h3>
-                   <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2">
                      {selectedTransaction?.status === 'draft' && !isEditing && (
-                       <Button
+            <Button
                          onClick={handleEditTransaction}
-                         variant="outline"
-                         size="sm"
+              variant="outline"
+              size="sm"
                        >
                          Edit
                        </Button>
@@ -917,7 +953,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                       onClick={handleCancelEdit}
                     >
                       Cancel
-                    </Button>
+            </Button>
                     <Button
                       onClick={handleSaveEdit}
                       className="bg-blue-600 text-white hover:bg-blue-700"
@@ -926,12 +962,12 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                     </Button>
                   </>
                 ) : (
-                  <Button
-                    variant="outline"
+            <Button
+              variant="outline"
                     onClick={() => setShowTransactionModal(false)}
-                  >
+            >
                     Close
-                  </Button>
+            </Button>
                 )}
               </div>
             </div>

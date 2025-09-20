@@ -10,9 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "components/ui/
 import { Input } from "components/ui/Input"
 import { getHousesFromStorage } from "lib/utils/house-storage"
 import { getResidentsFromStorage } from "lib/utils/resident-storage"
-import { createTransaction, getTransactionBalancePreview } from "lib/utils/transaction-storage"
+import { createTransaction } from "lib/utils/transaction-storage"
 import type { FundingInformation } from "types/resident"
-import type { TransactionBalancePreview, TransactionCreateInput } from "types/transaction"
+import type { TransactionCreateInput } from "types/transaction"
 
 // Form schema - enhanced for Drawing Down mode
 const createTransactionSchema = z.object({
@@ -40,7 +40,6 @@ interface CreateTransactionDialogProps {
 export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' }: CreateTransactionDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [balancePreview, setBalancePreview] = useState<TransactionBalancePreview | null>(null)
   const [residents, setResidents] = useState<any[]>([])
   const [houses, setHouses] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -294,20 +293,6 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
       form.setValue('amount', calculatedAmount)
     }
   }, [watchedValues.quantity, watchedValues.unitPrice, form])
-
-  // Update balance preview when contract or amount changes
-  useEffect(() => {
-    if (watchedValues.contractId && watchedValues.amount) {
-      try {
-        const preview = getTransactionBalancePreview(watchedValues.contractId, watchedValues.amount)
-        setBalancePreview(preview)
-      } catch (err) {
-        setBalancePreview(null)
-      }
-    } else {
-      setBalancePreview(null)
-    }
-  }, [watchedValues.contractId, watchedValues.amount])
 
   // Reset contract when resident changes
   useEffect(() => {
@@ -840,45 +825,6 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
               </p>
             </div>
           </div>
-
-          {/* Balance Preview */}
-          {balancePreview && (
-            <div className={`p-4 rounded-lg border ${
-              balancePreview.canPost 
-                ? 'bg-green-50 border-green-200' 
-                : 'bg-red-50 border-red-200'
-            }`}>
-              <h4 className={`font-medium ${
-                balancePreview.canPost ? 'text-green-800' : 'text-red-800'
-              }`}>
-                Balance Preview
-              </h4>
-              <div className="mt-2 grid grid-cols-3 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-600">Current Balance:</span>
-                  <p className="font-medium">${balancePreview.currentBalance.toFixed(2)}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Transaction Amount:</span>
-                  <p className="font-medium">${balancePreview.transactionAmount.toFixed(2)}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600">Remaining After Post:</span>
-                  <p className={`font-medium ${
-                    balancePreview.canPost ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    ${balancePreview.remainingAfterPost.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-              {balancePreview.warningMessage && (
-                <p className="mt-2 text-sm text-red-600">
-                  ⚠️ {balancePreview.warningMessage}
-                </p>
-              )}
-            </div>
-          )}
-
 
           {/* Error Display */}
           {error && (

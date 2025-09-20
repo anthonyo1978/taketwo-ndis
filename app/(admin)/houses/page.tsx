@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useEffect, useState, useCallback } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ResidentAvatars } from "components/residents/ResidentAvatars"
 import { Pagination } from "components/ui/Pagination"
 import { SearchAndFilter } from "components/ui/SearchAndFilter"
@@ -22,23 +23,30 @@ interface ApiResponse {
 }
 
 export default function HousesPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  
   const [houses, setHouses] = useState<House[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Initialize pagination from URL params
   const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
+    page: parseInt(searchParams.get('page') || '1'),
+    limit: parseInt(searchParams.get('limit') || '10'),
     total: 0,
     totalPages: 0,
     hasNext: false,
     hasPrev: false
   })
   
-  // Search and filter state
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [sortBy, setSortBy] = useState('created_at')
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  // Initialize search and filter state from URL params
+  const [search, setSearch] = useState(searchParams.get('search') || '')
+  const [status, setStatus] = useState(searchParams.get('status') || '')
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'created_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
+    (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
+  )
 
   const fetchHouses = useCallback(async () => {
     try {
@@ -77,28 +85,60 @@ export default function HousesPage() {
     fetchHouses()
   }, [fetchHouses])
 
+  // Function to update URL params when pagination or filters change
+  const updateUrlParams = (newParams: {
+    page?: number
+    limit?: number
+    search?: string
+    status?: string
+    sortBy?: string
+    sortOrder?: string
+  }) => {
+    const params = new URLSearchParams(searchParams.toString())
+    
+    if (newParams.page !== undefined) params.set('page', newParams.page.toString())
+    if (newParams.limit !== undefined) params.set('limit', newParams.limit.toString())
+    if (newParams.search !== undefined) {
+      if (newParams.search) params.set('search', newParams.search)
+      else params.delete('search')
+    }
+    if (newParams.status !== undefined) {
+      if (newParams.status) params.set('status', newParams.status)
+      else params.delete('status')
+    }
+    if (newParams.sortBy !== undefined) params.set('sortBy', newParams.sortBy)
+    if (newParams.sortOrder !== undefined) params.set('sortOrder', newParams.sortOrder)
+    
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }
+
   const handlePageChange = (page: number) => {
     setPagination(prev => ({ ...prev, page }))
+    updateUrlParams({ page })
   }
 
   const handleSearchChange = (value: string) => {
     setSearch(value)
     setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+    updateUrlParams({ search: value, page: 1 })
   }
 
   const handleStatusChange = (value: string) => {
     setStatus(value)
     setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+    updateUrlParams({ status: value, page: 1 })
   }
 
   const handleSortByChange = (value: string) => {
     setSortBy(value)
     setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+    updateUrlParams({ sortBy: value, page: 1 })
   }
 
   const handleSortOrderChange = (value: 'asc' | 'desc') => {
     setSortOrder(value)
     setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+    updateUrlParams({ sortOrder: value, page: 1 })
   }
 
   const retryFetch = () => {
@@ -402,13 +442,49 @@ export default function HousesPage() {
           </div>
           
           {/* Pagination */}
-          <div className="px-6 py-4 border-t border-gray-200">
-            <Pagination
-              currentPage={pagination.page}
-              totalPages={pagination.totalPages}
-              onPageChange={handlePageChange}
-            />
-          </div>
+          {pagination.total > 0 && (
+            <div className="px-6 py-4 border-t bg-gray-50">
+              <div className="flex items-center justify-between">
+                {/* Results Info */}
+                <div className="flex items-center space-x-4">
+                  <div className="text-sm text-gray-700">
+                    Showing {((pagination.page - 1) * pagination.limit) + 1} to{' '}
+                    {Math.min(pagination.page * pagination.limit, pagination.total)} of{' '}
+                    {pagination.total.toLocaleString()} houses
+                  </div>
+                  
+                  {/* Page Size Selector */}
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm text-gray-600">Show:</label>
+                    <select
+                      value={pagination.limit}
+                      onChange={(e) => {
+                        const newLimit = Number(e.target.value)
+                        setPagination(prev => ({ ...prev, limit: newLimit, page: 1 }))
+                        updateUrlParams({ limit: newLimit, page: 1 })
+                      }}
+                      className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                    </select>
+                    <span className="text-sm text-gray-600">per page</span>
+                  </div>
+                </div>
+
+                {/* Pagination Controls */}
+                <Pagination
+                  currentPage={pagination.page}
+                  totalPages={pagination.totalPages}
+                  onPageChange={handlePageChange}
+                  showFirstLast={true}
+                  maxVisiblePages={5}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

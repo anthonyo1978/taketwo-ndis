@@ -15,7 +15,7 @@ const createTransactionSchema = z.object({
   residentId: z.string().min(1, 'Resident ID is required'),
   contractId: z.string().min(1, 'Contract ID is required'),
   occurredAt: z.coerce.date(),
-  serviceCode: z.string().min(1, 'Service code is required'),
+  serviceCode: z.string().optional(),
   description: z.string().optional(),
   quantity: z.number().positive('Quantity must be positive'),
   unitPrice: z.number().nonnegative('Unit price must be non-negative'),

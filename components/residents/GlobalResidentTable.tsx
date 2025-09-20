@@ -1,8 +1,11 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { calculateBalanceSummary } from "lib/utils/funding-calculations"
+import { Pagination } from "components/ui/Pagination"
+import { ResidentSearchAndFilter } from "components/ui/ResidentSearchAndFilter"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 
@@ -10,6 +13,14 @@ interface ApiResponse {
   success: boolean
   data?: Resident[]
   error?: string
+  pagination?: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }
 }
 
 interface HousesApiResponse {
@@ -23,18 +34,43 @@ interface GlobalResidentTableProps {
 }
 
 export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  
   const [residents, setResidents] = useState<Resident[]>([])
   const [houses, setHouses] = useState<House[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Pagination state - initialize from URL params
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'))
+  const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '25'))
+  
+  // Filtering state - initialize from URL params
+  const [search, setSearch] = useState(searchParams.get('search') || '')
+  const [status, setStatus] = useState(searchParams.get('status') || '')
+  const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'created_at')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
+    (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
+  )
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true)
       
+      // Build query parameters for residents API
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+        search,
+        status,
+        sortBy,
+        sortOrder
+      })
+      
       // Fetch both residents and houses in parallel
       const [residentsResponse, housesResponse] = await Promise.all([
-        fetch('/api/residents'),
+        fetch(`/api/residents?${params}`),
         fetch('/api/houses')
       ])
       
@@ -45,6 +81,8 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
       
       if (residentsResult.success && residentsResult.data) {
         setResidents(residentsResult.data)
+        // Note: We're not using server-side pagination yet, so we still use client-side pagination
+        // The API returns all matching results, and we paginate them on the client
       } else {
         setError(residentsResult.error || 'Failed to load residents')
         return
@@ -64,16 +102,74 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
     } finally {
       setLoading(false)
     }
+  }, [currentPage, pageSize, search, status, sortBy, sortOrder])
+
+  // Function to update URL params when pagination or filters change
+  const updateUrlParams = (newParams: {
+    page?: number
+    pageSize?: number
+    search?: string
+    status?: string
+    sortBy?: string
+    sortOrder?: string
+  }) => {
+    const params = new URLSearchParams(searchParams.toString())
+    
+    if (newParams.page !== undefined) params.set('page', newParams.page.toString())
+    if (newParams.pageSize !== undefined) params.set('pageSize', newParams.pageSize.toString())
+    if (newParams.search !== undefined) {
+      if (newParams.search) params.set('search', newParams.search)
+      else params.delete('search')
+    }
+    if (newParams.status !== undefined) {
+      if (newParams.status) params.set('status', newParams.status)
+      else params.delete('status')
+    }
+    if (newParams.sortBy !== undefined) params.set('sortBy', newParams.sortBy)
+    if (newParams.sortOrder !== undefined) params.set('sortOrder', newParams.sortOrder)
+    
+    router.replace(`?${params.toString()}`, { scroll: false })
   }
 
   useEffect(() => {
     fetchData()
-  }, [refreshTrigger])
+  }, [fetchData, refreshTrigger])
+
+  // Filter handler functions
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setCurrentPage(1) // Reset to first page
+    updateUrlParams({ search: value, page: 1 })
+  }
+
+  const handleStatusChange = (value: string) => {
+    setStatus(value)
+    setCurrentPage(1) // Reset to first page
+    updateUrlParams({ status: value, page: 1 })
+  }
+
+  const handleSortByChange = (value: string) => {
+    setSortBy(value)
+    setCurrentPage(1) // Reset to first page
+    updateUrlParams({ sortBy: value, page: 1 })
+  }
+
+  const handleSortOrderChange = (value: 'asc' | 'desc') => {
+    setSortOrder(value)
+    setCurrentPage(1) // Reset to first page
+    updateUrlParams({ sortOrder: value, page: 1 })
+  }
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    updateUrlParams({ page })
+  }
 
   const retryFetch = () => {
     setError(null)
     fetchData()
   }
+
 
   // Get house name for a resident
   const getHouseName = (houseId: string): string => {
@@ -81,6 +177,13 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
     if (!house) return 'Unknown House'
     return house.descriptor || `${house.address1}, ${house.suburb}`
   }
+
+  // Pagination calculations
+  const totalResidents = residents.length
+  const totalPages = Math.ceil(totalResidents / pageSize)
+  const startIndex = (currentPage - 1) * pageSize
+  const endIndex = startIndex + pageSize
+  const paginatedResidents = residents.slice(startIndex, endIndex)
 
   // Loading state with skeleton table
   if (loading) {
@@ -236,6 +339,21 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
           All Residents ({residents.length})
         </h3>
       </div>
+
+      {/* Search and Filter */}
+      <div className="px-6 py-4">
+        <ResidentSearchAndFilter
+          searchValue={search}
+          onSearchChange={handleSearchChange}
+          statusValue={status}
+          onStatusChange={handleStatusChange}
+          sortBy={sortBy}
+          onSortByChange={handleSortByChange}
+          sortOrder={sortOrder}
+          onSortOrderChange={handleSortOrderChange}
+        />
+      </div>
+
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50">
@@ -276,7 +394,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {residents.map((resident) => (
+            {paginatedResidents.map((resident) => (
               <tr key={resident.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex-shrink-0 h-10 w-10">
@@ -389,6 +507,51 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalResidents > 0 && (
+        <div className="px-6 py-4 border-t bg-gray-50">
+          <div className="flex items-center justify-between">
+            {/* Results Info */}
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-700">
+                Showing {startIndex + 1} to {Math.min(endIndex, totalResidents)} of{' '}
+                {totalResidents.toLocaleString()} residents
+              </div>
+              
+              {/* Page Size Selector */}
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-600">Show:</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    const newPageSize = Number(e.target.value)
+                    setPageSize(newPageSize)
+                    setCurrentPage(1) // Reset to first page when changing page size
+                    updateUrlParams({ pageSize: newPageSize, page: 1 })
+                  }}
+                  className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+                <span className="text-sm text-gray-600">per page</span>
+              </div>
+            </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              showFirstLast={true}
+              maxVisiblePages={5}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
