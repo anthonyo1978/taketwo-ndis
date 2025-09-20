@@ -68,7 +68,7 @@ export default function ResidentEditPage({ params }: ResidentEditPageProps) {
       try {
         setLoading(true)
         const response = await fetch(`/api/residents/${residentId}`)
-        const result: ApiResponse = await response.json()
+        const result = await response.json() as ApiResponse
         
         if (result.success && result.data) {
           setResident(result.data)
@@ -125,7 +125,7 @@ export default function ResidentEditPage({ params }: ResidentEditPageProps) {
         body: JSON.stringify(data)
       })
 
-      const result: ApiResponse = await response.json()
+      const result = await response.json() as ApiResponse
 
       if (result.success && result.data) {
         // Redirect back to resident detail page

@@ -13,13 +13,12 @@ export interface Transaction {
   contractId: string
   occurredAt: Date
   serviceCode?: string // Made optional for backward compatibility
-  description?: string
+  note?: string // Renamed from description for consistency - this is the main note field
   quantity: number
   unitPrice: number
   amount: number // quantity * unitPrice (can be overridden)
   status: TransactionStatus
   drawdownStatus?: DrawdownStatus // Optional for backward compatibility
-  note?: string
   createdAt: Date
   createdBy: string
   postedAt?: Date
@@ -41,6 +40,8 @@ export interface Transaction {
     validatedBy: string
   }
   auditTrail?: TransactionAuditEntry[] // Immutable audit trail (optional for backward compatibility)
+  lastModifiedAt?: Date
+  lastModifiedBy?: string
 }
 
 /**
@@ -52,11 +53,10 @@ export interface TransactionCreateInput {
   occurredAt: Date
   serviceCode: string
   serviceItemCode?: string // Optional for regular transactions, required for Drawing Down
-  description?: string
+  note?: string // Renamed from description for consistency
   quantity: number
   unitPrice: number
   amount?: number // Optional override
-  note?: string
   supportAgreementId?: string
   isDrawdownTransaction?: boolean // Defaults to true for Drawing Down
   isOrphaned?: boolean // Indicates if transaction is outside contract date boundaries
@@ -67,14 +67,18 @@ export interface TransactionCreateInput {
  */
 export interface TransactionAuditEntry {
   id: string
-  action: 'created' | 'validated' | 'posted' | 'voided' | 'balance_updated'
+  action: 'created' | 'updated' | 'validated' | 'posted' | 'voided' | 'balance_updated'
   field?: string
   oldValue?: string
   newValue?: string
   timestamp: Date
   userId: string
   userEmail: string
-  reason?: string
+  comment: string // Required comment explaining the change (min 10 chars)
+  // Detailed change tracking
+  changedFields?: string[] // Array of field names that were changed
+  previousValues?: Partial<Transaction> // Snapshot of values before change
+  newValues?: Partial<Transaction> // Snapshot of values after change
 }
 
 /**
@@ -104,11 +108,12 @@ export interface MandatoryDrawdownRule {
 export interface TransactionUpdateInput {
   occurredAt?: Date
   serviceCode?: string
-  description?: string
+  note?: string // Renamed from description for consistency
   quantity?: number
   unitPrice?: number
   amount?: number
-  note?: string
+  // Audit fields
+  auditComment?: string // Required comment explaining the change (min 10 chars)
 }
 
 /**

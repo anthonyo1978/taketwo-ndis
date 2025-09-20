@@ -2,9 +2,11 @@ import { createClient } from '../server'
 import type { 
   Transaction, 
   TransactionCreateInput, 
+  TransactionUpdateInput,
   TransactionFilters,
   TransactionListResponse,
-  TransactionSortConfig
+  TransactionSortConfig,
+  TransactionAuditEntry
 } from 'types/transaction'
 
 export class TransactionService {
@@ -213,6 +215,9 @@ export class TransactionService {
         throw new Error(`Failed to create transaction: ${error.message}`)
       }
 
+      // Create audit trail entry for creation
+      await this.createAuditEntry(data.id, 'created', input.createdBy || 'system', 'Transaction created', undefined, data)
+
       // Update contract balance if transaction is not orphaned
       if (!isOrphaned) {
         await this.updateContractBalance(input.contractId, input.amount || (input.quantity * input.unitPrice), false)
@@ -261,6 +266,57 @@ export class TransactionService {
     } catch (error) {
       console.error('Error checking if transaction is orphaned:', error)
       return false // Default to not orphaned on error
+    }
+  }
+
+  /**
+   * Create an audit trail entry for transaction changes
+   */
+  private async createAuditEntry(
+    transactionId: string,
+    action: 'created' | 'updated' | 'posted' | 'voided',
+    userId: string,
+    comment: string,
+    previousValues?: any,
+    newValues?: any
+  ): Promise<void> {
+    try {
+      const supabase = await createClient()
+      
+      // Determine which fields changed
+      const changedFields: string[] = []
+      if (previousValues && newValues) {
+        const fieldsToCheck = ['service_code', 'note', 'quantity', 'unit_price', 'amount', 'occurred_at', 'status']
+        fieldsToCheck.forEach(field => {
+          if (previousValues[field] !== newValues[field]) {
+            changedFields.push(field)
+          }
+        })
+      }
+      
+      const auditEntry = {
+        transaction_id: transactionId,
+        action,
+        timestamp: new Date().toISOString(),
+        user_id: userId,
+        user_email: userId, // For now, using userId as email
+        comment,
+        changed_fields: changedFields,
+        previous_values: previousValues ? JSON.stringify(previousValues) : null,
+        new_values: newValues ? JSON.stringify(newValues) : null
+      }
+      
+      const { error } = await supabase
+        .from('transaction_audit_trail')
+        .insert(auditEntry)
+      
+      if (error) {
+        console.error('Error creating audit entry:', error)
+        // Don't throw here - audit failure shouldn't break the main operation
+      }
+    } catch (error) {
+      console.error('Error in createAuditEntry:', error)
+      // Don't throw here - audit failure shouldn't break the main operation
     }
   }
 
@@ -320,9 +376,14 @@ export class TransactionService {
   /**
    * Update an existing transaction
    */
-  async update(id: string, updates: Partial<TransactionCreateInput>, updatedBy: string): Promise<Transaction> {
+  async update(id: string, updates: TransactionUpdateInput, updatedBy: string): Promise<Transaction> {
     try {
       const supabase = await createClient()
+      
+      // Validate audit comment requirement
+      if (!updates.auditComment || updates.auditComment.length < 10) {
+        throw new Error('Audit comment is required and must be at least 10 characters long')
+      }
       
       // Get the original transaction to compare changes
       const { data: originalTransaction, error: fetchError } = await supabase
@@ -335,7 +396,9 @@ export class TransactionService {
         throw new Error('Transaction not found')
       }
 
-      const dbUpdates = convertFrontendTransactionToDb(updates, updatedBy, true)
+      // Extract audit comment and remove it from updates
+      const { auditComment, ...transactionUpdates } = updates
+      const dbUpdates = convertFrontendTransactionToDb(transactionUpdates, updatedBy, true)
 
       const { data, error } = await supabase
         .from('transactions')
@@ -348,6 +411,9 @@ export class TransactionService {
         console.error('Error updating transaction:', error)
         throw new Error(`Failed to update transaction: ${error.message}`)
       }
+
+      // Create audit trail entry
+      await this.createAuditEntry(id, 'updated', updatedBy, auditComment, originalTransaction, data)
 
       const updatedTransaction = convertDbTransactionToFrontend(data)
 
@@ -369,6 +435,44 @@ export class TransactionService {
       return updatedTransaction
     } catch (error) {
       console.error('Error in TransactionService.update:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Get audit trail for a transaction
+   */
+  async getAuditTrail(transactionId: string): Promise<TransactionAuditEntry[]> {
+    try {
+      const supabase = await createClient()
+      
+      const { data, error } = await supabase
+        .from('transaction_audit_trail')
+        .select('*')
+        .eq('transaction_id', transactionId)
+        .order('timestamp', { ascending: false })
+      
+      if (error) {
+        console.error('Error fetching audit trail:', error)
+        throw new Error(`Failed to fetch audit trail: ${error.message}`)
+      }
+      
+      return (data || []).map(entry => ({
+        id: entry.id,
+        action: entry.action,
+        field: entry.field,
+        oldValue: entry.old_value,
+        newValue: entry.new_value,
+        timestamp: new Date(entry.timestamp),
+        userId: entry.user_id,
+        userEmail: entry.user_email,
+        comment: entry.comment,
+        changedFields: entry.changed_fields || [],
+        previousValues: entry.previous_values ? JSON.parse(entry.previous_values) : undefined,
+        newValues: entry.new_values ? JSON.parse(entry.new_values) : undefined
+      }))
+    } catch (error) {
+      console.error('Error in getAuditTrail:', error)
       throw error
     }
   }

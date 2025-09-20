@@ -21,11 +21,10 @@ const createTransactionSchema = z.object({
   occurredAt: z.coerce.date(),
   serviceCode: z.string().optional(),
   serviceItemCode: z.string().optional(), // Required for Drawing Down mode
-  description: z.string().optional(),
+  note: z.string().optional(), // Renamed from description for consistency
   quantity: z.number().positive("Quantity must be positive"),
   unitPrice: z.number().nonnegative("Unit price must be non-negative"),
   amount: z.number().nonnegative().optional(),
-  note: z.string().optional(),
   supportAgreementId: z.string().optional(),
   isDrawdownTransaction: z.boolean().optional()
 })
@@ -665,14 +664,14 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
                   Specific Support Description * <span className="text-red-500">(Required for NDIS)</span>
                 </label>
                 <textarea
-                  {...form.register('description')}
+                  {...form.register('note')}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Describe the specific support provided at this point in time for NDIS compliance..."
                   required={mode === 'drawdown'}
                 />
-                {form.formState.errors.description && (
-                  <p className="text-red-500 text-sm">{form.formState.errors.description.message}</p>
+                {form.formState.errors.note && (
+                  <p className="text-red-500 text-sm">{form.formState.errors.note.message}</p>
                 )}
                 <p className="text-xs text-gray-500">
                   Must describe specific support provided for NDIS audit trail
@@ -681,18 +680,20 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
             </div>
           )}
 
-          {/* Description */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Description
-            </label>
-            <textarea
-              {...form.register('description')}
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Brief description of the service provided..."
-            />
-          </div>
+          {/* Description - Only show for regular transactions, not drawing down */}
+          {mode !== 'drawdown' && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Note
+              </label>
+              <textarea
+                {...form.register('note')}
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Brief description of the service provided..."
+              />
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Quantity */}
@@ -845,18 +846,6 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
             </div>
           )}
 
-          {/* Note */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Note
-            </label>
-            <textarea
-              {...form.register('note')}
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Additional notes or comments..."
-            />
-          </div>
 
           {/* Error Display */}
           {error && (

@@ -56,7 +56,8 @@ export async function PUT(
     const body = await request.json()
     
     // Check if this is a status change request
-    if (body.status && Object.keys(body).length === 1) {
+    const bodyObj = body as { status?: string; [key: string]: any }
+    if (bodyObj.status && Object.keys(bodyObj).length === 1) {
       // Handle status transition separately for proper validation
       const currentResident = await residentService.getById(id)
       if (!currentResident) {
@@ -72,7 +73,7 @@ export async function PUT(
       // Validate status transition
       const transitionValidation = statusTransitionSchema.safeParse({
         currentStatus: currentResident.status,
-        newStatus: body.status as ResidentStatus
+        newStatus: bodyObj.status as ResidentStatus
       })
       
       if (!transitionValidation.success) {
@@ -87,7 +88,7 @@ export async function PUT(
       }
       
       try {
-        const updatedResident = await residentService.update(id, { status: body.status })
+        const updatedResident = await residentService.update(id, { status: bodyObj.status as ResidentStatus })
         
         return NextResponse.json({
           success: true,

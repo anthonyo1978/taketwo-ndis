@@ -7,12 +7,13 @@ import type { TransactionCreateInput } from 'types/transaction'
 const updateTransactionSchema = z.object({
   occurredAt: z.coerce.date().optional(),
   serviceCode: z.string().min(1).optional(),
-  description: z.string().optional(),
+  note: z.string().optional(), // Renamed from description for consistency
   quantity: z.number().positive().optional(),
   unitPrice: z.number().nonnegative().optional(),
   amount: z.number().nonnegative().optional(),
-  note: z.string().optional(),
-  isOrphaned: z.boolean().optional()
+  isOrphaned: z.boolean().optional(),
+  // Audit fields
+  auditComment: z.string().min(10, 'Audit comment must be at least 10 characters long')
 })
 
 interface RouteParams {
@@ -26,6 +27,8 @@ export async function GET(
 ) {
   try {
     const { id } = await params
+    const url = new URL(request.url)
+    const includeAuditTrail = url.searchParams.get('includeAuditTrail') === 'true'
     
     if (!id) {
       return NextResponse.json(
@@ -43,10 +46,24 @@ export async function GET(
       )
     }
     
-    return NextResponse.json({
+    const response: any = {
       success: true,
       data: transaction
-    })
+    }
+    
+    // Include audit trail if requested
+    if (includeAuditTrail) {
+      try {
+        const auditTrail = await transactionService.getAuditTrail(id)
+        response.auditTrail = auditTrail
+      } catch (error) {
+        console.error('Error fetching audit trail:', error)
+        // Don't fail the request if audit trail fails
+        response.auditTrail = []
+      }
+    }
+    
+    return NextResponse.json(response)
     
   } catch (error) {
     console.error('Error fetching transaction:', error)
@@ -145,14 +162,7 @@ export async function DELETE(
       )
     }
     
-    const deleted = deleteTransaction(id)
-    
-    if (!deleted) {
-      return NextResponse.json(
-        { success: false, error: 'Transaction not found' },
-        { status: 404 }
-      )
-    }
+    await transactionService.delete(id)
     
     // Add delay for loading state demonstration
     await new Promise(resolve => setTimeout(resolve, 150))

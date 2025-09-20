@@ -25,7 +25,7 @@ export default function NewHousePage() {
         body: JSON.stringify(data),
       })
 
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; data?: any; error?: string }
 
       if (result.success && result.data) {
         const newHouse = result.data as House

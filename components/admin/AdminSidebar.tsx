@@ -81,7 +81,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     setMounted(true)
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored !== null) {
-      setIsCollapsed(JSON.parse(stored))
+      setIsCollapsed(JSON.parse(stored) as boolean)
     }
   }, [])
 
@@ -141,7 +141,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                 icon={item.icon}
                 label={item.label}
                 collapsed={isCollapsed}
-                exactMatch={item.exactMatch}
+                exactMatch={'exactMatch' in item ? item.exactMatch : false}
               />
             ))}
           </nav>

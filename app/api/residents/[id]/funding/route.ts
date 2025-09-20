@@ -159,7 +159,8 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await request.json()
-    const { fundingId, ...fundingUpdates } = body
+    const bodyObj = body as { fundingId?: string; [key: string]: any }
+    const { fundingId, ...fundingUpdates } = bodyObj
     
     if (!fundingId) {
       return NextResponse.json(

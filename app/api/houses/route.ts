@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
       search,
       status,
       sortBy,
-      sortOrder
+      sortOrder: sortOrder as 'asc' | 'desc' | undefined
     })
 
     return NextResponse.json(

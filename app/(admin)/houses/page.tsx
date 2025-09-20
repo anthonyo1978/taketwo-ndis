@@ -55,7 +55,7 @@ export default function HousesPage() {
       })
       
       const response = await fetch(`/api/houses?${params}`)
-      const result: ApiResponse = await response.json()
+      const result = await response.json() as ApiResponse
       
       if (result.success && result.data) {
         setHouses(result.data)

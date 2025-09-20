@@ -7,6 +7,7 @@ import { toast } from "react-hot-toast"
 import { HouseForm } from "components/houses/HouseForm"
 import { ImageUpload } from "components/ui/ImageUpload"
 import type { House, HouseCreateInput } from "types/house"
+import type { HouseCreateSchemaType } from "lib/schemas/house"
 
 /**
  * Page for editing an existing house.
@@ -32,7 +33,7 @@ export default function EditHousePage() {
           throw new Error('Failed to fetch house')
         }
         
-        const result = await response.json()
+        const result = await response.json() as { success: boolean; data?: any; error?: string }
         if (result.success) {
           setHouse(result.data)
           setImageUrl(result.data.imageUrl || null)
@@ -52,7 +53,7 @@ export default function EditHousePage() {
     }
   }, [houseId])
 
-  const handleFormSubmit = async (data: HouseCreateInput) => {
+  const handleFormSubmit = async (data: HouseCreateSchemaType) => {
     setIsSaving(true)
     setError(null)
 
@@ -68,7 +69,7 @@ export default function EditHousePage() {
         }),
       })
 
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; data?: any; error?: string }
 
       if (result.success) {
         const updatedHouse = result.data as House
@@ -213,19 +214,6 @@ export default function EditHousePage() {
               <HouseForm
                 onSubmit={handleFormSubmit}
                 isLoading={isSaving}
-                defaultValues={{
-                  descriptor: house.descriptor || '',
-                  address1: house.address1,
-                  unit: house.unit || '',
-                  suburb: house.suburb,
-                  state: house.state,
-                  postcode: house.postcode,
-                  country: house.country,
-                  status: house.status,
-                  notes: house.notes || '',
-                  goLiveDate: new Date(house.goLiveDate),
-                  resident: house.resident || ''
-                }}
               />
             </div>
           </div>

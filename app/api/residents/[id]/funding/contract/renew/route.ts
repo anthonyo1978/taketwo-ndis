@@ -22,12 +22,16 @@ interface ApiResponse {
  * POST /api/residents/[id]/funding/contract/renew
  * Create renewal contract linked to expiring contract
  */
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ): Promise<NextResponse<ApiResponse>> {
   try {
-    const residentId = params.id
+    const { id: residentId } = await params
     const body = await request.json()
     
     const validation = contractRenewalSchema.safeParse(body)

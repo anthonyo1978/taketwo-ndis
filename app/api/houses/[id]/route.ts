@@ -53,10 +53,11 @@ export async function PUT(
     }
 
     // If only imageUrl is being updated, handle it as a partial update
-    if (Object.keys(body).length === 1 && 'imageUrl' in body) {
+    const bodyObj = body as { imageUrl?: string; [key: string]: any }
+    if (Object.keys(bodyObj).length === 1 && 'imageUrl' in bodyObj) {
       const updatedHouse = await houseService.update(id, {
         ...existingHouse,
-        imageUrl: body.imageUrl,
+        imageUrl: bodyObj.imageUrl,
         updatedAt: new Date(),
         updatedBy: 'system' // TODO: Get from auth context
       })

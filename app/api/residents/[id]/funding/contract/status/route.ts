@@ -19,12 +19,16 @@ interface ApiResponse {
  * PUT /api/residents/[id]/funding/contract/status
  * Update contract status (Draft, Active, Expired, Cancelled, Renewed)
  */
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ): Promise<NextResponse<ApiResponse>> {
   try {
-    const residentId = params.id
+    const { id: residentId } = await params
     const body = await request.json()
     
     const validation = contractStatusUpdateSchema.safeParse(body)

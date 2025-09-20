@@ -54,7 +54,7 @@ function escapeCSVValue(value: any): string {
 function formatDateForCSV(date: Date | string | undefined): string {
   if (!date) return ''
   const d = date instanceof Date ? date : new Date(date)
-  return d.toISOString().split('T')[0] // YYYY-MM-DD format
+  return d.toISOString().split('T')[0]! // YYYY-MM-DD format
 }
 
 /**
@@ -66,7 +66,7 @@ function formatDateForCSV(date: Date | string | undefined): string {
 function formatDateTimeForCSV(date: Date | string | undefined): string {
   if (!date) return ''
   const d = date instanceof Date ? date : new Date(date)
-  return d.toISOString().replace('T', ' ').split('.')[0] // YYYY-MM-DD HH:mm:ss format
+  return d.toISOString().replace('T', ' ').split('.')[0]! // YYYY-MM-DD HH:mm:ss format
 }
 
 /**
@@ -208,10 +208,10 @@ export async function GET(request: NextRequest) {
         escapeCSVValue(tx.id),
         escapeCSVValue(formatDateForCSV(tx.occurredAt)),
         escapeCSVValue(resident ? `${resident.firstName} ${resident.lastName}` : 'Unknown'),
-        escapeCSVValue(house?.name || 'Unknown'),
+        escapeCSVValue(house?.descriptor || 'Unknown'),
         escapeCSVValue(contract?.type || 'Unknown'),
         escapeCSVValue(tx.serviceCode),
-        escapeCSVValue(tx.description || ''),
+        escapeCSVValue(tx.note || ''),
         escapeCSVValue(tx.quantity),
         escapeCSVValue(tx.unitPrice.toFixed(2)),
         escapeCSVValue(tx.amount.toFixed(2)),

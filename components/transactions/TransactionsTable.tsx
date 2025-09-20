@@ -60,6 +60,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
     maxDate?: string
   }>({})
   const [editDateWarning, setEditDateWarning] = useState<string>('')
+  const [auditComment, setAuditComment] = useState<string>('')
 
   // Create lookup maps
   const residentLookup = useMemo(() => 
@@ -348,7 +349,9 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       
       if (result.success) {
         setSelectedTransaction(result.data)
-        setEditFormData(result.data)
+        // Set edit form data but exclude the note field (it's read-only)
+        const { note, ...editData } = result.data
+        setEditFormData(editData)
         setIsEditing(false)
         setShowTransactionModal(true)
       } else {
@@ -363,6 +366,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   const handleEditTransaction = async () => {
     if (selectedTransaction?.status === 'draft') {
       setIsEditing(true)
+      setAuditComment('') // Clear any previous audit comment
       
       // Load contract information for date boundary validation
       if (selectedTransaction.contractId) {
@@ -395,13 +399,29 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   const handleSaveEdit = async () => {
     if (!selectedTransaction) return
 
+    // Validate audit comment
+    if (!auditComment || auditComment.length < 10) {
+      alert('Please provide an audit comment explaining the change (minimum 10 characters)')
+      return
+    }
+
     try {
       // Determine if transaction is orphaned based on date bounds
       const isOrphaned = editDateWarning.length > 0
       
+      // Create timestamp for the audit entry
+      const timestamp = new Date().toLocaleString()
+      
+      // Append the audit comment to the existing note with timestamp
+      const existingNote = selectedTransaction.note || ''
+      const newNoteEntry = `\n\n[${timestamp}] ${auditComment}`
+      const updatedNote = existingNote + newNoteEntry
+      
       const updateData = {
         ...editFormData,
-        isOrphaned
+        note: updatedNote, // Update the note with appended audit entry
+        isOrphaned,
+        auditComment // Include the required audit comment
       }
 
       const response = await fetch(`/api/transactions/${selectedTransaction.id}`, {
@@ -435,12 +455,15 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
 
   const handleCancelEdit = () => {
     if (selectedTransaction) {
-      setEditFormData(selectedTransaction)
+      // Reset edit form data but exclude the note field (it's read-only)
+      const { note, ...editData } = selectedTransaction
+      setEditFormData(editData)
       setIsEditing(false)
       // Clear edit state
       setEditContractInfo(null)
       setEditDateConstraints({})
       setEditDateWarning('')
+      setAuditComment('') // Clear audit comment
     }
   }
 
@@ -855,20 +878,35 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                 
                 <div>
                   <label className="text-sm font-medium text-gray-500">Note</label>
-                  {isEditing ? (
-                    <textarea
-                      value={editFormData.note || ''}
-                      onChange={(e) => handleInputChange('note', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-                      rows={3}
-                      placeholder="Add a note..."
-                    />
-                  ) : (
-                    <p className="text-sm bg-gray-50 p-3 rounded min-h-[60px]">
+                  <div className="bg-gray-50 p-3 rounded min-h-[60px] max-h-[120px] overflow-y-auto">
+                    <p className="text-sm whitespace-pre-wrap">
                       {selectedTransaction.note || 'No note added'}
                     </p>
-                  )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Note history is read-only. Add new entries using the audit comment below.
+                  </p>
                 </div>
+                
+                {/* Audit Comment Field - Only shown when editing */}
+                {isEditing && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">
+                      Add Note Entry <span className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      value={auditComment}
+                      onChange={(e) => setAuditComment(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      rows={3}
+                      placeholder="Add a new note entry explaining the changes made (minimum 10 characters)..."
+                      required
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      {auditComment.length}/10 characters minimum - This will be appended to the note history with a timestamp
+                    </p>
+                  </div>
+                )}
               </div>
               
               <div className="flex justify-end mt-6 space-x-2">

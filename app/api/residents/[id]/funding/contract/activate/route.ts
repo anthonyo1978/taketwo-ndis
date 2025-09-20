@@ -17,12 +17,16 @@ interface ApiResponse {
  * POST /api/residents/[id]/funding/contract/activate
  * Activate a contract (set status to Active and initialize balance tracking)
  */
+interface RouteParams {
+  params: Promise<{ id: string }>
+}
+
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteParams
 ): Promise<NextResponse<ApiResponse>> {
   try {
-    const residentId = params.id
+    const { id: residentId } = await params
     const body = await request.json()
     
     const validation = contractActivationSchema.safeParse(body)
