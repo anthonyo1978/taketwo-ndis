@@ -475,10 +475,19 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         setEditContractInfo(null)
         setEditDateConstraints({})
         setEditDateWarning('')
+        setAuditComment('')
         // Refresh the transactions list
         fetchTransactions()
       } else {
-        setError(result.error || 'Failed to update transaction')
+        // Provide more specific error messages
+        let errorMessage = result.error || 'Failed to update transaction'
+        if (result.details && Array.isArray(result.details)) {
+          const serviceCodeError = result.details.find((detail: any) => detail.path?.includes('serviceCode'))
+          if (serviceCodeError) {
+            errorMessage = 'Service code cannot be empty. Please enter a service code or remove the field content.'
+          }
+        }
+        setError(errorMessage)
       }
     } catch (err) {
       setError('Failed to update transaction')

@@ -6,7 +6,7 @@ import type { TransactionCreateInput } from 'types/transaction'
 // Validation schema for updating transactions
 const updateTransactionSchema = z.object({
   occurredAt: z.coerce.date().optional(),
-  serviceCode: z.string().min(1).optional(),
+  serviceCode: z.string().transform(val => val === '' ? undefined : val).optional(),
   note: z.string().optional(), // Renamed from description for consistency
   quantity: z.number().positive().optional(),
   unitPrice: z.number().nonnegative().optional(),
