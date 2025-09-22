@@ -136,7 +136,15 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      data: result
+      data: result.transactions,
+      pagination: {
+        page: result.page,
+        limit: result.pageSize,
+        total: result.total,
+        totalPages: Math.ceil(result.total / result.pageSize),
+        hasNext: result.hasMore,
+        hasPrev: result.page > 1
+      }
     })
     
   } catch (error) {

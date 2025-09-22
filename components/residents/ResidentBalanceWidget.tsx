@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { format } from "date-fns"
 import { Button } from "components/Button/Button"
-import type { ResidentBalanceSummary, RecentTransactionsSummary, Transaction } from "types/transaction"
-import { getRecentTransactionsSummary } from "lib/utils/transaction-storage"
+import type { ResidentBalanceSummary } from "types/transaction"
 import type { FundingInformation } from "types/resident"
 
 interface ResidentBalanceWidgetProps {
@@ -15,13 +13,14 @@ interface ResidentBalanceWidgetProps {
 
 export function ResidentBalanceWidget({ residentId, onCreateTransaction }: ResidentBalanceWidgetProps) {
   const [balanceSummary, setBalanceSummary] = useState<ResidentBalanceSummary | null>(null)
-  const [recentTransactions, setRecentTransactions] = useState<RecentTransactionsSummary | null>(null)
   const [fundingContracts, setFundingContracts] = useState<FundingInformation[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(true)
+        
         // Load funding contracts from API
         const fundingResponse = await fetch(`/api/residents/${residentId}/funding`)
         const fundingResult = await fundingResponse.json()
@@ -63,10 +62,6 @@ export function ResidentBalanceWidget({ residentId, onCreateTransaction }: Resid
             totalSpent: 0
           })
         }
-        
-        // Load recent transactions
-        const recent = getRecentTransactionsSummary(residentId, 5)
-        setRecentTransactions(recent)
       } catch (error) {
         console.error('Error loading resident financial data:', error)
         // Set safe defaults to prevent crashes
@@ -77,12 +72,6 @@ export function ResidentBalanceWidget({ residentId, onCreateTransaction }: Resid
           totalRemaining: 0,
           totalSpent: 0
         })
-        setRecentTransactions({
-          residentId,
-          transactions: [],
-          totalCount: 0,
-          hasMore: false
-        })
       } finally {
         setLoading(false)
       }
@@ -91,18 +80,6 @@ export function ResidentBalanceWidget({ residentId, onCreateTransaction }: Resid
     loadData()
   }, [residentId])
 
-  const getStatusColor = (status: Transaction['status']) => {
-    switch (status) {
-      case 'draft':
-        return 'bg-gray-100 text-gray-800'
-      case 'posted':
-        return 'bg-green-100 text-green-800'
-      case 'voided':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
 
   if (loading) {
     return (
@@ -211,88 +188,6 @@ export function ResidentBalanceWidget({ residentId, onCreateTransaction }: Resid
         )}
       </div>
 
-      {/* Recent Transactions */}
-      <div className="bg-white rounded-lg border p-6">
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
-          <Link
-            href="/transactions"
-            className="text-sm text-blue-600 hover:text-blue-800"
-          >
-            View All
-          </Link>
-        </div>
-
-        {recentTransactions && recentTransactions.transactions.length > 0 ? (
-          <div className="space-y-3">
-            {recentTransactions.transactions.map(transaction => {
-              try {
-                return (
-                  <div key={transaction.id} className="flex justify-between items-center p-3 border rounded-lg hover:bg-gray-50">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(transaction.status)}`}>
-                          {transaction.status.charAt(0).toUpperCase() + transaction.status.slice(1)}
-                        </span>
-                        <span className="font-medium text-gray-900">{transaction.serviceCode || 'N/A'}</span>
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1">
-                        {format(new Date(transaction.occurredAt), 'MMM d, yyyy')}
-                        {transaction.description && ` • ${transaction.description}`}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-gray-900">
-                        ${transaction.amount.toFixed(2)}
-                      </div>
-                      {transaction.note && (
-                        <div className="text-sm text-gray-500 truncate max-w-32">
-                          {transaction.note}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              } catch (error) {
-                console.error('Error rendering transaction:', transaction.id, error)
-                return (
-                  <div key={transaction.id} className="flex justify-between items-center p-3 border rounded-lg bg-red-50">
-                    <div className="text-sm text-red-600">Error loading transaction</div>
-                    <div className="text-sm text-red-600">ID: {transaction.id}</div>
-                  </div>
-                )
-              }
-            })}
-
-            {recentTransactions.hasMore && (
-              <div className="text-center pt-2">
-                <Link
-                  href={`/transactions?residentId=${residentId}`}
-                  className="text-sm text-blue-600 hover:text-blue-800"
-                >
-                  View all {recentTransactions.totalCount} transactions →
-                </Link>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-center py-8 text-gray-500">
-            <svg className="mx-auto h-8 w-8 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <p className="text-gray-600">No transactions yet</p>
-            {onCreateTransaction && (
-              <Button
-                onClick={onCreateTransaction}
-                size="sm"
-                className="mt-2"
-              >
-                Create First Transaction
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
     </div>
   )
 }

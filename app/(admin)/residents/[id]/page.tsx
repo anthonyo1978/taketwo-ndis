@@ -7,6 +7,7 @@ import { AuditTrail } from "components/residents/AuditTrail"
 import { FundingDashboard } from "components/residents/FundingDashboard"
 import { ResidentBalanceWidget } from "components/residents/ResidentBalanceWidget"
 import { ResidentEditForm } from "components/residents/ResidentEditForm"
+import { ResidentTransactionsList } from "components/residents/ResidentTransactionsList"
 import { StatusManager } from "components/residents/StatusManager"
 import { Button } from "components/Button/Button"
 import { type TabItem, Tabs } from "components/ui/Tabs"
@@ -412,18 +413,21 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
           }}
         />
         
+        {/* Transactions List */}
+        <ResidentTransactionsList residentId={resident.id} />
+        
         {/* Link to Full Transactions */}
-        <div className="text-center p-6 bg-gray-50 rounded-lg">
-          <p className="text-gray-600 mb-4">
-            View and manage all transactions for this resident
+        <div className="text-center p-4 bg-gray-50 rounded-lg">
+          <p className="text-sm text-gray-600 mb-2">
+            Need to create or edit transactions?
           </p>
           <a
             href={`/transactions?residentId=${resident.id}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Open Transactions Page
+            Open Full Transactions Page
           </a>
         </div>
       </div>

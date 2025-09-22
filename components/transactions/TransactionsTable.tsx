@@ -79,18 +79,20 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
 
   // Create lookup maps
   const residentLookup = useMemo(() => 
-    new Map(residents.map(r => [r.id, r])), 
+    new Map(residents.filter(r => r && r.id).map(r => [r.id, r])), 
     [residents]
   )
   const houseLookup = useMemo(() => 
-    new Map(houses.map(h => [h.id, h])), 
+    new Map(houses.filter(h => h && h.id).map(h => [h.id, h])), 
     [houses]
   )
   const contractLookup = useMemo(() => {
     const map = new Map()
-    residents.forEach(resident => {
+    residents.filter(r => r && r.fundingInformation && Array.isArray(r.fundingInformation)).forEach(resident => {
       resident.fundingInformation.forEach(contract => {
+        if (contract && contract.id) {
         map.set(contract.id, { ...contract, residentId: resident.id })
+        }
       })
     })
     return map
@@ -98,16 +100,32 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
 
   // Enhance data with lookup information
   const enhancedData = useMemo(() => {
-    return data.map(tx => {
+    // Safety check: ensure data is an array and lookup maps exist
+    if (!Array.isArray(data) || !residentLookup || !houseLookup || !contractLookup) {
+      return (data || []).map(tx => ({
+        ...tx,
+        residentName: 'Loading...',
+        houseName: 'Loading...',
+        contractType: 'Loading...',
+        isOrphaned: tx?.isOrphaned || false,
+        quantity: tx?.quantity || 0,
+        unitPrice: tx?.unitPrice || 0,
+        amount: tx?.amount || 0,
+        status: tx?.status || 'draft',
+        serviceCode: tx?.serviceCode || ''
+      }))
+    }
+
+    return data.filter(tx => tx && tx.id).map(tx => {
       try {
-      const resident = residentLookup.get(tx.residentId)
-      const contract = contractLookup.get(tx.contractId)
+        const resident = residentLookup.get(tx.residentId)
+        const contract = contractLookup.get(tx.contractId)
         const house = resident?.house || (resident ? houseLookup.get(resident.houseId) : null)
 
-      return {
-        ...tx,
+        return {
+          ...tx,
           residentName: resident ? `${resident.firstName || ''} ${resident.lastName || ''}`.trim() || 'Unknown' : 'Unknown',
-        houseName: house?.name || 'Unknown',
+          houseName: house?.name || 'Unknown',
           contractType: contract?.type || 'Unknown',
           isOrphaned: tx.isOrphaned || false, // Ensure isOrphaned is always defined
           quantity: tx.quantity || 0,
@@ -212,8 +230,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         throw new Error(result.error || 'Failed to fetch transactions')
       }
 
-      setData(result.data.transactions)
-      setTotalCount(result.data.total)
+      setData(result.data || [])
+      setTotalCount(result.pagination?.total || 0)
     } catch (err) {
       setError('Failed to load transactions from API.')
       console.error('Error fetching transactions:', err)
@@ -612,7 +630,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       <div className="flex items-center justify-between p-6 border-b">
         <div className="flex items-center space-x-4">
           <h2 className="text-lg font-semibold">
-            Transactions ({totalCount.toLocaleString()})
+            Transactions ({totalCount?.toLocaleString() || '0'})
           </h2>
         </div>
         <div className="flex items-center space-x-2">
@@ -719,8 +737,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
             <div className="flex items-center space-x-4">
           <div className="text-sm text-gray-700">
             Showing {pagination.pageIndex * pagination.pageSize + 1} to{' '}
-            {Math.min((pagination.pageIndex + 1) * pagination.pageSize, totalCount)} of{' '}
-                {totalCount.toLocaleString()} results
+            {Math.min((pagination.pageIndex + 1) * pagination.pageSize, totalCount || 0)} of{' '}
+                {totalCount?.toLocaleString() || '0'} results
               </div>
               
               {/* Page Size Selector */}

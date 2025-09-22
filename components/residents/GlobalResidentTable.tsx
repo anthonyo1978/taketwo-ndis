@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { calculateBalanceSummary } from "lib/utils/funding-calculations"
 import { Pagination } from "components/ui/Pagination"
@@ -54,6 +54,9 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
     (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
   )
 
+  // Debounced search state
+  const [debouncedSearch, setDebouncedSearch] = useState(search)
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
@@ -62,7 +65,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: pageSize.toString(),
-        search,
+        search: debouncedSearch,
         status,
         sortBy,
         sortOrder
@@ -102,7 +105,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
     } finally {
       setLoading(false)
     }
-  }, [currentPage, pageSize, search, status, sortBy, sortOrder])
+  }, [currentPage, pageSize, debouncedSearch, status, sortBy, sortOrder])
 
   // Function to update URL params when pagination or filters change
   const updateUrlParams = (newParams: {
@@ -135,11 +138,38 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
     fetchData()
   }, [fetchData, refreshTrigger])
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current)
+      }
+    }
+  }, [])
+
+  // Debounce timer ref
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Sync debouncedSearch with initial search value
+  useEffect(() => {
+    setDebouncedSearch(search)
+  }, [])
+
   // Filter handler functions
   const handleSearchChange = (value: string) => {
     setSearch(value)
-    setCurrentPage(1) // Reset to first page
-    updateUrlParams({ search: value, page: 1 })
+    
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current)
+    }
+    
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(value)
+      setCurrentPage(1) // Reset to first page
+      updateUrlParams({ search: value, page: 1 })
+    }, 500) // 500ms debounce
   }
 
   const handleStatusChange = (value: string) => {
