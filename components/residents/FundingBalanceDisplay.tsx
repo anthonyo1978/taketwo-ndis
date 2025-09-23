@@ -84,6 +84,11 @@ export function FundingBalanceDisplay({
         {/* Contract Details */}
         <div className="text-xs text-gray-500 space-y-1">
           <div>Automation: {contract.autoBillingEnabled ? '✅ Enabled' : '❌ Disabled'} • Frequency: {contract.automatedDrawdownFrequency || 'fortnightly'}</div>
+          {contract.autoBillingEnabled && contract.nextRunDate && (
+            <div className="text-blue-600 font-medium">
+              Next Run: {new Date(contract.nextRunDate).toLocaleDateString('en-AU')}
+            </div>
+          )}
           <div>
             {new Date(contract.startDate).toLocaleDateString('en-AU')} - {' '}
             {contract.endDate ? new Date(contract.endDate).toLocaleDateString('en-AU') : 'Ongoing'}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { FundingInformation, ContractStatus } from '@/types/resident'
+import type { FundingInformation, ContractStatus } from 'types/resident'
 import { Button } from 'components/Button/Button'
 
 interface ContractStatusManagerProps {
@@ -37,7 +37,7 @@ const statusTransitionLabels: Record<ContractStatus, string> = {
   'Expired': 'Renew Contract',
   'Cancelled': 'Contract Cancelled',
   'Renewed': 'Activate Renewal'
-}
+} as const
 
 export function ContractStatusManager({ 
   contract, 
@@ -129,17 +129,16 @@ export function ContractStatusManager({
           <p className="text-gray-600 mb-6">{getConfirmationMessage()}</p>
           <div className="flex space-x-3 justify-end">
             <Button
-              variant="secondary"
               onClick={() => setShowConfirmation(null)}
               disabled={isChanging}
+              className="bg-gray-100 text-gray-700 hover:bg-gray-200"
             >
               Cancel
             </Button>
             <Button
-              variant="primary"
               onClick={() => handleStatusChange(status)}
               disabled={isChanging}
-              loading={isChanging}
+              className="bg-blue-600 text-white hover:bg-blue-700"
             >
               Confirm
             </Button>
@@ -179,10 +178,18 @@ export function ContractStatusManager({
               <div className="font-semibold">{contract.autoBillingEnabled ? '✅ Enabled' : '❌ Disabled'}</div>
             </div>
             {contract.autoBillingEnabled && (
-              <div>
-                <span className="text-gray-600">Frequency:</span>
-                <div className="font-semibold capitalize">{contract.automatedDrawdownFrequency || 'fortnightly'}</div>
-              </div>
+              <>
+                <div>
+                  <span className="text-gray-600">Frequency:</span>
+                  <div className="font-semibold capitalize">{contract.automatedDrawdownFrequency || 'fortnightly'}</div>
+                </div>
+                {contract.nextRunDate && (
+                  <div>
+                    <span className="text-gray-600">Next Run:</span>
+                    <div className="font-semibold text-blue-600">{new Date(contract.nextRunDate).toLocaleDateString('en-AU')}</div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
