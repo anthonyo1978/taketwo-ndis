@@ -10,8 +10,8 @@ export type FundingModel = 'Draw Down' | 'Capture & Invoice' | 'Hybrid'
 /** Status options for funding contracts. */
 export type ContractStatus = 'Draft' | 'Active' | 'Expired' | 'Cancelled' | 'Renewed'
 
-/** Drawdown rate options for funding contracts. */
-export type DrawdownRate = 'daily' | 'weekly' | 'monthly'
+/** Automated drawdown frequency options for funding contracts. */
+export type AutomatedDrawdownFrequency = 'daily' | 'weekly' | 'fortnightly'
 
 /**
  * Information about a resident's funding contract.
@@ -30,7 +30,7 @@ export interface FundingInformation {
   contractStatus: ContractStatus
   originalAmount: number
   currentBalance: number
-  drawdownRate: DrawdownRate
+  drawdownRate: AutomatedDrawdownFrequency // Legacy field, use automatedDrawdownFrequency
   autoDrawdown: boolean
   lastDrawdownDate?: Date
   renewalDate?: Date
@@ -38,6 +38,11 @@ export interface FundingInformation {
   // Support item fields
   supportItemCode?: string
   dailySupportItemCost?: number
+  // Automation fields
+  autoBillingEnabled: boolean
+  automatedDrawdownFrequency: AutomatedDrawdownFrequency
+  nextRunDate?: Date
+  firstRunDate?: Date
 }
 
 /**
@@ -157,4 +162,30 @@ export interface ContractBalanceSummary {
   totalDrawnDown: number
   activeContracts: number
   expiringSoon: number
+}
+
+/**
+ * Automation error details for logging.
+ */
+export interface AutomationError {
+  contractId: string
+  residentName: string
+  reason: string
+  timestamp: Date
+}
+
+/**
+ * Log entry for automated billing batch job executions.
+ */
+export interface AutomationLog {
+  id: string
+  runDate: Date
+  status: 'success' | 'partial' | 'failed'
+  contractsProcessed: number
+  contractsSkipped: number
+  contractsFailed: number
+  executionTimeMs: number
+  errors: AutomationError[]
+  summary?: string
+  createdAt: Date
 }

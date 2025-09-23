@@ -82,7 +82,12 @@ export async function POST(
       supportItemCode: z.string()
         .max(50, "Support item code must be no more than 50 characters")
         .optional()
-        .or(z.literal(''))
+        .or(z.literal('')),
+      // Automation fields
+      autoBillingEnabled: z.boolean().default(false),
+      automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
+      firstRunDate: z.coerce.date().optional(),
+      nextRunDate: z.coerce.date().optional()
     }).refine(
       (data) => !data.endDate || data.startDate <= data.endDate,
       {
@@ -94,6 +99,30 @@ export async function POST(
       {
         message: "Renewal date must be after start date",
         path: ["renewalDate"]
+      }
+    ).refine(
+      (data) => !data.firstRunDate || data.firstRunDate >= data.startDate,
+      {
+        message: "First run date must be on or after contract start date",
+        path: ["firstRunDate"]
+      }
+    ).refine(
+      (data) => !data.firstRunDate || !data.endDate || data.firstRunDate <= data.endDate,
+      {
+        message: "First run date must be on or before contract end date",
+        path: ["firstRunDate"]
+      }
+    ).refine(
+      (data) => !data.firstRunDate || data.firstRunDate >= new Date(new Date().setHours(0, 0, 0, 0)),
+      {
+        message: "First run date must be today or in the future",
+        path: ["firstRunDate"]
+      }
+    ).refine(
+      (data) => !data.autoBillingEnabled || data.firstRunDate,
+      {
+        message: "First run date is required when automated billing is enabled",
+        path: ["firstRunDate"]
       }
     )
     
@@ -130,8 +159,13 @@ export async function POST(
       lastDrawdownDate: undefined,
       renewalDate: validation.data.renewalDate,
       parentContractId: undefined,
-      supportItemCode: undefined,
-      dailySupportItemCost: undefined
+      supportItemCode: validation.data.supportItemCode,
+      dailySupportItemCost: validation.data.dailySupportItemCost,
+      // Automation fields
+      autoBillingEnabled: validation.data.autoBillingEnabled,
+      automatedDrawdownFrequency: validation.data.automatedDrawdownFrequency,
+      firstRunDate: validation.data.firstRunDate,
+      nextRunDate: validation.data.nextRunDate
     })
     
     return NextResponse.json({
@@ -209,8 +243,49 @@ export async function PUT(
         .or(z.literal('')),
       dailySupportItemCost: z.number()
         .min(0, "Daily support item cost cannot be negative")
-        .optional()
-    })
+        .optional(),
+      // Automation fields
+      autoBillingEnabled: z.boolean().optional(),
+      automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).optional(),
+      firstRunDate: z.coerce.date().optional(),
+      nextRunDate: z.coerce.date().optional()
+    }).refine(
+      (data) => !data.endDate || !data.startDate || data.startDate <= data.endDate,
+      {
+        message: "End date must be after start date",
+        path: ["endDate"]
+      }
+    ).refine(
+      (data) => !data.renewalDate || !data.startDate || data.renewalDate > data.startDate,
+      {
+        message: "Renewal date must be after start date",
+        path: ["renewalDate"]
+      }
+    ).refine(
+      (data) => !data.firstRunDate || !data.startDate || data.firstRunDate >= data.startDate,
+      {
+        message: "First run date must be on or after contract start date",
+        path: ["firstRunDate"]
+      }
+    ).refine(
+      (data) => !data.firstRunDate || !data.endDate || data.firstRunDate <= data.endDate,
+      {
+        message: "First run date must be on or before contract end date",
+        path: ["firstRunDate"]
+      }
+    ).refine(
+      (data) => !data.firstRunDate || data.firstRunDate >= new Date(new Date().setHours(0, 0, 0, 0)),
+      {
+        message: "First run date must be today or in the future",
+        path: ["firstRunDate"]
+      }
+    ).refine(
+      (data) => !data.autoBillingEnabled || data.firstRunDate,
+      {
+        message: "First run date is required when automated billing is enabled",
+        path: ["firstRunDate"]
+      }
+    )
     
     const validation = partialFundingSchema.safeParse(fundingUpdates)
     

@@ -279,27 +279,43 @@ export class ResidentService {
         throw new Error(`Failed to fetch funding contracts: ${error.message}`)
       }
 
-      return data.map(contract => ({
-        id: contract.id,
-        type: contract.type,
-        amount: contract.amount,
-        startDate: new Date(contract.start_date),
-        endDate: contract.end_date ? new Date(contract.end_date) : undefined,
-        description: contract.description || undefined,
-        isActive: contract.is_active,
-        createdAt: new Date(contract.created_at),
-        updatedAt: new Date(contract.updated_at),
-        contractStatus: contract.contract_status,
-        originalAmount: contract.original_amount,
-        currentBalance: contract.current_balance,
-        drawdownRate: contract.drawdown_rate,
-        autoDrawdown: contract.auto_drawdown,
-        lastDrawdownDate: contract.last_drawdown_date ? new Date(contract.last_drawdown_date) : undefined,
-        renewalDate: contract.renewal_date ? new Date(contract.renewal_date) : undefined,
-        parentContractId: contract.parent_contract_id || undefined,
-        supportItemCode: contract.support_item_code || undefined,
-        dailySupportItemCost: contract.daily_support_item_cost || undefined
-      }))
+      return data.map(contract => {
+        // Now using proper database columns for automation fields
+
+        return {
+          id: contract.id,
+          type: contract.type,
+          amount: contract.amount,
+          startDate: new Date(contract.start_date),
+          endDate: contract.end_date ? new Date(contract.end_date) : undefined,
+          description: contract.description ? (() => {
+            try {
+              const parsed = JSON.parse(contract.description) as any
+              return parsed.originalDescription || contract.description
+            } catch {
+              return contract.description
+            }
+          })() : undefined,
+          isActive: contract.is_active,
+          createdAt: new Date(contract.created_at),
+          updatedAt: new Date(contract.updated_at),
+          contractStatus: contract.contract_status,
+          originalAmount: contract.original_amount,
+          currentBalance: contract.current_balance,
+          drawdownRate: contract.drawdown_rate,
+          autoDrawdown: contract.auto_drawdown,
+          lastDrawdownDate: contract.last_drawdown_date ? new Date(contract.last_drawdown_date) : undefined,
+          renewalDate: contract.renewal_date ? new Date(contract.renewal_date) : undefined,
+          parentContractId: contract.parent_contract_id || undefined,
+          supportItemCode: contract.support_item_code || undefined,
+          dailySupportItemCost: contract.daily_support_item_cost || undefined,
+          // Automation fields (now using proper database columns)
+          autoBillingEnabled: contract.auto_billing_enabled || false,
+          automatedDrawdownFrequency: contract.automated_drawdown_frequency || 'fortnightly',
+          nextRunDate: contract.next_run_date ? new Date(contract.next_run_date) : undefined,
+          firstRunDate: contract.first_run_date ? new Date(contract.first_run_date) : undefined
+        }
+      })
     } catch (error) {
       console.error('ResidentService.getFundingContracts error:', error)
       throw error
@@ -336,6 +352,11 @@ export class ResidentService {
       if (updates.parentContractId !== undefined) dbUpdates.parent_contract_id = updates.parentContractId
       if (updates.supportItemCode !== undefined) dbUpdates.support_item_code = updates.supportItemCode
       if (updates.dailySupportItemCost !== undefined) dbUpdates.daily_support_item_cost = updates.dailySupportItemCost
+      // Automation fields (now using proper database columns)
+      if (updates.autoBillingEnabled !== undefined) dbUpdates.auto_billing_enabled = updates.autoBillingEnabled
+      if (updates.automatedDrawdownFrequency) dbUpdates.automated_drawdown_frequency = updates.automatedDrawdownFrequency
+      if (updates.nextRunDate !== undefined) dbUpdates.next_run_date = updates.nextRunDate
+      if (updates.firstRunDate !== undefined) dbUpdates.first_run_date = updates.firstRunDate
 
       const { data, error } = await supabase
         .from('funding_contracts')
@@ -348,6 +369,8 @@ export class ResidentService {
         console.error('Error updating funding contract:', error)
         throw new Error(`Failed to update funding contract: ${error.message}`)
       }
+
+      // Now using proper database columns for automation fields
 
       return {
         id: data.id,
@@ -368,7 +391,12 @@ export class ResidentService {
         renewalDate: data.renewal_date ? new Date(data.renewal_date) : undefined,
         parentContractId: data.parent_contract_id || undefined,
         supportItemCode: data.support_item_code || undefined,
-        dailySupportItemCost: data.daily_support_item_cost || undefined
+        dailySupportItemCost: data.daily_support_item_cost || undefined,
+        // Automation fields (now using proper database columns)
+        autoBillingEnabled: data.auto_billing_enabled || false,
+        automatedDrawdownFrequency: data.automated_drawdown_frequency || 'fortnightly',
+        nextRunDate: data.next_run_date ? new Date(data.next_run_date) : undefined,
+        firstRunDate: data.first_run_date ? new Date(data.first_run_date) : undefined
       }
     } catch (error) {
       console.error('ResidentService.updateFundingContract error:', error)
@@ -430,7 +458,12 @@ export class ResidentService {
         renewal_date: contract.renewalDate || null,
         parent_contract_id: contract.parentContractId || null,
         support_item_code: contract.supportItemCode || null,
-        daily_support_item_cost: contract.dailySupportItemCost || null
+        daily_support_item_cost: contract.dailySupportItemCost || null,
+        // Automation fields (now using proper database columns)
+        auto_billing_enabled: contract.autoBillingEnabled || false,
+        automated_drawdown_frequency: contract.automatedDrawdownFrequency || 'fortnightly',
+        next_run_date: contract.nextRunDate || null,
+        first_run_date: contract.firstRunDate || null
       }
 
       const supabase = await this.getSupabase()
@@ -464,7 +497,12 @@ export class ResidentService {
         renewalDate: data.renewal_date ? new Date(data.renewal_date) : undefined,
         parentContractId: data.parent_contract_id || undefined,
         supportItemCode: data.support_item_code || undefined,
-        dailySupportItemCost: data.daily_support_item_cost || undefined
+        dailySupportItemCost: data.daily_support_item_cost || undefined,
+        // Automation fields (now using proper database columns)
+        autoBillingEnabled: data.auto_billing_enabled || false,
+        automatedDrawdownFrequency: data.automated_drawdown_frequency || 'fortnightly',
+        nextRunDate: data.next_run_date ? new Date(data.next_run_date) : undefined,
+        firstRunDate: data.first_run_date ? new Date(data.first_run_date) : undefined
       }
     } catch (error) {
       console.error('ResidentService.createFundingContract error:', error)

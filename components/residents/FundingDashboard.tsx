@@ -135,9 +135,9 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 mb-1">Billing Frequency</p>
-                  <p className="font-medium text-gray-900 capitalize">
-                    {currentContract.drawdownRate || 'monthly'}
+                  <p className="text-sm text-gray-500 mb-1">Automated Billing</p>
+                  <p className={`font-medium ${currentContract.autoBillingEnabled ? 'text-green-600' : 'text-gray-500'}`}>
+                    {currentContract.autoBillingEnabled ? '✅ Enabled' : '❌ Disabled'}
                   </p>
                 </div>
               </div>

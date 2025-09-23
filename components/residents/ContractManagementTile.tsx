@@ -72,94 +72,93 @@ export function ContractManagementTile({ residentId, fundingInfo, onFundingChang
 
       {currentContract ? (
         <div className="space-y-6">
-          {/* Contract Status & Dates Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Status, Dates, and Controls */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-700">Current Status</h4>
-                <div className={`inline-flex items-center px-3 py-2 rounded-lg border-2 text-sm font-medium ${getStatusColor(currentContract.contractStatus)}`}>
-                  <span className="mr-2 text-base">{getStatusIcon(currentContract.contractStatus)}</span>
-                  <span>{currentContract.contractStatus}</span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500 block">Start Date</span>
-                  <span className="font-medium text-gray-900">
-                    {format(new Date(currentContract.startDate), 'MMM d, yyyy')}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-gray-500 block">End Date</span>
-                  <span className="font-medium text-gray-900">
-                    {currentContract.endDate 
-                      ? format(new Date(currentContract.endDate), 'MMM d, yyyy')
-                      : 'Ongoing'
-                    }
-                  </span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                {currentContract.supportItemCode && (
-                  <div>
-                    <span className="text-gray-500 block">Support Item Code</span>
-                    <span className="font-medium text-gray-900">{currentContract.supportItemCode}</span>
+          {/* Contract Information */}
+          <div className="space-y-6">
+            {/* Basic Contract Info */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Contract Details</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Start Date</span>
+                    <span className="font-medium text-gray-900">
+                      {format(new Date(currentContract.startDate), 'MMM d, yyyy')}
+                    </span>
                   </div>
-                )}
-                <div>
-                  <span className="text-gray-500 block">Billing Frequency</span>
-                  <span className="font-medium text-gray-900 capitalize">{currentContract.drawdownRate || 'monthly'}</span>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">End Date</span>
+                    <span className="font-medium text-gray-900">
+                      {currentContract.endDate 
+                        ? format(new Date(currentContract.endDate), 'MMM d, yyyy')
+                        : 'Ongoing'
+                      }
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Original Amount</span>
+                    <span className="font-medium text-gray-900">${getAllocatedAmount().toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Current Balance</span>
+                    <span className="font-medium text-gray-900">${getCurrentBalance().toLocaleString()}</span>
+                  </div>
+                  {currentContract.description && (
+                    <div className="flex justify-between items-start">
+                      <span className="text-gray-500">Description</span>
+                      <span className="font-medium text-gray-900 text-right max-w-xs">{currentContract.description}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Integrated Status Controls */}
-              <div className="pt-3 border-t">
-                <ContractStatusManager 
-                  contract={currentContract}
-                  residentId={residentId}
-                  onStatusChange={(updated) => {
-                    const updatedFunding = fundingInfo.map(f =>
-                      f.id === updated.id ? updated : f
-                    )
-                    onFundingChange(updatedFunding)
-                  }}
-                />
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-gray-700">Status & Automation</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Status</span>
+                    <div className={`inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium ${getStatusColor(currentContract.contractStatus)}`}>
+                      <span className="mr-1">{getStatusIcon(currentContract.contractStatus)}</span>
+                      <span>{currentContract.contractStatus}</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500">Automated Billing</span>
+                    <span className={`font-medium ${currentContract.autoBillingEnabled ? 'text-green-600' : 'text-gray-500'}`}>
+                      {currentContract.autoBillingEnabled ? '✅ Enabled' : '❌ Disabled'}
+                    </span>
+                  </div>
+                  {currentContract.autoBillingEnabled && (
+                    <>
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-500">Automated Billing Frequency</span>
+                        <span className="font-medium text-gray-900 capitalize">{currentContract.automatedDrawdownFrequency || 'fortnightly'}</span>
+                      </div>
+                      {currentContract.nextRunDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">Next Run Date</span>
+                          <span className="font-medium text-blue-600">
+                            {format(new Date(currentContract.nextRunDate), 'MMM d, yyyy')}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Financial Figures */}
-            <div className="space-y-4">
-              <h4 className="text-sm font-medium text-gray-700">Financial Overview</h4>
-              <div className="grid grid-cols-1 gap-3">
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                  <span className="text-sm text-green-700">Allocated Amount</span>
-                  <span className="font-bold text-green-800">${getAllocatedAmount().toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                  <span className="text-sm text-blue-700">Current Balance</span>
-                  <span className="font-bold text-blue-800">${getCurrentBalance().toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
-                  <span className="text-sm text-orange-700">Amount Spent</span>
-                  <span className="font-bold text-orange-800">${getSpentAmount().toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg border-2 border-purple-200">
-                  <span className="text-sm text-purple-700 font-medium">Billing Frequency</span>
-                  <span className="font-bold text-purple-800 capitalize">{currentContract.drawdownRate || 'monthly'}</span>
-                </div>
-              </div>
-              
-              {currentContract.dailySupportItemCost && (
-                <div className="text-sm pt-2 border-t">
-                  <span className="text-gray-500 block">Daily Support Cost</span>
-                  <span className="font-medium text-gray-900">
-                    ${currentContract.dailySupportItemCost.toFixed(2)}/day
-                  </span>
-                </div>
-              )}
+            {/* Status Controls */}
+            <div className="pt-4 border-t">
+              <ContractStatusManager 
+                contract={currentContract}
+                residentId={residentId}
+                onStatusChange={(updated) => {
+                  const updatedFunding = fundingInfo.map(f =>
+                    f.id === updated.id ? updated : f
+                  )
+                  onFundingChange(updatedFunding)
+                }}
+              />
             </div>
           </div>
         </div>

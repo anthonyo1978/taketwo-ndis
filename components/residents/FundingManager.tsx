@@ -35,13 +35,15 @@ const fundingFormSchema = z.object({
     .optional()
     .or(z.literal('')),
   isActive: z.boolean().default(true),
-  drawdownRate: z.enum(['daily', 'weekly', 'monthly'] as const).default('monthly'),
-  autoDrawdown: z.boolean().default(true),
   renewalDate: z.coerce.date().optional(),
   supportItemCode: z.string()
     .max(50, "Support item code must be no more than 50 characters")
     .optional()
-    .or(z.literal(''))
+    .or(z.literal('')),
+  // Automation fields
+  autoBillingEnabled: z.boolean().default(false),
+  automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
+  firstRunDate: z.coerce.date().optional()
 }).refine(
   (data) => !data.endDate || data.startDate <= data.endDate,
   {
@@ -54,6 +56,24 @@ const fundingFormSchema = z.object({
     message: "Renewal date must be after start date",
     path: ["renewalDate"]
   }
+).refine(
+  (data) => !data.firstRunDate || data.firstRunDate >= data.startDate,
+  {
+    message: "First run date must be on or after contract start date",
+    path: ["firstRunDate"]
+  }
+).refine(
+  (data) => !data.firstRunDate || !data.endDate || data.firstRunDate <= data.endDate,
+  {
+    message: "First run date must be on or before contract end date",
+    path: ["firstRunDate"]
+  }
+).refine(
+  (data) => !data.autoBillingEnabled || data.firstRunDate,
+  {
+    message: "First run date is required when automated billing is enabled",
+    path: ["firstRunDate"]
+  }
 )
 
 type FundingFormData = z.infer<typeof fundingFormSchema>
@@ -64,10 +84,10 @@ const fundingModelOptions: { value: FundingModel; label: string; description: st
   { value: 'Hybrid', label: 'Hybrid', description: 'Combination of draw down and capture & invoice models' }
 ]
 
-const drawdownRateOptions: { value: DrawdownRate; label: string; description: string }[] = [
-  { value: 'daily', label: 'Daily', description: 'Funds reduce daily over contract period' },
-  { value: 'weekly', label: 'Weekly', description: 'Funds reduce weekly over contract period' },
-  { value: 'monthly', label: 'Monthly', description: 'Funds reduce monthly over contract period' }
+const automatedDrawdownFrequencyOptions: { value: string; label: string; description: string }[] = [
+  { value: 'daily', label: 'Daily', description: 'Every calendar day' },
+  { value: 'weekly', label: 'Weekly', description: 'Every 7th day' },
+  { value: 'fortnightly', label: 'Fortnightly', description: 'Every 14th day' }
 ]
 
 export function FundingManager({ residentId, fundingInfo, onFundingChange, editingContract }: FundingManagerProps) {
@@ -85,18 +105,22 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       endDate: editingContract.endDate,
       description: editingContract.description || '',
       isActive: editingContract.contractStatus === 'Active',
-      drawdownRate: editingContract.drawdownRate,
-      autoDrawdown: editingContract.autoDrawdown,
       renewalDate: editingContract.renewalDate,
-      supportItemCode: editingContract.supportItemCode || ''
+      supportItemCode: editingContract.supportItemCode || '',
+      // Automation fields
+      autoBillingEnabled: editingContract.autoBillingEnabled || false,
+      automatedDrawdownFrequency: editingContract.automatedDrawdownFrequency || 'fortnightly',
+      firstRunDate: editingContract.firstRunDate
     } : {
       type: 'Draw Down',
       amount: 0,
       startDate: new Date(),
       isActive: true,
-      drawdownRate: 'monthly',
-      autoDrawdown: true,
-      supportItemCode: ''
+      supportItemCode: '',
+      // Automation fields
+      autoBillingEnabled: false,
+      automatedDrawdownFrequency: 'fortnightly',
+      firstRunDate: undefined
     }
   })
   
@@ -111,6 +135,32 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
     return amount / totalDays
   }
 
+  // Calculate next run date based on first run date and frequency
+  const calculateNextRunDate = (firstRunDate: Date, frequency: string): Date => {
+    const nextDate = new Date(firstRunDate)
+    
+    switch (frequency) {
+      case 'daily':
+        nextDate.setDate(nextDate.getDate() + 1)
+        break
+      case 'weekly':
+        nextDate.setDate(nextDate.getDate() + 7)
+        break
+      case 'fortnightly':
+        nextDate.setDate(nextDate.getDate() + 14)
+        break
+      default:
+        nextDate.setDate(nextDate.getDate() + 14) // Default to fortnightly
+    }
+    
+    return nextDate
+  }
+
+  // Get today's date for first run date minimum
+  const getTodayDate = () => {
+    const today = new Date()
+    return today.toISOString().split('T')[0]
+  }
 
   const openAddForm = () => {
     setEditingFunding(null)
@@ -119,9 +169,11 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       amount: 0,
       startDate: new Date(),
       isActive: true,
-      drawdownRate: 'monthly',
-      autoDrawdown: true,
-      supportItemCode: ''
+      supportItemCode: '',
+      // Automation fields
+      autoBillingEnabled: false,
+      automatedDrawdownFrequency: 'fortnightly',
+      firstRunDate: undefined
     })
     setShowAddForm(true)
     setError(null)
@@ -136,10 +188,12 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       endDate: funding.endDate,
       description: funding.description || '',
       isActive: funding.isActive,
-      drawdownRate: funding.drawdownRate,
-      autoDrawdown: funding.autoDrawdown,
       renewalDate: funding.renewalDate,
-      supportItemCode: funding.supportItemCode || ''
+      supportItemCode: funding.supportItemCode || '',
+      // Automation fields
+      autoBillingEnabled: funding.autoBillingEnabled || false,
+      automatedDrawdownFrequency: funding.automatedDrawdownFrequency || 'fortnightly',
+      firstRunDate: funding.firstRunDate
     })
     setShowAddForm(true)
     setError(null)
@@ -365,8 +419,8 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
                         <span className="font-medium">Period:</span> {formatDateRange(funding.startDate, funding.endDate)}
                       </div>
                       <div>
-                        <span className="font-medium">Drawdown Rate:</span> {funding.drawdownRate} 
-                        {!funding.autoDrawdown && ' (Manual)'}
+                        <span className="font-medium">Automated Billing:</span> {funding.autoBillingEnabled ? '✅ Enabled' : '❌ Disabled'}
+                        {funding.autoBillingEnabled && ` (${funding.automatedDrawdownFrequency || 'fortnightly'})`}
                       </div>
                       {funding.description && (
                         <div>
@@ -495,31 +549,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
               </p>
             </div>
             
-            {/* Drawdown Rate */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Drawdown Rate *
-              </label>
-              <Controller
-                name="drawdownRate"
-                control={form.control}
-                render={({ field }) => (
-                  <select
-                    {...field}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {drawdownRateOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label} - {option.description}
-                      </option>
-                    ))}
-                  </select>
-                )}
-              />
-              {form.formState.errors.drawdownRate && (
-                <p className="text-red-600 text-sm mt-1">{form.formState.errors.drawdownRate.message}</p>
-              )}
-            </div>
 
             {/* Renewal Date */}
             <div>
@@ -541,18 +570,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
               <div className="flex items-center">
                 <input
                   type="checkbox"
-                  {...form.register("autoDrawdown")}
-                  id="autoDrawdown"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="autoDrawdown" className="ml-2 block text-sm text-gray-900">
-                  Enable automatic balance drawdown over time
-                </label>
-              </div>
-              
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
                   {...form.register("isActive")}
                   id="isActive"
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
@@ -561,6 +578,98 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
                   This contract is currently active
                 </label>
               </div>
+            </div>
+
+            {/* Automation Settings */}
+            <div className="space-y-4 p-3 bg-blue-50 rounded-lg">
+              <h4 className="text-sm font-medium text-gray-700">Automated Billing Settings</h4>
+              
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  {...form.register("autoBillingEnabled")}
+                  id="autoBillingEnabled"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="autoBillingEnabled" className="ml-2 block text-sm text-gray-900">
+                  Enable Automated Billing
+                </label>
+              </div>
+              
+              {form.watch("autoBillingEnabled") && (
+                <div className="space-y-3 ml-6 border-l-2 border-blue-200 pl-4">
+                  {/* Automated Drawdown Frequency */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Automated Drawdown Frequency *
+                    </label>
+                    <Controller
+                      name="automatedDrawdownFrequency"
+                      control={form.control}
+                      render={({ field }) => (
+                        <select
+                          {...field}
+                          onChange={(e) => {
+                            field.onChange(e)
+                            const firstRunDate = form.getValues("firstRunDate")
+                            if (firstRunDate && e.target.value) {
+                              const nextRunDate = calculateNextRunDate(new Date(firstRunDate), e.target.value)
+                              form.setValue("nextRunDate", nextRunDate)
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {automatedDrawdownFrequencyOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                              {option.label} - {option.description}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    />
+                    {form.formState.errors.automatedDrawdownFrequency && (
+                      <p className="text-red-600 text-sm mt-1">{form.formState.errors.automatedDrawdownFrequency.message}</p>
+                    )}
+                  </div>
+
+                  {/* First Run Date */}
+                  <div>
+                    <Input
+                      label="First Run Date *"
+                      type="date"
+                      min={getTodayDate()}
+                      {...form.register("firstRunDate", {
+                        onChange: () => {
+                          const firstRunDate = form.getValues("firstRunDate")
+                          const frequency = form.getValues("automatedDrawdownFrequency")
+                          if (firstRunDate && frequency) {
+                            const nextRunDate = calculateNextRunDate(new Date(firstRunDate), frequency)
+                            form.setValue("nextRunDate", nextRunDate)
+                          }
+                        }
+                      })}
+                      error={form.formState.errors.firstRunDate?.message}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      When should automated billing start for this contract? Must be today or in the future.
+                    </p>
+                  </div>
+
+                  {/* Next Run Date (calculated, read-only) */}
+                  <div>
+                    <Input
+                      label="Next Run Date (Auto-calculated)"
+                      type="date"
+                      value={form.watch("nextRunDate") ? new Date(form.watch("nextRunDate")).toISOString().split('T')[0] : ''}
+                      disabled
+                      className="bg-gray-100"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Automatically calculated based on first run date and frequency
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             
             {error && (

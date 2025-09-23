@@ -175,13 +175,15 @@ export function ContractStatusManager({
               <div className="font-semibold">${contract.currentBalance.toLocaleString()}</div>
             </div>
             <div>
-              <span className="text-gray-600">Drawdown Rate:</span>
-              <div className="font-semibold">{contract.drawdownRate}</div>
+              <span className="text-gray-600">Automated Billing:</span>
+              <div className="font-semibold">{contract.autoBillingEnabled ? '✅ Enabled' : '❌ Disabled'}</div>
             </div>
-            <div>
-              <span className="text-gray-600">Auto Drawdown:</span>
-              <div className="font-semibold">{contract.autoDrawdown ? 'Enabled' : 'Disabled'}</div>
-            </div>
+            {contract.autoBillingEnabled && (
+              <div>
+                <span className="text-gray-600">Frequency:</span>
+                <div className="font-semibold capitalize">{contract.automatedDrawdownFrequency || 'fortnightly'}</div>
+              </div>
+            )}
           </div>
         </div>
       </div>

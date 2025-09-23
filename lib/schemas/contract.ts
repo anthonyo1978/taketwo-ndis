@@ -70,7 +70,11 @@ export const contractCreateSchema = z.object({
   isActive: z.boolean().default(true),
   drawdownRate: drawdownRateSchema.default('monthly'),
   autoDrawdown: z.boolean().default(true),
-  renewalDate: z.coerce.date().optional()
+  renewalDate: z.coerce.date().optional(),
+  // Automation fields
+  autoBillingEnabled: z.boolean().default(false),
+  automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
+  firstRunDate: z.coerce.date().optional()
 }).refine(
   (data) => !data.endDate || data.startDate <= data.endDate,
   {
@@ -82,6 +86,24 @@ export const contractCreateSchema = z.object({
   {
     message: "Renewal date must be after start date",
     path: ["renewalDate"]
+  }
+).refine(
+  (data) => !data.firstRunDate || data.firstRunDate >= data.startDate,
+  {
+    message: "First run date must be on or after contract start date",
+    path: ["firstRunDate"]
+  }
+).refine(
+  (data) => !data.firstRunDate || !data.endDate || data.firstRunDate <= data.endDate,
+  {
+    message: "First run date must be on or before contract end date",
+    path: ["firstRunDate"]
+  }
+).refine(
+  (data) => !data.autoBillingEnabled || data.firstRunDate,
+  {
+    message: "First run date is required when automated billing is enabled",
+    path: ["firstRunDate"]
   }
 )
 

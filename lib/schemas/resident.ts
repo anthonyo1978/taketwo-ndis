@@ -8,6 +8,7 @@ export const fundingModelSchema = z.enum(['Draw Down', 'Capture & Invoice', 'Hyb
 // Contract status and drawdown rate schemas
 export const contractStatusSchema = z.enum(['Draft', 'Active', 'Expired', 'Cancelled', 'Renewed'] as const)
 export const drawdownRateSchema = z.enum(['daily', 'weekly', 'monthly'] as const)
+export const automatedDrawdownFrequencySchema = z.enum(['daily', 'weekly', 'fortnightly'] as const)
 
 // Funding information schema with contract fields
 export const fundingInformationSchema = z.object({
@@ -46,7 +47,12 @@ export const fundingInformationSchema = z.object({
     .or(z.literal('')),
   dailySupportItemCost: z.number()
     .min(0, "Daily support item cost cannot be negative")
-    .optional()
+    .optional(),
+  // Automation fields
+  autoBillingEnabled: z.boolean().default(false),
+  automatedDrawdownFrequency: automatedDrawdownFrequencySchema.default('fortnightly'),
+  nextRunDate: z.coerce.date().optional(),
+  firstRunDate: z.coerce.date().optional()
 }).refine(
   (data) => !data.endDate || data.startDate <= data.endDate,
   {
@@ -64,6 +70,30 @@ export const fundingInformationSchema = z.object({
   {
     message: "Renewal date must be after start date",
     path: ["renewalDate"]
+  }
+).refine(
+  (data) => !data.firstRunDate || data.firstRunDate >= data.startDate,
+  {
+    message: "First run date must be on or after contract start date",
+    path: ["firstRunDate"]
+  }
+).refine(
+  (data) => !data.firstRunDate || !data.endDate || data.firstRunDate <= data.endDate,
+  {
+    message: "First run date must be on or before contract end date",
+    path: ["firstRunDate"]
+  }
+).refine(
+  (data) => !data.firstRunDate || data.firstRunDate >= new Date(new Date().setHours(0, 0, 0, 0)),
+  {
+    message: "First run date must be today or in the future",
+    path: ["firstRunDate"]
+  }
+).refine(
+  (data) => !data.autoBillingEnabled || data.firstRunDate,
+  {
+    message: "First run date is required when automated billing is enabled",
+    path: ["firstRunDate"]
   }
 )
 
@@ -138,7 +168,7 @@ export const residentCreateSchema = z.object({
       // Client-side: validate FileList
       if (!files || (files as FileList).length === 0) return true
       const file = (files as FileList)[0]
-      return file?.size <= 5 * 1024 * 1024 // 5MB limit
+      return file?.size ? file.size <= 5 * 1024 * 1024 : true // 5MB limit
     }, "Photo must be less than 5MB")
     .refine((files) => {
       // Server-side: photo will be handled differently

@@ -118,6 +118,8 @@ As an admin, I want to turn on automation for my contracts, so that transactions
 Run frequency & setting next run date!
 
 the system can run daily, weekly or fortnightly only at this stage
-when a job runs successfully, it looks at the ferquency and sets the next run data based on the contract frequency
+when a job runs successfully, it looks at the frequency and sets the next run data based on the contract frequency ( the next rum data will have to maintained as anew filed in the db)
 
+
+Test harness, - in settings there is a tool that allows you to test a rerun of a certain date - lets work thorugh this. but a way to run this on demand in a mock way would be great!
 
