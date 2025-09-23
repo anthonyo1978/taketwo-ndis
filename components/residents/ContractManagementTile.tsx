@@ -133,9 +133,17 @@ export function ContractManagementTile({ residentId, fundingInfo, onFundingChang
                         <span className="text-gray-500">Automated Billing Frequency</span>
                         <span className="font-medium text-gray-900 capitalize">{currentContract.automatedDrawdownFrequency || 'fortnightly'}</span>
                       </div>
+                      {currentContract.firstRunDate && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-500">First Automation Run</span>
+                          <span className="font-medium text-gray-900">
+                            {format(new Date(currentContract.firstRunDate), 'MMM d, yyyy')}
+                          </span>
+                        </div>
+                      )}
                       {currentContract.nextRunDate && (
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-500">Next Run Date</span>
+                          <span className="text-gray-500">Next Automation Run</span>
                           <span className="font-medium text-blue-600">
                             {format(new Date(currentContract.nextRunDate), 'MMM d, yyyy')}
                           </span>
@@ -151,8 +159,7 @@ export function ContractManagementTile({ residentId, fundingInfo, onFundingChang
             <div className="pt-4 border-t">
               <ContractStatusManager 
                 contract={currentContract}
-                residentId={residentId}
-                onStatusChange={(updated) => {
+                onContractChange={(updated: FundingInformation) => {
                   const updatedFunding = fundingInfo.map(f =>
                     f.id === updated.id ? updated : f
                   )

@@ -139,6 +139,18 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
                   <p className={`font-medium ${currentContract.autoBillingEnabled ? 'text-green-600' : 'text-gray-500'}`}>
                     {currentContract.autoBillingEnabled ? '✅ Enabled' : '❌ Disabled'}
                   </p>
+                  {currentContract.autoBillingEnabled && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs text-gray-500">
+                        Frequency: {currentContract.automatedDrawdownFrequency || 'fortnightly'}
+                      </p>
+                      {currentContract.nextRunDate && (
+                        <p className="text-xs text-blue-600 font-medium">
+                          Next Run: {format(new Date(currentContract.nextRunDate), 'MMM d, yyyy')}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -154,8 +166,7 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
               <div className="pt-4 border-t">
                 <ContractStatusManager 
                   contract={currentContract}
-                  residentId={residentId}
-                  onStatusChange={(updated) => {
+                  onContractChange={(updated: FundingInformation) => {
                     const updatedFunding = fundingInfo.map(f =>
                       f.id === updated.id ? updated : f
                     )
