@@ -23,7 +23,15 @@ export async function POST(req: NextRequest) {
         }, { status: 400 })
       }
       
-      const calculation = calculateContractRates(amount, startDate, endDate, frequency)
+      // Validate frequency type
+      if (!['daily', 'weekly', 'fortnightly'].includes(frequency)) {
+        return NextResponse.json({
+          success: false,
+          error: 'Invalid frequency. Must be: daily, weekly, or fortnightly'
+        }, { status: 400 })
+      }
+      
+      const calculation = calculateContractRates(amount, startDate, endDate, frequency as 'daily' | 'weekly' | 'fortnightly')
       
       return NextResponse.json({
         success: true,
@@ -44,7 +52,15 @@ export async function POST(req: NextRequest) {
         }, { status: 400 })
       }
       
-      const result = await enableContractAutomation(contractId, frequency)
+      // Validate frequency type
+      if (!['daily', 'weekly', 'fortnightly'].includes(frequency)) {
+        return NextResponse.json({
+          success: false,
+          error: 'Invalid frequency. Must be: daily, weekly, or fortnightly'
+        }, { status: 400 })
+      }
+      
+      const result = await enableContractAutomation(contractId, frequency as 'daily' | 'weekly' | 'fortnightly')
       
       return NextResponse.json({
         success: result.success,
