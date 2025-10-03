@@ -357,6 +357,8 @@ export class ResidentService {
       if (updates.automatedDrawdownFrequency) dbUpdates.automated_drawdown_frequency = updates.automatedDrawdownFrequency
       if (updates.nextRunDate !== undefined) dbUpdates.next_run_date = updates.nextRunDate
       if (updates.firstRunDate !== undefined) dbUpdates.first_run_date = updates.firstRunDate
+      // Duration field
+      if (updates.durationDays !== undefined) dbUpdates.duration_days = updates.durationDays
 
       const { data, error } = await supabase
         .from('funding_contracts')
@@ -396,7 +398,9 @@ export class ResidentService {
         autoBillingEnabled: data.auto_billing_enabled || false,
         automatedDrawdownFrequency: data.automated_drawdown_frequency || 'fortnightly',
         nextRunDate: data.next_run_date ? new Date(data.next_run_date) : undefined,
-        firstRunDate: data.first_run_date ? new Date(data.first_run_date) : undefined
+        firstRunDate: data.first_run_date ? new Date(data.first_run_date) : undefined,
+        // Duration field
+        durationDays: data.duration_days || undefined
       }
     } catch (error) {
       console.error('ResidentService.updateFundingContract error:', error)
@@ -463,7 +467,9 @@ export class ResidentService {
         auto_billing_enabled: contract.autoBillingEnabled || false,
         automated_drawdown_frequency: contract.automatedDrawdownFrequency || 'fortnightly',
         next_run_date: contract.nextRunDate || null,
-        first_run_date: contract.firstRunDate || null
+        first_run_date: contract.firstRunDate || null,
+        // Duration field
+        duration_days: contract.durationDays || null
       }
 
       const supabase = await this.getSupabase()
@@ -502,7 +508,9 @@ export class ResidentService {
         autoBillingEnabled: data.auto_billing_enabled || false,
         automatedDrawdownFrequency: data.automated_drawdown_frequency || 'fortnightly',
         nextRunDate: data.next_run_date ? new Date(data.next_run_date) : undefined,
-        firstRunDate: data.first_run_date ? new Date(data.first_run_date) : undefined
+        firstRunDate: data.first_run_date ? new Date(data.first_run_date) : undefined,
+        // Duration field
+        durationDays: data.duration_days || undefined
       }
     } catch (error) {
       console.error('ResidentService.createFundingContract error:', error)

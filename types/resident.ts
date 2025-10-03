@@ -43,6 +43,8 @@ export interface FundingInformation {
   automatedDrawdownFrequency: AutomatedDrawdownFrequency
   nextRunDate?: Date
   firstRunDate?: Date
+  // Duration field
+  durationDays?: number
 }
 
 /**

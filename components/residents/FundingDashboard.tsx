@@ -118,7 +118,7 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
               </div>
 
               {/* Contract Information Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Start Date</p>
                   <p className="font-medium text-gray-900">
@@ -134,24 +134,39 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
                     }
                   </p>
                 </div>
+                {currentContract.durationDays && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Duration</p>
+                    <p className="font-medium text-purple-600">
+                      {currentContract.durationDays} day{currentContract.durationDays !== 1 ? 's' : ''}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Contract length
+                    </p>
+                  </div>
+                )}
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Automated Billing</p>
                   <p className={`font-medium ${currentContract.autoBillingEnabled ? 'text-green-600' : 'text-gray-500'}`}>
                     {currentContract.autoBillingEnabled ? '✅ Enabled' : '❌ Disabled'}
                   </p>
                   {currentContract.autoBillingEnabled && (
-                    <div className="mt-2 space-y-1">
-                      <p className="text-xs text-gray-500">
-                        Frequency: {currentContract.automatedDrawdownFrequency || 'fortnightly'}
-                      </p>
-                      {currentContract.nextRunDate && (
-                        <p className="text-xs text-blue-600 font-medium">
-                          Next Run: {format(new Date(currentContract.nextRunDate), 'MMM d, yyyy')}
-                        </p>
-                      )}
-                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Frequency: {currentContract.automatedDrawdownFrequency || 'fortnightly'}
+                    </p>
                   )}
                 </div>
+                {currentContract.autoBillingEnabled && currentContract.nextRunDate && (
+                  <div>
+                    <p className="text-sm text-gray-500 mb-1">Next Run Date</p>
+                    <p className="font-medium text-blue-600">
+                      {format(new Date(currentContract.nextRunDate), 'MMM d, yyyy')}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Automated billing
+                    </p>
+                  </div>
+                )}
               </div>
 
               {/* Description */}

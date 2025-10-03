@@ -1,4 +1,5 @@
 import { Metadata } from "next"
+import Link from "next/link"
 
 export const metadata: Metadata = {
   title: "Settings",
@@ -72,6 +73,21 @@ export default function SettingsPage() {
             <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
               Configure →
             </button>
+          </div>
+          
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <svg className="size-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Automation</h3>
+            <p className="text-gray-600 text-sm mb-4">Configure automated billing and transaction generation.</p>
+            <Link href="/settings/automation" className="text-blue-600 text-sm font-medium hover:text-blue-800">
+              Configure →
+            </Link>
           </div>
         </div>
 
