@@ -3,7 +3,15 @@ import { calculateContractRates, enableContractAutomation } from "lib/services/c
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    const body = await req.json() as {
+      contractId?: string
+      amount?: number
+      startDate?: string
+      endDate?: string
+      frequency?: string
+      action?: string
+    }
+    
     const { contractId, amount, startDate, endDate, frequency, action } = body
     
     if (action === 'calculate') {
