@@ -2,10 +2,10 @@ name: "Feature PRP - Funding Engine (NDIS Contract-Based Funding with Balance Tr
 description: |
 
 ## Purpose
-Transform the existing static funding information system into a dynamic NDIS funding engine that models funding as time-based contracts with automatic balance calculations and drawdown tracking. This enables accurate funding allocation management over time periods per resident, essential for NDIS compliance and successful accommodation provider business operations.
+Transform the existing static funding information system into a dynamic funding engine (based on NDIS structure) that models funding as time-based contracts with automatic balance calculations and drawdown tracking. The kinds of contract start off with an amount and draw down over time. This enables accurate funding allocation management over time periods per resident, essential for NDIS compliance and like models where payment is post service delivery. 
 
 ## Core Principles
-1. **Context is King**: Build upon existing FundingManager component and resident funding infrastructure
+1. **Context is King**: Build upon existing FundingManager component and resident funding infrastructure with a view to building a system that services this kind of a funding structiure
 2. **Validation Loops**: Include proper error handling, loading states, and comprehensive E2E testing
 3. **Information Dense**: Use existing Next.js App Router + Tailwind + TypeScript patterns
 4. **Progressive Success**: Start with contract model, add balance tracking, then drawdown mechanisms
@@ -15,11 +15,12 @@ Transform the existing static funding information system into a dynamic NDIS fun
 
 ## Goal
 Users can:
-- Create funding contracts for residents with upfront allocations and time periods
-- View current balance and remaining balance as funding reduces over time
+- Create funding contracts for residents with upfront allocations and time periods and track and draw down over time
+- View current balance and remaining balance as funding reduces over time, at any poiint in time this is accurate
 - Make funding contracts active to begin automatic balance drawdown
-- Track funding drawdown patterns aligned with NDIS payment structures
+- Track funding drawdown patterns
 - See comprehensive funding status in resident records
+
 
 ---
 
@@ -638,3 +639,9 @@ This PRP provides comprehensive context for one-pass implementation success:
 - ✅ Professional UI components following established design patterns
 
 The high confidence (9/10) reflects the solid foundation of existing funding infrastructure and the clear business requirements. The implementation extends proven patterns rather than creating new architecture, reducing risk while delivering essential NDIS funding management capabilities.
+
+
+** Updates
+
+A When creating a funding contract, plase alter the funding type to be called "Funding Model" and change the options to "Draw Down" or "Capture & Invoice" or "Hybrid"
+

@@ -87,7 +87,9 @@ export async function POST(
       autoBillingEnabled: z.boolean().default(false),
       automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
       firstRunDate: z.coerce.date().optional(),
-      nextRunDate: z.coerce.date().optional()
+      nextRunDate: z.coerce.date().optional(),
+      // Duration field (calculated from start/end dates)
+      durationDays: z.number().int().positive().optional()
     }).refine(
       (data) => !data.endDate || data.startDate <= data.endDate,
       {
@@ -143,6 +145,13 @@ export async function POST(
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 300))
     
+    // Calculate duration in days if both start and end dates are provided
+    let durationDays: number | undefined = undefined
+    if (validation.data.startDate && validation.data.endDate) {
+      const timeDiff = validation.data.endDate.getTime() - validation.data.startDate.getTime()
+      durationDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end dates
+    }
+    
     // Create funding contract in Supabase
     const newFunding = await residentService.createFundingContract(id, {
       type: validation.data.type,
@@ -165,7 +174,9 @@ export async function POST(
       autoBillingEnabled: validation.data.autoBillingEnabled,
       automatedDrawdownFrequency: validation.data.automatedDrawdownFrequency,
       firstRunDate: validation.data.firstRunDate,
-      nextRunDate: validation.data.nextRunDate
+      nextRunDate: validation.data.nextRunDate,
+      // Duration field
+      durationDays: durationDays
     })
     
     return NextResponse.json({
@@ -248,7 +259,9 @@ export async function PUT(
       autoBillingEnabled: z.boolean().optional(),
       automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).optional(),
       firstRunDate: z.coerce.date().optional(),
-      nextRunDate: z.coerce.date().optional()
+      nextRunDate: z.coerce.date().optional(),
+      // Duration field (calculated from start/end dates)
+      durationDays: z.number().int().positive().optional()
     }).refine(
       (data) => !data.endDate || !data.startDate || data.startDate <= data.endDate,
       {
@@ -303,8 +316,21 @@ export async function PUT(
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 300))
     
+    // Calculate duration in days if both start and end dates are provided
+    let durationDays: number | undefined = undefined
+    if (validation.data.startDate && validation.data.endDate) {
+      const timeDiff = validation.data.endDate.getTime() - validation.data.startDate.getTime()
+      durationDays = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1 // +1 to include both start and end dates
+    }
+    
+    // Add duration to the update data
+    const updateData = {
+      ...validation.data,
+      ...(durationDays !== undefined && { durationDays })
+    }
+    
     // Update funding contract in Supabase
-    const updatedFunding = await residentService.updateFundingContract(fundingId, validation.data)
+    const updatedFunding = await residentService.updateFundingContract(fundingId, updateData)
     
     return NextResponse.json({
       success: true,
