@@ -6,7 +6,8 @@ import type {
   DrawdownValidationResult, 
   MandatoryDrawdownRule,
   Transaction, 
-  TransactionCreateInput
+  TransactionCreateInput,
+  TransactionAuditEntry
 } from 'types/transaction'
 import { calculateBalanceImpact } from './transaction-storage'
 
@@ -90,7 +91,7 @@ export const MANDATORY_DRAWDOWN_RULES: MandatoryDrawdownRule[] = [
     description: 'Transaction must be atomic (single point in time, specific support item)',
     isMandatory: true,
     validate: (transaction: Transaction) => {
-      const hasSpecificDescription = !!transaction.description && transaction.description.trim().length > 0
+      const hasSpecificDescription = !!transaction.note && transaction.note.trim().length > 0
       const hasValidQuantity = transaction.quantity > 0 && Number.isInteger(transaction.quantity)
       return {
         isValid: hasSpecificDescription && hasValidQuantity,
@@ -113,7 +114,7 @@ export function validateDrawdownTransaction(
   
   // Run all mandatory rules
   for (const rule of MANDATORY_DRAWDOWN_RULES) {
-    const result = rule.validate(transaction, contract)
+    const result = rule.validate(transaction, _contract)
     if (!result.isValid && result.error) {
       if (rule.isMandatory) {
         errors.push(result.error)
@@ -129,15 +130,15 @@ export function validateDrawdownTransaction(
   // Additional NDIS-specific validations
   if (transaction.isDrawdownTransaction) {
     // Validate service item code format (basic NDIS format check)
-    if (!isValidNDISServiceCode(transaction.serviceItemCode)) {
+    if (!transaction.serviceItemCode || !isValidNDISServiceCode(transaction.serviceItemCode)) {
       errors.push('Service item code must follow NDIS format (e.g., 01_001_0107_1_1)')
     }
     
     // Validate transaction occurred within contract period
-    if (contract.startDate && contract.endDate) {
+    if (_contract.startDate && _contract.endDate) {
       const occurredAt = new Date(transaction.occurredAt)
-      const startDate = new Date(contract.startDate)
-      const endDate = new Date(contract.endDate)
+      const startDate = new Date(_contract.startDate)
+      const endDate = new Date(_contract.endDate)
       
       if (occurredAt < startDate || occurredAt > endDate) {
         errors.push('Transaction must occur within contract period')
@@ -244,7 +245,7 @@ export function createDrawdownTransaction(
     timestamp: now,
     userId: createdBy,
     userEmail: `${createdBy}@example.com`,
-    reason: 'Transaction created via Drawing Down system'
+    comment: 'Transaction created via Drawing Down system'
   }
   
   const transaction: Transaction = {
@@ -254,13 +255,12 @@ export function createDrawdownTransaction(
     occurredAt: input.occurredAt,
     serviceCode: input.serviceCode || 'DRAWDOWN',
     serviceItemCode: input.serviceItemCode,
-    description: input.description,
+    note: input.note,
     quantity: input.quantity,
     unitPrice: input.unitPrice,
     amount: finalAmount,
     status: 'draft',
     drawdownStatus: 'pending',
-    note: input.note,
     createdAt: now,
     createdBy,
     supportAgreementId: input.supportAgreementId,

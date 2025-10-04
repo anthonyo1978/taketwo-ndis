@@ -50,9 +50,9 @@ export function exportData(): { residents: any[]; houses: any[]; transactions: a
   }
 
   try {
-    const residents = JSON.parse(localStorage.getItem('ndis_residents') || '[]')
-    const houses = JSON.parse(localStorage.getItem('ndis_houses') || '[]')
-    const transactions = JSON.parse(localStorage.getItem('ndis_transactions') || '[]')
+    const residents = JSON.parse(localStorage.getItem('ndis_residents') || '[]') as any[]
+    const houses = JSON.parse(localStorage.getItem('ndis_houses') || '[]') as any[]
+    const transactions = JSON.parse(localStorage.getItem('ndis_transactions') || '[]') as any[]
     
     return { residents, houses, transactions }
   } catch (error) {
@@ -130,7 +130,7 @@ export function diagnoseDataIssues(): {
         const transactions = JSON.parse(transactionsData)
         if (Array.isArray(transactions)) {
           // Check each transaction for required fields
-          transactions.forEach((tx, index) => {
+          transactions.forEach((tx: any, index) => {
             if (!tx.id || !tx.residentId || !tx.contractId) {
               issues.push(`Transaction at index ${index} is missing required fields`)
             }

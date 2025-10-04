@@ -1,5 +1,5 @@
 import { createClient } from '../server'
-import type { House } from '@/types/house'
+import type { House } from '../../../types/house'
 
 /**
  * Service class for managing house data operations with Supabase.
@@ -18,11 +18,10 @@ export class HouseService {
       id: dbHouse.id,
       descriptor: dbHouse.descriptor || undefined, // Handle missing descriptor field
       address1: dbHouse.address1,
-      address2: dbHouse.address2,
+      unit: dbHouse.unit,
       suburb: dbHouse.suburb,
       state: dbHouse.state,
       postcode: dbHouse.postcode,
-      unit: dbHouse.unit,
       country: dbHouse.country || 'AU', // Default to AU if not provided
       status: dbHouse.status,
       notes: dbHouse.notes,
@@ -80,7 +79,7 @@ export class HouseService {
       }
 
       // Add sorting
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' })
+      query = query.order(sortBy || 'created_at', { ascending: sortOrder === 'asc' })
 
       // Add pagination
       query = query.range(offset, offset + limit - 1)
@@ -182,11 +181,10 @@ export class HouseService {
       const dbHouse = {
         descriptor: house.descriptor, // Now uncommented - database migration applied
         address1: house.address1,
-        address2: house.address2,
+        unit: house.unit,
         suburb: house.suburb,
         state: house.state,
         postcode: house.postcode,
-        unit: house.unit,
         country: house.country || 'AU', // Default to AU if not provided
         status: house.status,
         notes: house.notes,
@@ -230,11 +228,10 @@ export class HouseService {
       }
 
       if (updates.address1 !== undefined) dbUpdates.address1 = updates.address1
-      if (updates.address2 !== undefined) dbUpdates.address2 = updates.address2
+      if (updates.unit !== undefined) dbUpdates.unit = updates.unit
       if (updates.suburb !== undefined) dbUpdates.suburb = updates.suburb
       if (updates.state !== undefined) dbUpdates.state = updates.state
       if (updates.postcode !== undefined) dbUpdates.postcode = updates.postcode
-      if (updates.unit !== undefined) dbUpdates.unit = updates.unit
       if (updates.country !== undefined) dbUpdates.country = updates.country
       if (updates.status !== undefined) dbUpdates.status = updates.status
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes
@@ -261,53 +258,6 @@ export class HouseService {
     }
   }
 
-  /**
-   * Update a house by ID.
-   * 
-   * @param id - The house ID to update
-   * @param house - The updated house data
-   * @returns Promise resolving to updated house
-   * @throws Error if update fails
-   */
-  async update(id: string, house: Omit<House, 'id' | 'createdAt' | 'createdBy'>): Promise<House> {
-    try {
-      // Convert camelCase to snake_case for database
-      const dbHouse = {
-        descriptor: house.descriptor,
-        address1: house.address1,
-        address2: house.address2,
-        suburb: house.suburb,
-        state: house.state,
-        postcode: house.postcode,
-        unit: house.unit,
-        country: house.country || 'AU', // Default to AU if not provided
-        status: house.status,
-        notes: house.notes,
-        go_live_date: house.goLiveDate, // Convert camelCase to snake_case
-        resident: house.resident,
-        image_url: house.imageUrl, // Add image URL support
-        updated_at: house.updatedAt.toISOString()
-      }
-
-      const supabase = await this.getSupabase()
-      const { data, error } = await supabase
-        .from('houses')
-        .update(dbHouse)
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error updating house:', error)
-        throw new Error(`Failed to update house: ${error.message}`)
-      }
-
-      return this.convertDbHouseToFrontend(data)
-    } catch (error) {
-      console.error('HouseService.update error:', error)
-      throw error
-    }
-  }
 
   /**
    * Delete a house.

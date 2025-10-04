@@ -70,9 +70,9 @@ export class TransactionService {
       return {
         transactions,
         total: count || 0,
+        hasMore: (page * pageSize) < (count || 0),
         page,
-        pageSize,
-        totalPages: Math.ceil((count || 0) / pageSize)
+        pageSize
       }
     } catch (error) {
       console.error('Error in TransactionService.getAll:', error)
@@ -216,7 +216,7 @@ export class TransactionService {
       }
 
       // Create audit trail entry for creation
-      await this.createAuditEntry(data.id, 'created', input.createdBy || 'system', 'Transaction created', undefined, data)
+      await this.createAuditEntry(data.id, 'created', createdBy, 'Transaction created', undefined, data)
 
       // Update contract balance if transaction is not orphaned
       if (!isOrphaned) {
@@ -468,8 +468,8 @@ export class TransactionService {
         userEmail: entry.user_email,
         comment: entry.comment,
         changedFields: entry.changed_fields || [],
-        previousValues: entry.previous_values ? JSON.parse(entry.previous_values) : undefined,
-        newValues: entry.new_values ? JSON.parse(entry.new_values) : undefined
+        previousValues: entry.previous_values ? JSON.parse(entry.previous_values) as Partial<Transaction> : undefined,
+        newValues: entry.new_values ? JSON.parse(entry.new_values) as Partial<Transaction> : undefined
       }))
     } catch (error) {
       console.error('Error in getAuditTrail:', error)
@@ -575,11 +575,10 @@ function convertFrontendTransactionToDb(
     occurred_at: transaction.occurredAt?.toISOString(),
     service_code: transaction.serviceCode,
     service_item_code: transaction.serviceItemCode,
-    description: transaction.description,
+    description: transaction.note,
     quantity: transaction.quantity,
     unit_price: transaction.unitPrice,
     amount: transaction.amount,
-    note: transaction.note,
     support_agreement_id: transaction.supportAgreementId,
     is_drawdown_transaction: transaction.isDrawdownTransaction || false,
     is_orphaned: transaction.isOrphaned || false
@@ -607,13 +606,12 @@ function convertDbTransactionToFrontend(dbTransaction: any): Transaction {
     occurredAt: new Date(dbTransaction.occurred_at),
     serviceCode: dbTransaction.service_code,
     serviceItemCode: dbTransaction.service_item_code,
-    description: dbTransaction.description,
+    note: dbTransaction.description,
     quantity: parseFloat(dbTransaction.quantity),
     unitPrice: parseFloat(dbTransaction.unit_price),
     amount: parseFloat(dbTransaction.amount),
     status: dbTransaction.status,
     drawdownStatus: dbTransaction.drawdown_status,
-    note: dbTransaction.note,
     supportAgreementId: dbTransaction.support_agreement_id,
     isDrawdownTransaction: dbTransaction.is_drawdown_transaction,
     isOrphaned: dbTransaction.is_orphaned || false,

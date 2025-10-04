@@ -142,6 +142,9 @@ export async function updateContractBalance(residentId: string, contractId: stri
   }
 
   const resident = residents[residentIndex]
+  if (!resident) {
+    return null
+  }
   const contractIndex = resident.fundingInformation.findIndex(f => f.id === contractId)
   
   if (contractIndex === -1) {
@@ -149,6 +152,9 @@ export async function updateContractBalance(residentId: string, contractId: stri
   }
 
   const contract = resident.fundingInformation[contractIndex]
+  if (!contract) {
+    return null
+  }
   
   // Only update active contracts
   if (contract.contractStatus !== 'Active') {
@@ -253,6 +259,9 @@ export async function markExpiredContracts(): Promise<{
 
   for (let residentIndex = 0; residentIndex < residents.length; residentIndex++) {
     const resident = residents[residentIndex]
+    if (!resident) {
+      continue
+    }
     let hasChanges = false
     const auditEntries: AuditLogEntry[] = []
 

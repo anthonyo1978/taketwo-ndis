@@ -58,7 +58,6 @@ export async function PUT(
       const updatedHouse = await houseService.update(id, {
         ...existingHouse,
         imageUrl: bodyObj.imageUrl,
-        updatedAt: new Date(),
         updatedBy: 'system' // TODO: Get from auth context
       })
       return NextResponse.json({ success: true, data: updatedHouse })
@@ -78,14 +77,12 @@ export async function PUT(
     }
 
     // Update the house with full validation
-    const updatedHouse = await houseService.update(id, {
-      ...validation.data,
-      // Preserve audit fields
-      createdAt: existingHouse.createdAt,
-      createdBy: existingHouse.createdBy,
-      updatedAt: new Date(),
-      updatedBy: 'system' // TODO: Get from auth context
-    })
+      const updatedHouse = await houseService.update(id, {
+        ...validation.data,
+        // Preserve audit fields
+        createdBy: existingHouse.createdBy,
+        updatedBy: 'system' // TODO: Get from auth context
+      })
 
     return NextResponse.json({ success: true, data: updatedHouse })
   } catch (error) {

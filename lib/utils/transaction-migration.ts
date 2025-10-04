@@ -14,17 +14,25 @@ export function migrateTransaction(transaction: Record<string, unknown>): Transa
   return {
     ...transaction,
     // Ensure required fields have safe defaults
-    serviceCode: transaction.serviceCode || 'LEGACY',
-    drawdownStatus: transaction.drawdownStatus || 'posted', // Assume existing transactions are posted
-    participantId: transaction.participantId || transaction.residentId,
-    serviceItemCode: transaction.serviceItemCode || undefined,
-    isDrawdownTransaction: transaction.isDrawdownTransaction || false,
-    auditTrail: transaction.auditTrail || [],
+    id: (transaction.id as string) || 'migrated-transaction-' + Date.now(),
+    residentId: (transaction.residentId as string) || 'unknown',
+    contractId: (transaction.contractId as string) || 'unknown',
+    quantity: (transaction.quantity as number) || 1,
+    unitPrice: (transaction.unitPrice as number) || 0,
+    amount: (transaction.amount as number) || 0,
+    status: (transaction.status as 'draft' | 'posted' | 'voided') || 'posted',
+    createdBy: (transaction.createdBy as string) || 'system',
+    serviceCode: (transaction.serviceCode as string) || 'LEGACY',
+    drawdownStatus: (transaction.drawdownStatus as 'pending' | 'validated' | 'posted' | 'rejected' | 'voided') || 'posted', // Assume existing transactions are posted
+    participantId: (transaction.participantId as string) || (transaction.residentId as string),
+    serviceItemCode: (transaction.serviceItemCode as string) || undefined,
+    isDrawdownTransaction: (transaction.isDrawdownTransaction as boolean) || false,
+    auditTrail: (transaction.auditTrail as any[]) || [],
     // Ensure dates are proper Date objects
-    occurredAt: new Date(transaction.occurredAt),
-    createdAt: new Date(transaction.createdAt),
-    postedAt: transaction.postedAt ? new Date(transaction.postedAt) : undefined,
-    voidedAt: transaction.voidedAt ? new Date(transaction.voidedAt) : undefined
+    occurredAt: new Date(transaction.occurredAt as string),
+    createdAt: new Date(transaction.createdAt as string),
+    postedAt: transaction.postedAt ? new Date(transaction.postedAt as string) : undefined,
+    voidedAt: transaction.voidedAt ? new Date(transaction.voidedAt as string) : undefined
   }
 }
 
@@ -71,7 +79,7 @@ export function autoMigrateTransactions(): void {
     const stored = localStorage.getItem('ndis_transactions')
     if (!stored) return
 
-    const transactions = JSON.parse(stored)
+    const transactions = JSON.parse(stored) as any[]
     const needsMigrationCount = transactions.filter(needsMigration).length
     
     if (needsMigrationCount > 0) {

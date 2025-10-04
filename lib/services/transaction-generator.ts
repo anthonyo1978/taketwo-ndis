@@ -355,7 +355,7 @@ export async function previewTransactionGeneration(): Promise<{
         frequency: contract.contract.automated_drawdown_frequency,
         currentBalance: contract.contract.current_balance,
         newBalance: contract.contract.current_balance - transactionAmount,
-        nextRunDate: nextRunDate.toISOString().split('T')[0]
+        nextRunDate: nextRunDate.toISOString().split('T')[0] as string
       }
     })
     

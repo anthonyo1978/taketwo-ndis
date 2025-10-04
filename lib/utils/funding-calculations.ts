@@ -1,5 +1,5 @@
 import { differenceInDays, differenceInWeeks, differenceInMonths } from 'date-fns'
-import type { FundingInformation, ContractStatus } from '@/types/resident'
+import type { FundingInformation, ContractStatus } from '../../types/resident'
 
 /**
  * Calculate the number of elapsed periods based on the drawdown rate

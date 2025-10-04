@@ -262,7 +262,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   }, [refreshTrigger])
 
   // Table columns - Only showing requested columns in specified order
-  const columns = useMemo<ColumnDef<typeof enhancedData[0]>[]>(() => [
+  const columns = useMemo(() => [
     // TXN ID column
     columnHelper.accessor('id', {
       id: 'id',
@@ -356,7 +356,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   ], [])
 
   const table = useReactTable({
-    data: enhancedData,
+    data: enhancedData as any,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -378,8 +378,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   const handleViewTransaction = async (id: string) => {
     try {
       const response = await fetch(`/api/transactions/${id}`)
-      const result = await response.json()
-      
+      const result = await response.json() as { success: boolean; data?: any; error?: string }
+
       if (result.success) {
         setSelectedTransaction(result.data)
         // Set edit form data but exclude the note field (it's read-only)
@@ -406,7 +406,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         try {
           const response = await fetch(`/api/residents/${selectedTransaction.residentId}/funding`)
           if (response.ok) {
-            const result = await response.json()
+            const result = await response.json() as { success: boolean; data?: any[] }
             if (result.success && result.data) {
               const contract = result.data.find((c: any) => c.id === selectedTransaction.contractId)
               if (contract) {
@@ -465,8 +465,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         body: JSON.stringify(updateData)
       })
 
-      const result = await response.json()
-      
+      const result = await response.json() as { success: boolean; data?: any; error?: string; details?: any[] }
+
       if (result.success) {
         setSelectedTransaction(result.data)
         setEditFormData(result.data)
@@ -555,8 +555,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       const response = await fetch(`/api/transactions/${id}/post`, {
         method: 'POST',
       })
-      const result = await response.json()
-      
+      const result = await response.json() as { success: boolean; error?: string }
+
       if (result.success) {
         await fetchTransactions() // Refresh the table
       } else {
@@ -578,8 +578,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason }),
       })
-      const result = await response.json()
-      
+      const result = await response.json() as { success: boolean; error?: string }
+
       if (result.success) {
         await fetchTransactions() // Refresh the table
       } else {
@@ -841,11 +841,11 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Resident</label>
-                    <p className="text-sm">{selectedTransaction.residentName || 'Unknown'}</p>
+                    <p className="text-sm">{(selectedTransaction as any).residentName || 'Unknown'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">House</label>
-                    <p className="text-sm">{selectedTransaction.houseName || 'Unknown'}</p>
+                    <p className="text-sm">{(selectedTransaction as any).houseName || 'Unknown'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Service Code</label>

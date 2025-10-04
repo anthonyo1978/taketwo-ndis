@@ -72,13 +72,12 @@ export function getTransactionsFromStorage(): Transaction[] {
           contractId: tx.contractId || 'unknown',
           occurredAt: new Date(),
           serviceCode: 'LEGACY',
-          description: tx.description || 'Migrated transaction',
+          note: tx.note || 'Migrated transaction',
           quantity: tx.quantity || 1,
           unitPrice: tx.unitPrice || 0,
           amount: tx.amount || 0,
           status: 'posted' as const,
           drawdownStatus: 'posted' as const,
-          note: tx.note,
           createdAt: new Date(),
           createdBy: tx.createdBy || 'system',
           participantId: tx.residentId || 'unknown',
@@ -222,12 +221,11 @@ export function createTransaction(
     contractId: input.contractId,
     occurredAt: input.occurredAt,
     serviceCode: input.serviceCode,
-    description: input.description,
+    note: input.note,
     quantity: input.quantity,
     unitPrice: input.unitPrice,
     amount: finalAmount,
     status: 'draft',
-    note: input.note,
     createdAt: now,
     createdBy: createdBy,
     // Drawing Down fields (optional for regular transactions)
@@ -244,7 +242,7 @@ export function createTransaction(
     timestamp: new Date(),
     userId: createdBy,
     userEmail: `${createdBy}@example.com`,
-    reason: 'Transaction created'
+    comment: 'Transaction created'
   }
   
   // Initialize audit trail if it doesn't exist
@@ -280,6 +278,10 @@ export function updateTransaction(
   }
   
   const transaction = transactions[index]
+  
+  if (!transaction) {
+    throw new Error('Transaction not found')
+  }
   
   if (transaction.status !== 'draft') {
     throw new Error('Can only update draft transactions')
@@ -319,6 +321,10 @@ export function postTransaction(
   
   const transaction = transactions[index]
   
+  if (!transaction) {
+    return { success: false, error: 'Transaction not found' }
+  }
+  
   if (transaction.status !== 'draft') {
     return { success: false, error: 'Can only post draft transactions' }
   }
@@ -354,7 +360,7 @@ export function postTransaction(
     timestamp: new Date(),
     userId: postedBy,
     userEmail: `${postedBy}@example.com`,
-    reason: 'Transaction posted via Drawing Down system'
+    comment: 'Transaction posted via Drawing Down system'
   }
   
   // Update transaction status with Drawing Down fields
@@ -407,6 +413,10 @@ export function voidTransaction(
   
   const transaction = transactions[index]
   
+  if (!transaction) {
+    throw new Error('Transaction not found')
+  }
+  
   if (transaction.status !== 'posted') {
     throw new Error('Can only void posted transactions')
   }
@@ -455,6 +465,10 @@ function updateContractBalance(contractId: string): void {
     tx.contractId === contractId && tx.status === 'posted'
   )
   
+  if (!contract) {
+    throw new Error('Contract not found')
+  }
+  
   const totalPosted = postedTransactions.reduce((sum, tx) => sum + tx.amount, 0)
   const newBalance = Math.max(0, contract.originalAmount - totalPosted)
   
@@ -482,6 +496,10 @@ export function deleteTransaction(id: string): boolean {
   }
   
   const transaction = transactions[index]
+  
+  if (!transaction) {
+    throw new Error('Transaction not found')
+  }
   
   if (transaction.status !== 'draft') {
     throw new Error('Can only delete draft transactions')
@@ -534,7 +552,6 @@ function applyFilters(transactions: Transaction[], filters: TransactionFilters):
     const searchLower = filters.search.toLowerCase()
     filtered = filtered.filter(tx => 
       tx.serviceCode?.toLowerCase().includes(searchLower) ||
-      tx.description?.toLowerCase().includes(searchLower) ||
       tx.note?.toLowerCase().includes(searchLower)
     )
   }

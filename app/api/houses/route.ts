@@ -25,7 +25,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Create house in Supabase
-    const newHouse = await houseService.create(validation.data)
+    const newHouse = await houseService.create({
+      ...validation.data,
+      country: validation.data.country || 'Australia', // Default to Australia
+      createdBy: 'system', // TODO: Get from auth context
+      updatedBy: 'system' // TODO: Get from auth context
+    })
 
     return NextResponse.json(
       { 

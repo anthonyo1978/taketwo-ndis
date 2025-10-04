@@ -1,11 +1,11 @@
+import type { FundingInformation, ContractStatus, Resident, FundingModel, Gender, ResidentStatus } from '../../types/resident'
+
 /**
  * Resident Migration Utility
  * 
  * This utility helps migrate existing resident data to include the new contract fields
  * for backward compatibility with the Drawing Down system.
  */
-
-import type { FundingInformation, Resident } from 'types/resident'
 
 /**
  * Migrate a single funding information object to include new contract fields
@@ -14,21 +14,27 @@ export function migrateFundingInformation(funding: Record<string, unknown>): Fun
   return {
     ...funding,
     // Ensure required contract fields have safe defaults
-    contractStatus: funding.contractStatus || 'Draft',
-    originalAmount: funding.originalAmount || funding.amount || 0,
-    currentBalance: funding.currentBalance || funding.amount || 0,
-    drawdownRate: funding.drawdownRate || 'monthly',
-    autoDrawdown: funding.autoDrawdown ?? true,
-    lastDrawdownDate: funding.lastDrawdownDate || undefined,
-    renewalDate: funding.renewalDate || undefined,
-    parentContractId: funding.parentContractId || undefined,
-    supportItemCode: funding.supportItemCode || undefined,
-    dailySupportItemCost: funding.dailySupportItemCost || undefined,
+    id: (funding.id as string) || 'migrated-' + Date.now(),
+    type: (funding.type as FundingModel) || 'Draw Down',
+    amount: (funding.amount as number) || 0,
+    isActive: (funding.isActive as boolean) ?? true,
+    contractStatus: (funding.contractStatus as ContractStatus) || 'Draft',
+    originalAmount: (funding.originalAmount as number) || (funding.amount as number) || 0,
+    currentBalance: (funding.currentBalance as number) || (funding.amount as number) || 0,
+    drawdownRate: (funding.drawdownRate as 'daily' | 'weekly' | 'monthly') || 'monthly',
+    autoDrawdown: (funding.autoDrawdown as boolean) ?? true,
+    autoBillingEnabled: (funding.autoBillingEnabled as boolean) ?? false,
+    automatedDrawdownFrequency: (funding.automatedDrawdownFrequency as 'daily' | 'weekly' | 'fortnightly') || 'weekly',
+    lastDrawdownDate: funding.lastDrawdownDate ? new Date(funding.lastDrawdownDate as string) : undefined,
+    renewalDate: funding.renewalDate ? new Date(funding.renewalDate as string) : undefined,
+    parentContractId: funding.parentContractId as string || undefined,
+    supportItemCode: (funding.supportItemCode as string) || undefined,
+    dailySupportItemCost: (funding.dailySupportItemCost as number) || undefined,
     // Ensure dates are proper Date objects
-    startDate: new Date(funding.startDate),
-    endDate: funding.endDate ? new Date(funding.endDate) : undefined,
-    createdAt: new Date(funding.createdAt),
-    updatedAt: new Date(funding.updatedAt)
+    startDate: new Date(funding.startDate as string),
+    endDate: funding.endDate ? new Date(funding.endDate as string) : undefined,
+    createdAt: new Date(funding.createdAt as string),
+    updatedAt: new Date(funding.updatedAt as string)
   }
 }
 
@@ -38,14 +44,24 @@ export function migrateFundingInformation(funding: Record<string, unknown>): Fun
 export function migrateResident(resident: Record<string, unknown>): Resident {
   return {
     ...resident,
+    // Ensure required fields have safe defaults
+    id: (resident.id as string) || 'migrated-resident-' + Date.now(),
+    houseId: (resident.houseId as string) || 'unknown',
+    firstName: (resident.firstName as string) || 'Unknown',
+    lastName: (resident.lastName as string) || 'Resident',
+    gender: (resident.gender as Gender) || 'Prefer not to say',
+    status: (resident.status as ResidentStatus) || 'Active',
+    preferences: (resident.preferences as any) || {},
+    createdBy: (resident.createdBy as string) || 'system',
+    updatedBy: (resident.updatedBy as string) || 'system',
     // Migrate funding information
-    fundingInformation: resident.fundingInformation?.map(migrateFundingInformation) || [],
+    fundingInformation: (resident.fundingInformation as any[])?.map(migrateFundingInformation) || [],
     // Ensure dates are proper Date objects
-    dateOfBirth: new Date(resident.dateOfBirth),
-    createdAt: new Date(resident.createdAt),
-    updatedAt: new Date(resident.updatedAt),
+    dateOfBirth: new Date(resident.dateOfBirth as string),
+    createdAt: new Date(resident.createdAt as string),
+    updatedAt: new Date(resident.updatedAt as string),
     // Ensure audit trail exists
-    auditTrail: resident.auditTrail || []
+    auditTrail: (resident.auditTrail as any[]) || []
   }
 }
 
@@ -79,7 +95,7 @@ export function needsResidentMigration(resident: Record<string, unknown>): boole
     return true
   }
   
-  return resident.fundingInformation.some((funding: Record<string, unknown>) => 
+  return resident.fundingInformation.some((funding: any) => 
     !funding.hasOwnProperty('contractStatus') || 
     !funding.hasOwnProperty('originalAmount') ||
     !funding.hasOwnProperty('currentBalance')

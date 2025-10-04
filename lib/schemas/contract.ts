@@ -6,41 +6,15 @@ export const contractStatusSchema = z.enum(['Draft', 'Active', 'Expired', 'Cance
 export const drawdownRateSchema = z.enum(['daily', 'weekly', 'monthly'] as const)
 
 // Extended funding information schema with contract fields
-export const fundingContractSchema = fundingInformationSchema.extend({
-  contractStatus: contractStatusSchema.default('Draft'),
-  originalAmount: z.number()
-    .min(0, "Original amount must be positive")
-    .max(999999.99, "Original amount must be less than $1,000,000")
-    .refine(val => Number.isFinite(val), "Invalid original amount"),
-  currentBalance: z.number()
-    .min(0, "Current balance cannot be negative")
-    .max(999999.99, "Current balance must be less than $1,000,000")
-    .refine(val => Number.isFinite(val), "Invalid current balance"),
-  drawdownRate: drawdownRateSchema.default('monthly'),
-  autoDrawdown: z.boolean().default(true),
-  lastDrawdownDate: z.coerce.date().optional(),
-  renewalDate: z.coerce.date().optional(),
-  parentContractId: z.string().optional()
-}).refine(
-  (data) => data.currentBalance <= data.originalAmount,
-  {
-    message: "Current balance cannot exceed original amount",
-    path: ["currentBalance"]
-  }
-).refine(
-  (data) => !data.renewalDate || data.renewalDate > data.startDate,
-  {
-    message: "Renewal date must be after start date", 
-    path: ["renewalDate"]
-  }
-)
+// Note: Using fundingInformationSchema directly since it already includes all contract fields
+export const fundingContractSchema = fundingInformationSchema
 
 // Contract status transition validation
 export const contractStatusTransitionSchema = z.object({
   currentStatus: contractStatusSchema,
   newStatus: contractStatusSchema
 }).refine((data) => {
-  const validTransitions = {
+  const validTransitions: Record<string, string[]> = {
     'Draft': ['Active', 'Cancelled'],
     'Active': ['Expired', 'Cancelled'],
     'Expired': ['Renewed', 'Cancelled'],

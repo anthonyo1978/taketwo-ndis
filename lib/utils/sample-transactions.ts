@@ -59,16 +59,17 @@ export function generateSampleTransactions(): void {
         const unitPrice = baseUnitPrice + (Math.random() * 20 - 10) // Add some variation
         const amount = Math.round(quantity * unitPrice * 100) / 100 // Round to 2 decimal places
         
+        if (!contract) continue
+        
         const transaction: TransactionCreateInput = {
           residentId: resident.id,
           contractId: contract.id,
           occurredAt,
           serviceCode,
-          description,
+          note: i % 3 === 0 ? `Generated sample transaction #${i + 1}` : description,
           quantity,
           unitPrice: Math.round(unitPrice * 100) / 100,
-          amount,
-          note: i % 3 === 0 ? `Generated sample transaction #${i + 1}` : undefined
+          amount
         }
         
         sampleTransactions.push(transaction)

@@ -162,7 +162,7 @@ export const updateResidentInStorage = (id: string, updates: ResidentUpdateInput
   
   Object.keys(updates).forEach(key => {
     const typedKey = key as keyof ResidentUpdateInput
-    const oldValue = existingResident[typedKey as keyof Resident]
+    const oldValue = existingResident?.[typedKey as keyof Resident]
     const newValue = updates[typedKey]
     
     if (oldValue !== newValue && newValue !== undefined) {
@@ -184,9 +184,20 @@ export const updateResidentInStorage = (id: string, updates: ResidentUpdateInput
   const updatedResident: Resident = {
     ...existingResident,
     ...updates,
+    id: existingResident?.id || 'unknown',
+    houseId: existingResident?.houseId || 'unknown',
+    firstName: existingResident?.firstName || 'Unknown',
+    lastName: existingResident?.lastName || 'Resident',
+    dateOfBirth: existingResident?.dateOfBirth || new Date(),
+    gender: existingResident?.gender || 'Prefer not to say',
+    status: existingResident?.status || 'Active',
+    fundingInformation: existingResident?.fundingInformation || [],
+    preferences: existingResident?.preferences || {},
+    createdAt: existingResident?.createdAt || new Date(),
+    createdBy: existingResident?.createdBy || 'system',
     // Preserve photoBase64 if not being explicitly updated
-    photoBase64: updates.photoBase64 !== undefined ? updates.photoBase64 : existingResident.photoBase64,
-    auditTrail: [...existingResident.auditTrail, ...auditEntries],
+    photoBase64: updates.photoBase64 !== undefined ? updates.photoBase64 : existingResident?.photoBase64,
+    auditTrail: [...(existingResident?.auditTrail || []), ...auditEntries],
     updatedAt: now,
     updatedBy: mockUser
   }
@@ -215,6 +226,10 @@ export const changeResidentStatus = (id: string, newStatus: ResidentStatus): Res
     'Prospect': ['Active', 'Deactivated'],
     'Active': ['Deactivated'],
     'Deactivated': ['Prospect'] // Allow reactivation through Prospect for circular flow
+  }
+  
+  if (!existingResident) {
+    throw new Error('Resident not found')
   }
   
   const allowedTransitions = validTransitions[existingResident.status]
@@ -294,9 +309,23 @@ export const addFundingToResident = (residentId: string, fundingData: Omit<Fundi
     userEmail: 'admin@example.com'
   }
   
+  if (!existingResident) {
+    throw new Error('Resident not found')
+  }
+  
   // Update the resident
   const updatedResident: Resident = {
     ...existingResident,
+    id: existingResident.id || 'unknown',
+    houseId: existingResident.houseId || 'unknown',
+    firstName: existingResident.firstName || 'Unknown',
+    lastName: existingResident.lastName || 'Resident',
+    dateOfBirth: existingResident.dateOfBirth || new Date(),
+    gender: existingResident.gender || 'Prefer not to say',
+    status: existingResident.status || 'Active',
+    preferences: existingResident.preferences || {},
+    createdAt: existingResident.createdAt || new Date(),
+    createdBy: existingResident.createdBy || 'system',
     fundingInformation: [...existingResident.fundingInformation, newFunding],
     auditTrail: [...existingResident.auditTrail, fundingAudit],
     updatedAt: now,
@@ -322,17 +351,21 @@ export const updateFundingInResident = (residentId: string, fundingId: string, u
   const mockUser = 'admin'
   const existingResident = residents[residentIndex]
   
+  if (!existingResident) {
+    return null
+  }
+  
   const fundingIndex = existingResident.fundingInformation.findIndex(f => f.id === fundingId)
   if (fundingIndex === -1) {
     return null
   }
   
   // Update funding information
-  const updatedFunding = {
+  const updatedFunding: FundingInformation = {
     ...existingResident.fundingInformation[fundingIndex],
     ...updates,
     updatedAt: now
-  }
+  } as FundingInformation
   
   // Create audit log entry
   const fundingAudit: AuditLogEntry = {
@@ -340,7 +373,7 @@ export const updateFundingInResident = (residentId: string, fundingId: string, u
     residentId,
     action: 'FUNDING_UPDATED',
     field: 'fundingInformation',
-    oldValue: `${existingResident.fundingInformation[fundingIndex].type}: $${existingResident.fundingInformation[fundingIndex].amount}`,
+    oldValue: `${existingResident.fundingInformation[fundingIndex]?.type}: $${existingResident.fundingInformation[fundingIndex]?.amount}`,
     newValue: `${updatedFunding.type}: $${updatedFunding.amount}`,
     timestamp: now,
     userId: mockUser,
@@ -377,6 +410,10 @@ export const removeFundingFromResident = (residentId: string, fundingId: string)
   const now = new Date()
   const mockUser = 'admin'
   const existingResident = residents[residentIndex]
+  
+  if (!existingResident) {
+    return null
+  }
   
   const fundingToRemove = existingResident.fundingInformation.find(f => f.id === fundingId)
   if (!fundingToRemove) {
@@ -449,6 +486,10 @@ export const updateContractStatus = (residentId: string, fundingId: string, newS
   const mockUser = 'admin'
   const existingResident = residents[residentIndex]
   
+  if (!existingResident) {
+    return null
+  }
+  
   const fundingIndex = existingResident.fundingInformation.findIndex(f => f.id === fundingId)
   if (fundingIndex === -1) {
     return null
@@ -463,6 +504,10 @@ export const updateContractStatus = (residentId: string, fundingId: string, newS
     'Expired': ['Renewed'],
     'Cancelled': [], // No transitions from cancelled
     'Renewed': ['Active', 'Expired', 'Cancelled'] // Renewed contracts can be activated or cancelled
+  }
+  
+  if (!currentContract) {
+    throw new Error('Contract not found')
   }
   
   if (!validTransitions[currentContract.contractStatus]?.includes(newStatus)) {
@@ -536,6 +581,10 @@ export const createContractRenewal = (residentId: string, parentContractId: stri
   const mockUser = 'admin'
   const existingResident = residents[residentIndex]
   
+  if (!existingResident) {
+    throw new Error('Resident not found')
+  }
+  
   // Find parent contract
   const parentContract = existingResident.fundingInformation.find(f => f.id === parentContractId)
   if (!parentContract) {
@@ -556,6 +605,8 @@ export const createContractRenewal = (residentId: string, parentContractId: stri
     currentBalance: renewalData.amount,
     drawdownRate: renewalData.drawdownRate || parentContract.drawdownRate,
     autoDrawdown: renewalData.autoDrawdown ?? parentContract.autoDrawdown,
+    autoBillingEnabled: parentContract.autoBillingEnabled || false,
+    automatedDrawdownFrequency: parentContract.automatedDrawdownFrequency || 'weekly',
     lastDrawdownDate: undefined,
     renewalDate: undefined,
     parentContractId: parentContractId,
