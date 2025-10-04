@@ -207,14 +207,14 @@ export function AutomationSettingsPage() {
     const currentEmails = form.getValues("adminEmails")
     const newEmails = [...currentEmails, ""]
     form.setValue("adminEmails", newEmails)
-    setFormValues(prev => ({ ...prev, adminEmails: newEmails }))
+    setFormValues((prev: any) => ({ ...prev, adminEmails: newEmails }))
   }
 
   const removeAdminEmail = (index: number) => {
     const currentEmails = form.getValues("adminEmails")
     const newEmails = currentEmails.filter((_, i) => i !== index)
     form.setValue("adminEmails", newEmails)
-    setFormValues(prev => ({ ...prev, adminEmails: newEmails }))
+    setFormValues((prev: any) => ({ ...prev, adminEmails: newEmails }))
   }
 
   const updateAdminEmail = (index: number, value: string) => {
@@ -222,7 +222,7 @@ export function AutomationSettingsPage() {
     const updatedEmails = [...currentEmails]
     updatedEmails[index] = value
     form.setValue("adminEmails", updatedEmails)
-    setFormValues(prev => ({ ...prev, adminEmails: updatedEmails }))
+    setFormValues((prev: any) => ({ ...prev, adminEmails: updatedEmails }))
   }
 
   const fetchEligibleContracts = async () => {
@@ -239,7 +239,7 @@ export function AutomationSettingsPage() {
         error?: string
       }
       
-      if (data.success) {
+      if (data.success && data.data) {
         setEligibleContracts(data.data.eligibleContracts || [])
         setShowEligibleContracts(true)
       } else {
@@ -374,7 +374,7 @@ export function AutomationSettingsPage() {
                     checked={formValues?.enabled || false}
                     onChange={(e) => {
                       form.setValue('enabled', e.target.checked)
-                      setFormValues(prev => ({ ...prev, enabled: e.target.checked }))
+                       setFormValues((prev: any) => ({ ...prev, enabled: e.target.checked }))
                     }}
                     className="sr-only peer"
                   />
@@ -402,7 +402,7 @@ export function AutomationSettingsPage() {
                     value={formValues?.timezone || 'Australia/Sydney'}
                     onChange={(e) => {
                       form.setValue('timezone', e.target.value)
-                      setFormValues(prev => ({ ...prev, timezone: e.target.value }))
+                      setFormValues((prev: any) => ({ ...prev, timezone: e.target.value }))
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
@@ -432,7 +432,7 @@ export function AutomationSettingsPage() {
                 <p className="text-sm text-gray-500 mb-4">Email addresses that will receive automation notifications</p>
                 
                 <div className="space-y-3">
-                  {(formValues?.adminEmails || []).map((email, index) => (
+                  {(formValues?.adminEmails || []).map((email: any, index: number) => (
                     <div key={index} className="flex items-center gap-3">
                       <Input
                         type="email"
@@ -493,7 +493,7 @@ export function AutomationSettingsPage() {
                         checked={formValues?.notificationSettings?.frequency === value}
                         onChange={(e) => {
                           form.setValue('notificationSettings.frequency', e.target.value as any)
-                          setFormValues(prev => ({ 
+                          setFormValues((prev: any) => ({ 
                             ...prev, 
                             notificationSettings: { 
                               ...prev.notificationSettings, 
@@ -524,7 +524,7 @@ export function AutomationSettingsPage() {
                       checked={formValues?.notificationSettings?.includeLogs || false}
                       onChange={(e) => {
                         form.setValue('notificationSettings.includeLogs', e.target.checked)
-                        setFormValues(prev => ({ 
+                        setFormValues((prev: any) => ({ 
                           ...prev, 
                           notificationSettings: { 
                             ...prev.notificationSettings, 
@@ -558,7 +558,7 @@ export function AutomationSettingsPage() {
                     checked={formValues?.errorHandling?.continueOnError || false}
                     onChange={(e) => {
                       form.setValue('errorHandling.continueOnError', e.target.checked)
-                      setFormValues(prev => ({ 
+                      setFormValues((prev: any) => ({ 
                         ...prev, 
                         errorHandling: { 
                           ...prev.errorHandling, 
@@ -730,10 +730,12 @@ export function AutomationSettingsPage() {
                   // Group contracts by their next run date
                   const contractsByDate = eligibleContracts.reduce((acc, contract) => {
                     const runDate = new Date(contract.contract.next_run_date).toISOString().split('T')[0]
-                    if (!acc[runDate]) {
+                    if (runDate && !acc[runDate]) {
                       acc[runDate] = []
                     }
-                    acc[runDate].push(contract)
+                    if (runDate) {
+                      acc[runDate].push(contract)
+                    }
                     return acc
                   }, {} as Record<string, typeof eligibleContracts>)
                   
@@ -765,7 +767,7 @@ export function AutomationSettingsPage() {
                         </div>
                         
                         <div className="space-y-3 ml-4">
-                          {contracts.map((contract) => {
+                          {contracts.map((contract: any) => {
                             // Calculate transaction amount based on frequency
                             const dailyRate = contract.contract.daily_support_item_cost || 0
                             const frequency = contract.contract.automated_drawdown_frequency
