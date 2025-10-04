@@ -147,7 +147,7 @@ export function ImageUpload({
         
         <Button
           type="button"
-          variant="outline"
+          intent="secondary"
           onClick={() => fileInputRef.current?.click()}
           disabled={disabled || isUploading}
           className="flex items-center gap-2"
@@ -170,7 +170,7 @@ export function ImageUpload({
         {previewUrl && (
           <Button
             type="button"
-            variant="outline"
+            intent="secondary"
             onClick={handleRemoveImage}
             disabled={disabled || isUploading}
             className="text-red-600 hover:text-red-700 hover:bg-red-50"

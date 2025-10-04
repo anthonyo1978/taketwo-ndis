@@ -138,7 +138,7 @@ export function TransactionFilters({ filters, onFiltersChange }: TransactionFilt
         {/* Clear All Button */}
         {hasActiveFilters && (
           <Button
-            variant="ghost"
+            intent="secondary"
             size="sm"
             onClick={clearFilters}
             className="text-gray-500 hover:text-gray-700 h-8 px-3 text-sm"

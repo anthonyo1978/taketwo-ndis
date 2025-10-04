@@ -508,7 +508,7 @@ export function DrawingDownDialog({ onClose, onSuccess }: DrawingDownDialogProps
           <div className="flex justify-end space-x-3 pt-4 border-t">
             <Button
               type="button"
-              variant="secondary"
+              intent="secondary"
               onClick={onClose}
               disabled={isSubmitting}
             >

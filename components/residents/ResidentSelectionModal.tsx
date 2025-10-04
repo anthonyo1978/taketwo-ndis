@@ -290,7 +290,7 @@ export function ResidentSelectionModal({
 
         {/* Footer */}
         <div className="flex items-center justify-end space-x-3 p-6 border-t border-gray-200">
-          <Button variant="outline" onClick={onClose}>
+          <Button intent="secondary" onClick={onClose}>
             Cancel
           </Button>
         </div>

@@ -643,7 +643,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
           </h2>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={handleExport}>
+          <Button intent="secondary" onClick={handleExport}>
             Export CSV
           </Button>
         </div>
@@ -656,7 +656,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
             <div className="ml-3">
               <p className="text-sm text-red-700">{error}</p>
               <Button
-                variant="ghost"
+                intent="secondary"
                 size="sm"
                 onClick={() => setError(null)}
                 className="mt-2"
@@ -799,7 +799,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                      {selectedTransaction?.status === 'draft' && !isEditing && (
             <Button
                          onClick={handleEditTransaction}
-              variant="outline"
+              intent="secondary"
               size="sm"
                        >
                          Edit
@@ -976,7 +976,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                 {isEditing ? (
                   <>
                     <Button
-                      variant="outline"
+                      intent="secondary"
                       onClick={handleCancelEdit}
                     >
                       Cancel
@@ -990,7 +990,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                   </>
                 ) : (
             <Button
-              variant="outline"
+              intent="secondary"
                     onClick={() => setShowTransactionModal(false)}
             >
                     Close
