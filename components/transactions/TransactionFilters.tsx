@@ -129,7 +129,7 @@ export function TransactionFilters({ filters, onFiltersChange }: TransactionFilt
             <option value="">All</option>
             {houses.map(house => (
               <option key={house.id} value={house.id}>
-                {house.name}
+                {house.descriptor || 'House'}
               </option>
             ))}
           </select>
@@ -189,7 +189,7 @@ export function TransactionFilters({ filters, onFiltersChange }: TransactionFilt
           
           {localFilters.houseIds?.length && (
             <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-orange-100 text-orange-800">
-              {houses.find(h => h.id === localFilters.houseIds![0])?.name}
+              {houses.find(h => h.id === localFilters.houseIds![0])?.descriptor || 'House'}
               <button
                 onClick={() => handleFilterChange('houseIds', undefined)}
                 className="ml-1 inline-flex items-center justify-center w-3 h-3 rounded-full text-orange-400 hover:bg-orange-200 hover:text-orange-600 focus:outline-none"

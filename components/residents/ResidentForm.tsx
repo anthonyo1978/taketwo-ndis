@@ -42,7 +42,7 @@ export function ResidentForm({ houseId, mode = "house-context", open, onClose, o
     formState: { errors },
     reset,
   } = useForm<ResidentCreateSchemaType>({
-    resolver: zodResolver(residentCreateSchema),
+    resolver: zodResolver(residentCreateSchema) as any,
     defaultValues: {
       gender: 'Male',
       status: 'Prospect' as const,
@@ -55,7 +55,7 @@ export function ResidentForm({ houseId, mode = "house-context", open, onClose, o
       const fetchHouses = async () => {
         try {
           const response = await fetch('/api/houses')
-          const result = await response.json()
+          const result = await response.json() as { success: boolean; data?: any[] }
           if (result.success) {
             setHouses(result.data || [])
           }
@@ -87,7 +87,7 @@ export function ResidentForm({ houseId, mode = "house-context", open, onClose, o
       // Add all form fields to FormData
       formData.append('firstName', data.firstName)
       formData.append('lastName', data.lastName)
-      formData.append('dateOfBirth', data.dateOfBirth.toISOString().split('T')[0])
+      formData.append('dateOfBirth', data.dateOfBirth?.toISOString().split('T')[0] || '')
       formData.append('gender', data.gender)
       
       if (data.phone) formData.append('phone', data.phone)
@@ -96,8 +96,8 @@ export function ResidentForm({ houseId, mode = "house-context", open, onClose, o
       if (data.notes) formData.append('notes', data.notes)
       
       // Add photo file if provided
-      if (data.photo && data.photo.length > 0) {
-        formData.append('photo', data.photo[0])
+      if (data.photo && Array.isArray(data.photo) && data.photo.length > 0) {
+        formData.append('photo', data.photo[0] as File)
       }
 
       // Use the appropriate API endpoint
@@ -115,7 +115,7 @@ export function ResidentForm({ houseId, mode = "house-context", open, onClose, o
         body: formData,
       })
 
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; data?: any; error?: string }
 
       if (result.success) {
         reset()
@@ -377,7 +377,7 @@ export function ResidentForm({ houseId, mode = "house-context", open, onClose, o
                   <option value="">No house assignment (Prospect mode)</option>
                   {houses.map((house) => (
                     <option key={house.id} value={house.id}>
-                      {house.name} - {house.address}
+                       {house.descriptor || 'House'} - {house.address1}
                     </option>
                   ))}
                 </select>

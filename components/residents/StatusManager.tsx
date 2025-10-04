@@ -65,7 +65,7 @@ export function StatusManager({ resident, onStatusChange }: StatusManagerProps) 
         })
       })
       
-      const result: ApiResponse = await response.json()
+      const result = await response.json() as ApiResponse
       
       if (result.success && result.data) {
         onStatusChange?.(result.data)
@@ -90,7 +90,7 @@ export function StatusManager({ resident, onStatusChange }: StatusManagerProps) 
 
   const getStatusIcon = (status: ResidentStatus) => {
     switch (status) {
-      case 'Draft':
+      case 'Prospect':
         return (
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -155,11 +155,6 @@ export function StatusManager({ resident, onStatusChange }: StatusManagerProps) 
           </div>
         )}
         
-        {validTransitions.length === 0 && (
-          <div className="text-sm text-gray-500 bg-gray-50 rounded-lg p-3">
-            No status transitions available from {resident.status}
-          </div>
-        )}
         
         {error && (
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">

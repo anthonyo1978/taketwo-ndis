@@ -89,7 +89,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   const contractLookup = useMemo(() => {
     const map = new Map()
     residents.filter(r => r && r.fundingInformation && Array.isArray(r.fundingInformation)).forEach(resident => {
-      resident.fundingInformation.forEach(contract => {
+      resident.fundingInformation.forEach((contract: any) => {
         if (contract && contract.id) {
         map.set(contract.id, { ...contract, residentId: resident.id })
         }
@@ -163,8 +163,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         fetch('/api/houses')
       ])
       
-      const residentsResult = await residentsResponse.json()
-      const housesResult = await housesResponse.json()
+      const residentsResult = await residentsResponse.json() as { success: boolean; data?: any[] }
+      const housesResult = await housesResponse.json() as { success: boolean; data?: any[] }
       
       if (residentsResult.success) {
         setResidents(residentsResult.data || [])
@@ -187,7 +187,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       setError(null)
 
       // Prepare sort configuration
-      const sortConfig = sorting.length > 0 ? {
+      const sortConfig = sorting.length > 0 && sorting[0] ? {
         field: sorting[0].id as keyof Transaction,
         direction: sorting[0].desc ? 'desc' as const : 'asc' as const
       } : { field: 'id' as keyof Transaction, direction: 'desc' as const }
@@ -224,7 +224,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
 
       // Fetch from API
       const response = await fetch(`/api/transactions?${params.toString()}`)
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; error?: string; data?: any; pagination?: { total: number } }
 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Failed to fetch transactions')

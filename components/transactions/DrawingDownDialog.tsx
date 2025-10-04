@@ -52,18 +52,17 @@ export function DrawingDownDialog({ onClose, onSuccess }: DrawingDownDialogProps
       occurredAt: new Date(),
       quantity: 1,
       unitPrice: 0,
-      isDrawdownTransaction: true,
       serviceCode: 'DRAWDOWN',
       serviceItemCode: '' // Will be required to be selected
     }
   })
 
   const watchedValues = form.watch()
+  const selectedResident = residents.find(r => r.id === watchedValues.residentId)
 
   // Set Drawing Down specific values
   useEffect(() => {
     form.setValue('serviceCode', 'DRAWDOWN')
-    form.setValue('isDrawdownTransaction', true)
   }, [form])
 
   // Fetch residents data
@@ -157,8 +156,6 @@ export function DrawingDownDialog({ onClose, onSuccess }: DrawingDownDialogProps
     }
   }
 
-  const selectedResident = residents.find(r => r.id === watchedValues.residentId)
-
   const onSubmit = async (data: DrawingDownFormData) => {
     setIsSubmitting(true)
     setError(null)
@@ -191,7 +188,7 @@ export function DrawingDownDialog({ onClose, onSuccess }: DrawingDownDialogProps
         body: JSON.stringify(input),
       })
 
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; details?: any; error?: string }
 
       if (result.success) {
         onSuccess()
@@ -212,7 +209,7 @@ export function DrawingDownDialog({ onClose, onSuccess }: DrawingDownDialogProps
   if (isLoading) {
     return (
       <Dialog open={true} onClose={onClose}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <div className="flex items-center justify-center p-8">
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
@@ -226,9 +223,9 @@ export function DrawingDownDialog({ onClose, onSuccess }: DrawingDownDialogProps
 
   return (
     <Dialog open={true} onClose={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-blue-800">
+          <DialogTitle>
             🎯 Drawing Down Transaction
           </DialogTitle>
           <p className="text-sm text-gray-600">
@@ -239,7 +236,6 @@ export function DrawingDownDialog({ onClose, onSuccess }: DrawingDownDialogProps
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Hidden fields for Drawing Down */}
           <input type="hidden" {...form.register('serviceCode')} />
-          <input type="hidden" {...form.register('isDrawdownTransaction')} />
           
           {/* Participant Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
