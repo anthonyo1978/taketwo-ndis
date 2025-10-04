@@ -77,9 +77,9 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
         fetch('/api/houses')
       ])
       
-      const [residentsResult, housesResult]: [ApiResponse, HousesApiResponse] = await Promise.all([
-        residentsResponse.json(),
-        housesResponse.json()
+      const [residentsResult, housesResult] = await Promise.all([
+        residentsResponse.json() as Promise<ApiResponse>,
+        housesResponse.json() as Promise<HousesApiResponse>
       ])
       
       if (residentsResult.success && residentsResult.data) {

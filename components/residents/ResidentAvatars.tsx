@@ -24,7 +24,7 @@ export function ResidentAvatars({ houseId, maxDisplay = 4 }: ResidentAvatarsProp
       try {
         setLoading(true)
         const response = await fetch(`/api/houses/${houseId}/residents`)
-        const result: ApiResponse = await response.json()
+        const result = await response.json() as ApiResponse
         
         if (result.success && result.data) {
           setResidents(result.data)
@@ -108,8 +108,8 @@ export function ResidentAvatars({ houseId, maxDisplay = 4 }: ResidentAvatarsProp
           {/* Hover tooltip */}
           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
             {resident.firstName} {resident.lastName}
-            {resident.age && (
-              <span className="text-gray-300"> • {resident.age}y</span>
+            {resident.dateOfBirth && (
+              <span className="text-gray-300"> • {new Date().getFullYear() - new Date(resident.dateOfBirth).getFullYear()}y</span>
             )}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
           </div>

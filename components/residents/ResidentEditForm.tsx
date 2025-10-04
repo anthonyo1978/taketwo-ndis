@@ -59,7 +59,7 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
       const fetchHouses = async () => {
         try {
           const response = await fetch('/api/houses')
-          const result = await response.json()
+          const result = await response.json() as { success: boolean; data?: any[] }
           if (result.success) {
             setHouses(result.data || [])
           }
@@ -100,7 +100,7 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
         })
       })
 
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; data?: any; error?: string }
 
       if (result.success) {
         onSuccess?.(result.data)
@@ -126,7 +126,7 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
 
   return (
     <Dialog open={open} onClose={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Resident - {resident.firstName} {resident.lastName}</DialogTitle>
         </DialogHeader>
@@ -316,7 +316,7 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
                 <option value="">No house assignment</option>
                 {houses.map((house) => (
                   <option key={house.id} value={house.id}>
-                    {house.name} - {house.address}
+                     {house.descriptor || 'House'} - {house.address1}
                   </option>
                 ))}
               </select>
@@ -360,7 +360,7 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
           <div className="flex justify-end space-x-3 pt-4">
             <Button
               type="button"
-              variant="secondary"
+               intent="secondary"
               onClick={handleClose}
               disabled={isSubmitting}
             >

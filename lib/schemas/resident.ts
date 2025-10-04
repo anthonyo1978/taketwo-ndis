@@ -184,7 +184,7 @@ export const residentCreateSchema = z.object({
     .max(500, "Notes must be no more than 500 characters")
     .optional(),
   
-  status: residentStatusSchema.default('Prospect'),
+  status: residentStatusSchema.optional().default('Prospect'),
   preferences: preferencesSchema.optional(),
   emergencyContact: emergencyContactSchema.optional()
 })

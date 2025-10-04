@@ -23,7 +23,7 @@ export function ResidentBalanceWidget({ residentId, onCreateTransaction }: Resid
         
         // Load funding contracts from API
         const fundingResponse = await fetch(`/api/residents/${residentId}/funding`)
-        const fundingResult = await fundingResponse.json()
+        const fundingResult = await fundingResponse.json() as { success: boolean; data?: FundingInformation[] }
         
         if (fundingResult.success && fundingResult.data) {
           setFundingContracts(fundingResult.data)

@@ -260,7 +260,7 @@ export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormP
           </Button>
           <Button
             type="button"
-            variant="secondary"
+            intent="secondary"
             onClick={() => reset()}
             disabled={submitDisabled}
           >

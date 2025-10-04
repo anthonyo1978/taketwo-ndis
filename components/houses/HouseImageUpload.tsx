@@ -101,7 +101,7 @@ export function HouseImageUpload({
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json() as { error?: string }
         throw new Error(`Failed to update house: ${errorData.error || 'Unknown error'}`)
       }
 
@@ -153,7 +153,7 @@ export function HouseImageUpload({
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
+        const errorData = await response.json() as { error?: string }
         throw new Error(`Failed to remove image: ${errorData.error || 'Unknown error'}`)
       }
 

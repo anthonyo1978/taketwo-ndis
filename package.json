@@ -92,6 +92,7 @@
     "@opentelemetry/sdk-trace-node": "1.18.1",
     "@opentelemetry/semantic-conventions": "1.18.1",
     "@playwright/test": "^1.52.0",
+    "@storybook/addon-actions": "^8.6.12",
     "@storybook/addon-controls": "^8.6.12",
     "@storybook/addon-essentials": "^8.6.12",
     "@storybook/addon-interactions": "^8.6.12",

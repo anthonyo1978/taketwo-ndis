@@ -45,6 +45,7 @@ export function ResidentForm({ houseId, mode = "house-context", open, onClose, o
     resolver: zodResolver(residentCreateSchema),
     defaultValues: {
       gender: 'Male',
+      status: 'Prospect' as const,
     },
   })
 
