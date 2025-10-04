@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ResidentAvatars } from "components/residents/ResidentAvatars"
 import { Pagination } from "components/ui/Pagination"
@@ -22,7 +22,7 @@ interface ApiResponse {
   }
 }
 
-export default function HousesPage() {
+function HousesPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -518,5 +518,33 @@ export default function HousesPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function HousesPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Houses</h1>
+            <Link
+              href="/houses/new"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add New House
+            </Link>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+            <div className="text-gray-600">Loading houses...</div>
+          </div>
+        </div>
+      </div>
+    }>
+      <HousesPageContent />
+    </Suspense>
   )
 }

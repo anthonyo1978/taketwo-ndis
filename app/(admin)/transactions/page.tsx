@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { TransactionsTable } from "components/transactions/TransactionsTable"
 import { TransactionFilters } from "components/transactions/TransactionFilters"
 import { CreateTransactionDialog } from "components/transactions/CreateTransactionDialog"
 import { Button } from "components/Button/Button"
 import { type TransactionFilters as TxFilters } from "types/transaction"
 
-export default function TransactionsPage() {
+function TransactionsPageContent() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [filters, setFilters] = useState<TxFilters>({})
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -66,5 +66,31 @@ export default function TransactionsPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function TransactionsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
+                <p className="text-gray-600 mt-1">
+                  Manage billing transactions and contract drawdowns
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border shadow-sm p-8 text-center">
+            <div className="text-gray-600">Loading transactions...</div>
+          </div>
+        </div>
+      </div>
+    }>
+      <TransactionsPageContent />
+    </Suspense>
   )
 }

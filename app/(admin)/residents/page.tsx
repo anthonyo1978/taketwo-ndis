@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 
 import { GlobalResidentTable } from "components/residents/GlobalResidentTable"
 import { ResidentForm } from "components/residents/ResidentForm"
 import type { Resident } from "types/resident"
 
-export default function ResidentsPage() {
+function ResidentsPageContent() {
   const [showResidentForm, setShowResidentForm] = useState(false)
   const [residentRefreshTrigger, setResidentRefreshTrigger] = useState(0)
 
@@ -47,5 +47,27 @@ export default function ResidentsPage() {
         />
       </div>
     </div>
+  )
+}
+
+export default function ResidentsPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">All Residents</h1>
+              <p className="text-gray-600 mt-1">Manage residents across all houses</p>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+            <div className="text-gray-600">Loading residents...</div>
+          </div>
+        </div>
+      </div>
+    }>
+      <ResidentsPageContent />
+    </Suspense>
   )
 }
