@@ -185,7 +185,7 @@ export function AutomationSettingsPage() {
       }
 
       if (result.success) {
-        setSettings(result.data)
+        setSettings(result.data || null)
         setShowSuccessModal(true)
         
         // Redirect to main settings page after modal is shown
