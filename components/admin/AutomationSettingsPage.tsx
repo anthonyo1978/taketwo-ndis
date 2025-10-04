@@ -95,7 +95,11 @@ export function AutomationSettingsPage() {
       setIsLoading(true)
       const response = await fetch('/api/automation/settings')
       if (response.ok) {
-        const data = await response.json()
+        const data = await response.json() as {
+          success: boolean
+          data?: AutomationSettings
+          error?: string
+        }
         if (data.success && data.data) {
           console.log('Fetched settings data:', data.data)
           setSettings(data.data)
@@ -174,7 +178,11 @@ export function AutomationSettingsPage() {
         console.log('API Error response:', errorText)
       }
 
-      const result = await response.json()
+      const result = await response.json() as {
+        success: boolean
+        data?: AutomationSettings
+        error?: string
+      }
 
       if (result.success) {
         setSettings(result.data)
@@ -221,7 +229,15 @@ export function AutomationSettingsPage() {
     try {
       setIsLoadingEligible(true)
       const response = await fetch('/api/automation/eligible-contracts')
-      const data = await response.json()
+      const data = await response.json() as {
+        success: boolean
+        data?: {
+          eligibleContracts: any[]
+          count: number
+          summary: any
+        }
+        error?: string
+      }
       
       if (data.success) {
         setEligibleContracts(data.data.eligibleContracts || [])
@@ -245,7 +261,11 @@ export function AutomationSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'preview' })
       })
-      const result = await response.json()
+      const result = await response.json() as {
+        success: boolean
+        data?: any
+        error?: string
+      }
       
       if (result.success) {
         setTransactionPreview(result.data)
@@ -268,7 +288,11 @@ export function AutomationSettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'generate' })
       })
-      const result = await response.json()
+      const result = await response.json() as {
+        success: boolean
+        data?: any
+        error?: string
+      }
       
       if (result.success) {
         setSuccess(`Successfully generated ${result.data.successfulTransactions} transactions for ${result.data.processedContracts} contracts`)
