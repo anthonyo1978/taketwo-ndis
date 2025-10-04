@@ -10,6 +10,9 @@ export type FundingModel = 'Draw Down' | 'Capture & Invoice' | 'Hybrid'
 /** Status options for funding contracts. */
 export type ContractStatus = 'Draft' | 'Active' | 'Expired' | 'Cancelled' | 'Renewed'
 
+/** Legacy drawdown rate options for funding contracts. */
+export type DrawdownRate = 'daily' | 'weekly' | 'monthly'
+
 /** Automated drawdown frequency options for funding contracts. */
 export type AutomatedDrawdownFrequency = 'daily' | 'weekly' | 'fortnightly'
 
@@ -30,7 +33,7 @@ export interface FundingInformation {
   contractStatus: ContractStatus
   originalAmount: number
   currentBalance: number
-  drawdownRate: AutomatedDrawdownFrequency // Legacy field, use automatedDrawdownFrequency
+  drawdownRate: DrawdownRate // Legacy field, use automatedDrawdownFrequency
   autoDrawdown: boolean
   lastDrawdownDate?: Date
   renewalDate?: Date

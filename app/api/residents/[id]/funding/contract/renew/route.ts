@@ -65,7 +65,7 @@ export async function POST(
       contractStatus: 'Draft',
       originalAmount: newAmount || 10000,
       currentBalance: 0,
-      drawdownRate: 'monthly',
+      drawdownRate: 'weekly',
       autoDrawdown: true,
       createdAt: new Date(),
       updatedAt: new Date()
