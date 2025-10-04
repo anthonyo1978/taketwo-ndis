@@ -163,7 +163,20 @@ export async function GET(request: NextRequest) {
 // POST /api/transactions - Create a new transaction
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await request.json() as {
+      residentId?: string
+      contractId?: string
+      occurredAt?: string
+      serviceCode?: string
+      description?: string
+      quantity?: number
+      unitPrice?: number
+      amount?: number
+      note?: string
+      serviceItemCode?: string
+      supportAgreementId?: string
+      isDrawdownTransaction?: boolean
+    }
     
     // Debug logging for Drawing Down transactions
     if ((body as any).isDrawdownTransaction) {

@@ -146,7 +146,19 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient()
-    const body = await request.json()
+    const body = await request.json() as {
+      enabled?: boolean
+      runTime?: string
+      timezone?: string
+      adminEmails?: string[]
+      notificationSettings?: {
+        frequency?: string
+        includeLogs?: boolean
+      }
+      errorHandling?: {
+        continueOnError?: boolean
+      }
+    }
     
     // Validate the request body
     const validation = automationSettingsSchema.safeParse(body)
