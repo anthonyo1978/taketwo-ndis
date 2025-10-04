@@ -9,28 +9,19 @@ import { Input } from "components/ui/Input"
 
 // Automation settings schema
 const automationSettingsSchema = z.object({
-  enabled: z.boolean().default(false),
+  enabled: z.boolean(),
   runTime: z.string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, "Run time must be in HH:MM or HH:MM:SS format")
-    .default("02:00"),
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, "Run time must be in HH:MM or HH:MM:SS format"),
   timezone: z.string()
-    .min(1, "Timezone is required")
-    .default("Australia/Sydney"),
+    .min(1, "Timezone is required"),
   adminEmails: z.array(z.string().email("Invalid email address"))
-    .min(1, "At least one admin email is required")
-    .default([]),
+    .min(1, "At least one admin email is required"),
   notificationSettings: z.object({
-    frequency: z.enum(["endOfRun", "endOfWeek", "off"])
-      .default("endOfRun"),
-    includeLogs: z.boolean().default(true)
-  }).default({
-    frequency: "endOfRun",
-    includeLogs: true
+    frequency: z.enum(["endOfRun", "endOfWeek", "off"]),
+    includeLogs: z.boolean()
   }),
   errorHandling: z.object({
-    continueOnError: z.boolean().default(true)
-  }).default({
-    continueOnError: true
+    continueOnError: z.boolean()
   })
 })
 
