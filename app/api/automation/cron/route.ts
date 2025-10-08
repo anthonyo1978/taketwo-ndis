@@ -46,6 +46,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if it's time to run based on settings
+    // For hourly runs, we skip the time check (runs every hour)
+    // For daily runs, we check if it's the configured time
     const now = new Date()
     const currentHour = now.getHours()
     const currentMinute = now.getMinutes()
@@ -53,8 +55,12 @@ export async function GET(request: NextRequest) {
     // Parse the run time from settings (format: "HH:MM:SS")
     const [runHour, runMinute] = settings.run_time.split(':').map(Number)
     
-    // Only run if current time matches the configured run time
-    if (currentHour !== runHour || currentMinute !== runMinute) {
+    // Check if this is an hourly schedule (Pro plan) or daily (Hobby plan)
+    // For hourly runs: always proceed
+    // For daily runs: only run if time matches
+    const isHourlySchedule = true // Set to true when using hourly Vercel cron (0 * * * *)
+    
+    if (!isHourlySchedule && (currentHour !== runHour || currentMinute !== runMinute)) {
       console.log(`Not time to run yet. Configured: ${settings.run_time}, Current: ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`)
       return NextResponse.json({
         success: true,

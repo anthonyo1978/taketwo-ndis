@@ -310,6 +310,56 @@ export function AutomationSettingsPage() {
     }
   }
 
+  const runAutomationNow = async () => {
+    setIsGeneratingTransactions(true)
+    setError(null)
+    setSuccess(null)
+    
+    try {
+      const response = await fetch('/api/automation/cron', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      const result = await response.json() as {
+        success: boolean
+        data?: any
+        message?: string
+        skipped?: boolean
+        error?: string
+      }
+      
+      if (result.success) {
+        if (result.skipped) {
+          setError(result.message || 'Automation run was skipped')
+        } else if (result.data) {
+          const successMsg = `✅ Automation run completed successfully!
+          
+• Processed: ${result.data.processedContracts} contracts
+• Success: ${result.data.successfulTransactions} transactions
+• Failed: ${result.data.failedTransactions || 0} transactions
+• Total Amount: $${result.data.totalAmount?.toFixed(2) || '0.00'}
+• Execution Time: ${result.data.executionTime}ms`
+          
+          setSuccess(successMsg)
+          // Refresh data
+          fetchEligibleContracts()
+        } else {
+          setSuccess('Automation run completed')
+        }
+      } else {
+        setError(result.error || 'Failed to run automation')
+      }
+    } catch (error) {
+      setError('Network error. Please try again.')
+      console.error('Error running automation:', error)
+    } finally {
+      setIsGeneratingTransactions(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="p-8">
@@ -602,6 +652,15 @@ export function AutomationSettingsPage() {
                 className="px-6 py-2 text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
               >
                 {isGeneratingTransactions ? 'Generating...' : 'Generate Transactions'}
+              </Button>
+              
+              <Button
+                type="button"
+                onClick={runAutomationNow}
+                disabled={isGeneratingTransactions || isSaving}
+                className="px-6 py-2 text-white bg-purple-600 border border-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 font-semibold"
+              >
+                {isGeneratingTransactions ? 'Running...' : '🚀 Run Automation Now'}
               </Button>
             </div>
             <div className="flex space-x-4">
