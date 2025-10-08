@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { data: settings } = await supabase
       .from('automation_settings')
-      .select('enabled, run_time')
+      .select('enabled, run_time, admin_emails')
       .eq('organization_id', '00000000-0000-0000-0000-000000000000')
       .single()
     
