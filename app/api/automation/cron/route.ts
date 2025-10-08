@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateTransactionsForEligibleContracts } from "lib/services/transaction-generator"
 import { createClient } from "lib/supabase/server"
+import { sendAutomationCompletionEmail, sendAutomationErrorEmail } from "lib/services/email-notifications"
 
 /**
  * Automated Billing Cron Job
@@ -107,8 +108,28 @@ export async function GET(request: NextRequest) {
       console.error(`[AUTOMATION CRON] Errors:`, result.errors)
     }
     
-    // TODO: Send email notifications to admin emails
-    // This would be implemented in Phase 4: Logging & Notifications
+    // Send email notifications to admin emails
+    if (settings.admin_emails && settings.admin_emails.length > 0) {
+      const emailResult = await sendAutomationCompletionEmail(
+        settings.admin_emails,
+        {
+          executionDate,
+          executionTime,
+          processedContracts: result.processedContracts,
+          successfulTransactions: result.successfulTransactions,
+          failedTransactions: result.failedTransactions,
+          totalAmount: result.summary.totalAmount,
+          errors: result.errors,
+          summary: result.summary
+        }
+      )
+      
+      if (!emailResult.success) {
+        console.error('[AUTOMATION CRON] Failed to send email notification:', emailResult.error)
+      } else {
+        console.log('[AUTOMATION CRON] Email notification sent to:', settings.admin_emails.join(', '))
+      }
+    }
     
     return NextResponse.json({
       success: result.success,
@@ -126,6 +147,26 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     const executionTime = Date.now() - startTime
     console.error('[AUTOMATION CRON] Fatal error:', error)
+    
+    // Try to send error email notification
+    try {
+      const supabase = await createClient()
+      const { data: settings } = await supabase
+        .from('automation_settings')
+        .select('admin_emails')
+        .eq('organization_id', '00000000-0000-0000-0000-000000000000')
+        .single()
+      
+      if (settings?.admin_emails && settings.admin_emails.length > 0) {
+        await sendAutomationErrorEmail(
+          settings.admin_emails,
+          error instanceof Error ? error.message : 'Unknown error',
+          error
+        )
+      }
+    } catch (emailError) {
+      console.error('[AUTOMATION CRON] Failed to send error email:', emailError)
+    }
     
     return NextResponse.json({
       success: false,

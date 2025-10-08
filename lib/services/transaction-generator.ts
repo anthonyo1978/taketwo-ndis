@@ -179,7 +179,7 @@ export async function generateTransactionForContract(
     const automationLogId = generateId()
     const now = new Date()
     
-    // Create transaction record
+    // Create transaction record in DRAFT status (requires manual approval)
     const transactionData = {
       id: transactionId,
       resident_id: resident.id,
@@ -189,12 +189,12 @@ export async function generateTransactionForContract(
       description: `Automated ${contract.automated_drawdown_frequency} drawdown - ${contract.type}`,
       quantity: 1,
       unit_price: transactionAmount,
-      status: 'posted',
-      drawdown_status: 'posted',
+      status: 'draft', // Draft status - requires manual approval
+      drawdown_status: 'draft', // Draft drawdown status
       is_drawdown_transaction: true,
       created_by: 'automation-system',
-      posted_at: now.toISOString(),
-      posted_by: 'automation-system'
+      posted_at: null, // Not posted yet
+      posted_by: null // Not posted yet
     }
     
     // Insert transaction
