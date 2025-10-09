@@ -221,7 +221,10 @@ export async function POST(
     const timestamp = Date.now()
     const storagePath = `contracts/${contractId}/ndis_service_agreement-v1-${timestamp}.pdf`
     
-    const { error: uploadError } = await supabase.storage
+    console.log(`[PDF API] Uploading to storage: ${storagePath}`)
+    console.log(`[PDF API] Buffer size: ${renderResult.buffer.length} bytes`)
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('exports')
       .upload(storagePath, renderResult.buffer, {
         contentType: 'application/pdf',
@@ -229,12 +232,23 @@ export async function POST(
       })
     
     if (uploadError) {
-      console.error('[PDF API] Storage upload failed:', uploadError)
+      console.error('[PDF API] Storage upload failed!')
+      console.error('[PDF API] Error code:', uploadError.name)
+      console.error('[PDF API] Error message:', uploadError.message)
+      console.error('[PDF API] Full error:', JSON.stringify(uploadError, null, 2))
+      
       return NextResponse.json(
-        { error: { code: 'STORAGE_WRITE_FAILED', message: 'Failed to save PDF' } },
+        { 
+          error: { 
+            code: 'STORAGE_WRITE_FAILED', 
+            message: `Failed to save PDF: ${uploadError.message}` 
+          } 
+        },
         { status: 503 }
       )
     }
+    
+    console.log('[PDF API] Upload successful:', uploadData)
     
     console.log(`[PDF API] PDF uploaded to storage: ${storagePath}`)
     
