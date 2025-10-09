@@ -116,18 +116,16 @@ export async function checkContractEligibility(contractId: string): Promise<Cont
 }
 
 /**
- * Get all contracts eligible for automation in the next 3 days
+ * Get all contracts eligible for automation TODAY ONLY
+ * Used by "Run Automation Now" button
  */
 export async function getEligibleContracts(): Promise<ContractEligibilityResult[]> {
   const supabase = await createClient()
   const today = new Date()
-  const threeDaysFromNow = new Date(today)
-  threeDaysFromNow.setDate(today.getDate() + 3)
-  
+  today.setHours(0, 0, 0, 0)
   const todayStr = today.toISOString().split('T')[0] // YYYY-MM-DD format
-  const threeDaysStr = threeDaysFromNow.toISOString().split('T')[0] // YYYY-MM-DD format
 
-  // Get all contracts with automation enabled that have next_run_date within next 3 days
+  // Get all contracts with automation enabled that have next_run_date = TODAY
   const { data: contracts, error } = await supabase
     .from('funding_contracts')
     .select(`
@@ -149,9 +147,7 @@ export async function getEligibleContracts(): Promise<ContractEligibilityResult[
       )
     `)
     .eq('auto_billing_enabled', true)
-    .not('next_run_date', 'is', null)
-    .gte('next_run_date', todayStr)
-    .lte('next_run_date', threeDaysStr)
+    .lte('next_run_date', todayStr) // Next run date is today or earlier (overdue)
 
   if (error) {
     console.error('Error fetching contracts:', error)
@@ -161,8 +157,19 @@ export async function getEligibleContracts(): Promise<ContractEligibilityResult[
   // Check eligibility for each contract
   const results: ContractEligibilityResult[] = []
   for (const contract of contracts || []) {
-    const eligibilityResult = await checkContractEligibility(contract.id)
-    results.push(eligibilityResult)
+    const eligibilityChecks = await performEligibilityChecks(contract)
+    const reasons = getEligibilityReasons(eligibilityChecks, contract)
+    const isEligible = Object.values(eligibilityChecks).every(check => check === true)
+    
+    results.push({
+      contractId: contract.id,
+      isEligible,
+      reasons,
+      contract,
+      resident: contract.resident,
+      house: contract.resident?.house,
+      eligibilityChecks
+    })
   }
 
   return results.filter(result => result.isEligible)
@@ -281,6 +288,7 @@ function validateDateRange(
 
 /**
  * Validate next run date
+ * IMPORTANT: For "Run Automation Now", we only process contracts scheduled for TODAY
  */
 function validateNextRunDate(today: Date, nextRunDate: Date | null): boolean {
   // Next run date must be set
@@ -288,11 +296,16 @@ function validateNextRunDate(today: Date, nextRunDate: Date | null): boolean {
     return false
   }
 
-  // Next run date must be >= today (not in the past) and <= 3 days from now
-  const threeDaysFromNow = new Date(today)
-  threeDaysFromNow.setDate(today.getDate() + 3)
+  // Normalize dates to compare (remove time component)
+  const todayStr = today.toISOString().split('T')[0]
+  const nextRunStr = nextRunDate.toISOString().split('T')[0]
   
-  return nextRunDate >= today && nextRunDate <= threeDaysFromNow
+  // Next run date must be today or earlier (overdue contracts should run)
+  // But not more than 7 days overdue (prevent runaway automation)
+  const sevenDaysAgo = new Date(today)
+  sevenDaysAgo.setDate(today.getDate() - 7)
+  
+  return nextRunDate <= today && nextRunDate >= sevenDaysAgo
 }
 
 /**
@@ -351,14 +364,16 @@ function getEligibilityReasons(checks: EligibilityCheck, contract: ContractWithD
       reasons.push('Next run date is not set')
     } else {
       const today = new Date()
-      const threeDaysFromNow = new Date(today)
-      threeDaysFromNow.setDate(today.getDate() + 3)
+      const sevenDaysAgo = new Date(today)
+      sevenDaysAgo.setDate(today.getDate() - 7)
       const nextRunDate = new Date(contract.next_run_date)
+      const todayStr = today.toISOString().split('T')[0] as string
+      const nextRunStr = nextRunDate.toISOString().split('T')[0] as string
       
-      if (nextRunDate < today) {
-        reasons.push(`Next run date is in the past (${contract.next_run_date})`)
-      } else if (nextRunDate > threeDaysFromNow) {
-        reasons.push(`Next run date is more than 3 days away (${contract.next_run_date})`)
+      if (nextRunDate < sevenDaysAgo) {
+        reasons.push(`Next run date is too far in the past (${contract.next_run_date}) - more than 7 days overdue`)
+      } else if (nextRunStr > todayStr) {
+        reasons.push(`Next run date is scheduled for the future (${contract.next_run_date}) - not due today`)
       }
     }
   }
