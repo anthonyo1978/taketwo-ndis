@@ -383,36 +383,94 @@ vercel.json                             # Cron configuration
 
 ---
 
-## 🚀 Next Steps
+## 🚀 Next Steps & Future Enhancements
 
-1. **Test Current Implementation**
-   - Run database migrations
-   - Test settings page
-   - Test preview tools
-   - Test manual generation
-   - Verify cron endpoint works
+### **Immediate Priority**
 
-2. **Phase 4: Email Notifications**
-   - Choose email service provider
-   - Create notification templates
-   - Implement sending logic
-   - Add notification history tracking
+1. ✅ **Core Automation System** - COMPLETED
+   - Transaction generation working
+   - Draft status implemented
+   - Email notifications (console logging)
+   - Testing tools functional
 
-3. **Phase 5: Admin Dashboard**
-   - Create logs viewing page
-   - Add filtering and search
-   - Performance metrics
-   - Export functionality
+### **Phase 7: Contract Lifecycle Automation** 🆕 HIGH PRIORITY
 
-4. **Production Launch**
-   - Deploy to production
-   - Enable automation
-   - Monitor closely for first week
-   - Gather user feedback
-   - Iterate based on usage
+**Goal**: Automatically manage contract status based on dates
+
+**Requirements**:
+- **Nightly Job**: Runs separately from billing automation (e.g., 3:00 AM)
+- **Deactivate Expired Contracts**: Contracts where `end_date < today`
+- **Status Updates**: Change `contract_status` from 'Active' to 'Expired'
+- **Disable Automation**: Set `auto_billing_enabled = false` for expired contracts
+- **Notification**: Email admins about contracts that were deactivated
+- **Logging**: Track all contract status changes
+
+**Why This Matters**:
+- Prevents billing on expired contracts
+- Automatic cleanup of contract statuses
+- Reduces manual admin work
+- Ensures data accuracy
+- Discovered during testing: Bill Maher's contract was expired but still marked Active
+
+**Implementation Plan**:
+1. Create `/api/automation/contract-expiry/route.ts` endpoint
+2. Add to `vercel.json` cron schedule (runs at 3:00 AM daily)
+3. Query: `SELECT * FROM funding_contracts WHERE end_date < CURRENT_DATE AND contract_status = 'Active'`
+4. Update: Set `contract_status = 'Expired'` and `auto_billing_enabled = false`
+5. Log: Create entries in `automation_logs` or new `contract_lifecycle_logs` table
+6. Email: Send summary to admins of expired contracts
+
+**Estimated Effort**: 4-6 hours
 
 ---
 
-**Last Updated:** October 1, 2025  
-**Status:** Ready for Testing & Phase 4 Implementation
+### **Phase 8: Email Service Integration**
+
+2. **Real Email Delivery**
+   - Integrate with Resend, SendGrid, or AWS SES
+   - Replace console logging with actual email sending
+   - Add email delivery tracking
+   - Handle bounces and failures
+
+**Estimated Effort**: 2-3 hours
+
+---
+
+### **Phase 9: Admin Dashboard Enhancements**
+
+3. **Automation Logs Viewer**
+   - Create `/admin/automation/logs` page
+   - View all automation runs
+   - Filter by date, status, errors
+   - Export to CSV
+   - Performance metrics dashboard
+
+**Estimated Effort**: 8-10 hours
+
+---
+
+### **Phase 10: Production Monitoring**
+
+4. **Advanced Monitoring**
+   - Success/failure rate tracking
+   - Performance trends
+   - Alert thresholds
+   - Capacity planning
+   - Integration with monitoring services (e.g., Sentry)
+
+**Estimated Effort**: 6-8 hours
+
+---
+
+## 📋 **Priority Order**
+
+1. 🔴 **HIGH**: Contract Lifecycle Automation (Phase 7) - Prevents billing on expired contracts
+2. 🟡 **MEDIUM**: Email Service Integration (Phase 8) - Better notifications
+3. 🟢 **LOW**: Admin Dashboard (Phase 9) - Nice to have
+4. 🟢 **LOW**: Advanced Monitoring (Phase 10) - Future enhancement
+
+---
+
+**Last Updated:** October 9, 2025  
+**Status:** Core System Operational - Contract Expiry Automation Needed
 
