@@ -130,30 +130,30 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT 
-    h.id as house_id,
-    COALESCE(h.descriptor, 'House') as house_name,
-    (h.address1 || ', ' || h.suburb || ', ' || h.state) as house_address,
-    (SELECT COUNT(*) FROM residents WHERE house_id = h.id AND status = 'Active')::BIGINT as resident_count,
+    h.id,
+    COALESCE(h.descriptor, 'House'),
+    (h.address1 || ', ' || h.suburb || ', ' || h.state),
+    (SELECT COUNT(*) FROM residents r2 WHERE r2.house_id = h.id AND r2.status = 'Active')::BIGINT,
     (SELECT COUNT(*) FROM funding_contracts fc 
-     JOIN residents r ON r.id = fc.resident_id 
-     WHERE r.house_id = h.id AND fc.contract_status = 'Active')::BIGINT as active_contracts,
+     JOIN residents r3 ON r3.id = fc.resident_id 
+     WHERE r3.house_id = h.id AND fc.contract_status = 'Active')::BIGINT,
     (SELECT COALESCE(SUM(fc.current_balance), 0) FROM funding_contracts fc 
-     JOIN residents r ON r.id = fc.resident_id 
-     WHERE r.house_id = h.id AND fc.contract_status = 'Active') as total_balance,
+     JOIN residents r4 ON r4.id = fc.resident_id 
+     WHERE r4.house_id = h.id AND fc.contract_status = 'Active'),
     (SELECT COUNT(*) FROM transactions t 
-     JOIN residents r ON r.id = t.resident_id 
-     WHERE r.house_id = h.id AND t.created_at >= NOW() - INTERVAL '30 days')::BIGINT as transactions_30d,
+     JOIN residents r5 ON r5.id = t.resident_id 
+     WHERE r5.house_id = h.id AND t.created_at >= NOW() - INTERVAL '30 days')::BIGINT,
     (SELECT COALESCE(SUM(t.amount), 0) FROM transactions t 
-     JOIN residents r ON r.id = t.resident_id 
-     WHERE r.house_id = h.id AND t.created_at >= NOW() - INTERVAL '30 days') as revenue_30d,
+     JOIN residents r6 ON r6.id = t.resident_id 
+     WHERE r6.house_id = h.id AND t.created_at >= NOW() - INTERVAL '30 days'),
     CASE 
       WHEN h.status = 'Active' THEN 100.0
       WHEN h.status = 'Vacant' THEN 0.0
       ELSE 50.0
-    END as occupancy_rate
+    END
   FROM houses h
   WHERE h.status IN ('Active', 'Vacant')
-  ORDER BY revenue_30d DESC;
+  ORDER BY 8 DESC;
 END;
 $$;
 
