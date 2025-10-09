@@ -178,18 +178,17 @@ Test harness, - in settings there is a tool that allows you to test a rerun of a
 ### **Phase 5: Test Harness**
 **Goal**: Manual testing and debugging tools
 
-**Tasks**:
-1. **Manual Run Interface**
-   - Test run button in settings
-   - Date override functionality
-   - Simulation mode (no real transactions)
-   - Real mode (creates actual transactions)
 
-2. **Debugging Tools**
-   - Contract eligibility preview
-   - Transaction preview before creation
-   - Log viewing interface
-   - Performance monitoring dashboard
+2. **Debugging & Testing Tools**
+   - A simple button called "Preview Next 3 Days " shows which TXN the system thinks it will pick up.
+      This shows per day per resident
+      also, if a resident will be picked up more than once, this is reflected in this three day snap shot
+   - Another button called "Run Today's Automation Now" is a way for the user to invoike the batch job without waiting
+      This only runs if todays automation has not automatically run already
+      If this automation has run today already, clicking this button will tell the user such!
+    - Both buttons sit within a testing tools scetn just benaeth the "Error Handling" tile
+    
+
 
 ### **Phase 6: Production Scheduling**
 **Goal**: Automated execution system

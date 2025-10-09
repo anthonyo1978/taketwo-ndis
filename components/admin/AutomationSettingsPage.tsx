@@ -54,7 +54,7 @@ export function AutomationSettingsPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [formValues, setFormValues] = useState<any>(null)
   const [showEligibleContracts, setShowEligibleContracts] = useState(false)
-  const [eligibleContracts, setEligibleContracts] = useState<any[]>([])
+  const [eligibleContracts, setEligibleContracts] = useState<Record<string, any[]>>({})
   const [isLoadingEligible, setIsLoadingEligible] = useState(false)
   const [showTransactionPreview, setShowTransactionPreview] = useState(false)
   const [transactionPreview, setTransactionPreview] = useState<any>(null)
@@ -228,19 +228,24 @@ export function AutomationSettingsPage() {
   const fetchEligibleContracts = async () => {
     try {
       setIsLoadingEligible(true)
-      const response = await fetch('/api/automation/eligible-contracts')
+      const response = await fetch('/api/automation/preview-3-days')
       const data = await response.json() as {
         success: boolean
         data?: {
-          eligibleContracts: any[]
-          count: number
-          summary: any
+          contractsByDay: Record<string, any[]>
+          summary: {
+            totalScheduledRuns: number
+            uniqueContracts: number
+            totalAmount: number
+            days: number
+          }
         }
         error?: string
       }
       
       if (data.success && data.data) {
-        setEligibleContracts(data.data.eligibleContracts || [])
+        // Convert the contractsByDay format to our display format
+        setEligibleContracts(data.data.contractsByDay)
         setShowEligibleContracts(true)
       } else {
         setError(data.error || 'Failed to fetch eligible contracts')
@@ -316,6 +321,30 @@ export function AutomationSettingsPage() {
     setSuccess(null)
     
     try {
+      // First, check if automation already ran today
+      const today = new Date().toISOString().split('T')[0]
+      const checkResponse = await fetch('/api/automation/logs/today')
+      
+      if (checkResponse.ok) {
+        const checkResult = await checkResponse.json() as {
+          success: boolean
+          alreadyRan?: boolean
+          lastRun?: any
+        }
+        
+        if (checkResult.alreadyRan && checkResult.lastRun) {
+          const runTime = new Date(checkResult.lastRun.run_date).toLocaleTimeString('en-AU', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Australia/Sydney'
+          })
+          setError(`⚠️ Automation has already run today at ${runTime}. Cannot run again until tomorrow.`)
+          setIsGeneratingTransactions(false)
+          return
+        }
+      }
+      
+      // Proceed with automation run
       const response = await fetch('/api/automation/cron', {
         method: 'GET',
         headers: {
@@ -624,45 +653,40 @@ export function AutomationSettingsPage() {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-between">
-            <div className="flex space-x-4">
-              <Button
-                type="button"
-                onClick={fetchEligibleContracts}
-                disabled={isLoadingEligible || isSaving}
-                className="px-6 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
-              >
-                {isLoadingEligible ? 'Loading...' : 'Preview Next 3 Days'}
-              </Button>
+          {/* Testing Tools Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-6">Testing & Debugging Tools</h2>
+            
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Use these tools to preview and test automation behavior before it runs automatically.
+              </p>
               
-              <Button
-                type="button"
-                onClick={previewTransactions}
-                disabled={isLoadingEligible || isSaving}
-                className="px-6 py-2 text-green-600 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
-              >
-                {isLoadingEligible ? 'Loading...' : 'Preview Transactions'}
-              </Button>
-              
-              <Button
-                type="button"
-                onClick={generateTransactions}
-                disabled={isGeneratingTransactions || isSaving}
-                className="px-6 py-2 text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
-              >
-                {isGeneratingTransactions ? 'Generating...' : 'Generate Transactions'}
-              </Button>
-              
-              <Button
-                type="button"
-                onClick={runAutomationNow}
-                disabled={isGeneratingTransactions || isSaving}
-                className="px-6 py-2 text-white bg-purple-600 border border-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 font-semibold"
-              >
-                {isGeneratingTransactions ? 'Running...' : '🚀 Run Automation Now'}
-              </Button>
+              <div className="flex space-x-4">
+                <Button
+                  type="button"
+                  onClick={fetchEligibleContracts}
+                  disabled={isLoadingEligible || isSaving}
+                  className="px-6 py-2 text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+                >
+                  {isLoadingEligible ? 'Loading...' : '🔍 Preview Next 3 Days'}
+                </Button>
+                
+                <Button
+                  type="button"
+                  onClick={runAutomationNow}
+                  disabled={isGeneratingTransactions || isSaving}
+                  className="px-6 py-2 text-white bg-purple-600 border border-purple-600 rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 font-semibold"
+                >
+                  {isGeneratingTransactions ? 'Running...' : '🚀 Run Automation Now'}
+                </Button>
+              </div>
             </div>
+          </div>
+
+          {/* Form Action Buttons */}
+          <div className="flex justify-between">
+            <div></div>
             <div className="flex space-x-4">
               <Button
                 type="button"
@@ -742,7 +766,7 @@ export function AutomationSettingsPage() {
           <div className="bg-white rounded-lg p-6 max-w-4xl mx-4 shadow-xl max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xl font-semibold text-gray-900">
-                Eligible Contracts (Next 3 Days)
+                Preview Next 3 Days
               </h3>
               <button
                 onClick={() => setShowEligibleContracts(false)}
@@ -754,56 +778,57 @@ export function AutomationSettingsPage() {
               </button>
             </div>
             
-            {eligibleContracts.length === 0 ? (
+            {Object.keys(eligibleContracts).length === 0 ? (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <h4 className="text-lg font-medium text-gray-900 mb-2">No Eligible Contracts</h4>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No Scheduled Transactions</h4>
                 <p className="text-gray-600">
-                  No contracts are eligible for automation in the next 3 days. This could be because:
+                  No contracts are scheduled to run in the next 3 days. This could be because:
                 </p>
                 <ul className="text-gray-600 text-sm mt-2 space-y-1">
                   <li>• No contracts have automation enabled</li>
+                  <li>• All next run dates are more than 3 days away</li>
                   <li>• Contracts don't meet eligibility criteria</li>
-                  <li>• Next run dates are in the future</li>
                 </ul>
               </div>
             ) : (
               <div className="space-y-6">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <svg className="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-green-800 font-medium">
-                      {eligibleContracts.length} contract{eligibleContracts.length !== 1 ? 's' : ''} eligible for automation in the next 3 days
-                    </span>
+                {/* Summary banner */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {Object.values(eligibleContracts as Record<string, any[]>).flat().length}
+                      </div>
+                      <div className="text-sm text-blue-800">Total Runs</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-blue-600">
+                        {new Set(Object.values(eligibleContracts as Record<string, any[]>).flat().map((c: any) => c.contractId)).size}
+                      </div>
+                      <div className="text-sm text-blue-800">Unique Contracts</div>
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-green-600">
+                        ${Object.values(eligibleContracts as Record<string, any[]>).flat().reduce((sum: number, c: any) => sum + (c.transactionAmount || 0), 0).toFixed(2)}
+                      </div>
+                      <div className="text-sm text-green-800">Total Amount</div>
+                    </div>
                   </div>
                 </div>
                 
-                {/* Group contracts by next run date */}
+                {/* Contracts grouped by day */}
                 {(() => {
-                  // Group contracts by their next run date
-                  const contractsByDate = eligibleContracts.reduce((acc, contract) => {
-                    const runDate = new Date(contract.contract.next_run_date).toISOString().split('T')[0]
-                    if (runDate && !acc[runDate]) {
-                      acc[runDate] = []
-                    }
-                    if (runDate) {
-                      acc[runDate].push(contract)
-                    }
-                    return acc
-                  }, {} as Record<string, typeof eligibleContracts>)
-                  
-                  // Sort dates
-                  const sortedDates = Object.keys(contractsByDate).sort()
+                  // Sort dates chronologically
+                  const sortedDates = Object.keys(eligibleContracts).sort()
                   
                   return sortedDates.map((date) => {
-                    const contracts = contractsByDate[date]
-                    const dateObj = new Date(date)
+                    const contracts = (eligibleContracts as Record<string, any[]>)[date] || []
+                    const dateObj = new Date(date + 'T00:00:00')
                     const dayName = dateObj.toLocaleDateString('en-AU', { weekday: 'long' })
                     const formattedDate = dateObj.toLocaleDateString('en-AU', { 
                       day: 'numeric', 
@@ -811,11 +836,17 @@ export function AutomationSettingsPage() {
                       year: 'numeric' 
                     })
                     
+                    // Get today for comparison
+                    const today = new Date().toISOString().split('T')[0]
+                    const isToday = date === today
+                    
                     return (
                       <div key={date} className="space-y-3">
                         <div className="flex items-center space-x-3">
-                          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                            {dayName}
+                          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            isToday ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {isToday ? '📅 Today' : dayName}
                           </div>
                           <div className="text-lg font-semibold text-gray-900">
                             {formattedDate}
@@ -826,29 +857,9 @@ export function AutomationSettingsPage() {
                         </div>
                         
                         <div className="space-y-3 ml-4">
-                          {contracts.map((contract: any) => {
-                            // Calculate transaction amount based on frequency
-                            const dailyRate = contract.contract.daily_support_item_cost || 0
-                            const frequency = contract.contract.automated_drawdown_frequency
-                            let transactionAmount = dailyRate
-                            
-                            if (frequency === 'weekly') transactionAmount = dailyRate * 7
-                            if (frequency === 'fortnightly') transactionAmount = dailyRate * 14
-                            
-                            // Calculate balance after transaction
-                            const currentBalance = contract.contract.current_balance || 0
-                            const balanceAfterTransaction = currentBalance - transactionAmount
-                            
-                            // Calculate next run date after this transaction
-                            const nextRunDate = new Date(contract.contract.next_run_date)
-                            let nextRunAfterTransaction = new Date(nextRunDate)
-                            
-                            if (frequency === 'daily') nextRunAfterTransaction.setDate(nextRunDate.getDate() + 1)
-                            if (frequency === 'weekly') nextRunAfterTransaction.setDate(nextRunDate.getDate() + 7)
-                            if (frequency === 'fortnightly') nextRunAfterTransaction.setDate(nextRunDate.getDate() + 14)
-                            
+                          {contracts.map((contract: any, index: number) => {
                             return (
-                              <div key={contract.contractId} className="border border-gray-200 rounded-lg p-4 bg-white">
+                              <div key={`${contract.contractId}-${date}-${index}`} className="border border-gray-200 rounded-lg p-4 bg-white">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="space-y-2">
                                     <div className="flex items-center space-x-2">
@@ -856,7 +867,7 @@ export function AutomationSettingsPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                       </svg>
                                       <span className="font-medium text-gray-900">
-                                        {contract.resident?.first_name} {contract.resident?.last_name}
+                                        {contract.residentName}
                                       </span>
                                     </div>
                                     
@@ -865,7 +876,7 @@ export function AutomationSettingsPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                       </svg>
                                       <span className="text-sm text-gray-600">
-                                        {contract.house?.descriptor || 'No house assigned'}
+                                        {contract.houseName}
                                       </span>
                                     </div>
                                   </div>
@@ -875,25 +886,25 @@ export function AutomationSettingsPage() {
                                       <div>
                                         <span className="text-gray-500">Transaction Amount:</span>
                                         <div className="font-medium text-green-600">
-                                          ${transactionAmount.toFixed(2)}
+                                          ${contract.transactionAmount.toFixed(2)}
                                         </div>
                                       </div>
                                       <div>
                                         <span className="text-gray-500">Frequency:</span>
                                         <div className="font-medium text-gray-900 capitalize">
-                                          {frequency}
+                                          {contract.frequency}
                                         </div>
                                       </div>
                                       <div>
-                                        <span className="text-gray-500">Next Run Date:</span>
+                                        <span className="text-gray-500">Next Run After:</span>
                                         <div className="font-medium text-blue-600">
-                                          {nextRunAfterTransaction.toLocaleDateString('en-AU')}
+                                          {new Date(contract.nextRunDateAfter).toLocaleDateString('en-AU')}
                                         </div>
                                       </div>
                                       <div>
                                         <span className="text-gray-500">Balance After:</span>
-                                        <div className="font-medium text-gray-900">
-                                          ${balanceAfterTransaction.toFixed(2)}
+                                        <div className={`font-medium ${contract.balanceAfterTransaction >= 0 ? 'text-gray-900' : 'text-red-600'}`}>
+                                          ${contract.balanceAfterTransaction.toFixed(2)}
                                         </div>
                                       </div>
                                     </div>
@@ -902,8 +913,10 @@ export function AutomationSettingsPage() {
                                 
                                 <div className="mt-3 pt-3 border-t border-gray-100">
                                   <div className="flex items-center justify-between text-xs text-gray-500">
-                                    <span>Contract: {contract.contract.type} • ${contract.contract.amount.toLocaleString()}</span>
-                                    <span>Current Balance: ${currentBalance.toFixed(2)}</span>
+                                    <span>Contract: {contract.contractType} • Current: ${contract.currentBalance.toFixed(2)}</span>
+                                    {!contract.hasSufficientBalance && (
+                                      <span className="text-red-600 font-medium">⚠️ Insufficient Balance</span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
