@@ -122,16 +122,21 @@ export async function checkContractEligibility(contractId: string): Promise<Cont
 export async function getEligibleContracts(): Promise<ContractEligibilityResult[]> {
   const supabase = await createClient()
   
-  // Get today's date in YYYY-MM-DD format (local date, not UTC)
+  // Get today's date in YYYY-MM-DD format in SYDNEY timezone
+  // This ensures consistent behavior whether cron runs from UTC or local machine
   const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
+  const sydneyDate = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Sydney' }))
+  const year = sydneyDate.getFullYear()
+  const month = String(sydneyDate.getMonth() + 1).padStart(2, '0')
+  const day = String(sydneyDate.getDate()).padStart(2, '0')
   const todayStr = `${year}-${month}-${day}`
   
+  console.log('[ELIGIBILITY] Current time (UTC):', now.toISOString())
+  console.log('[ELIGIBILITY] Current time (Sydney):', sydneyDate.toLocaleString('en-AU', { timeZone: 'Australia/Sydney' }))
   console.log('[ELIGIBILITY] Checking for contracts with next_run_date =', todayStr)
 
-  // Get all contracts with automation enabled that have next_run_date = TODAY
+  // Get all contracts with automation enabled that have next_run_date DATE portion = TODAY (Sydney date)
+  // We match on the DATE portion only, ignoring time
   const { data: contracts, error } = await supabase
     .from('funding_contracts')
     .select(`
@@ -153,8 +158,8 @@ export async function getEligibleContracts(): Promise<ContractEligibilityResult[
       )
     `)
     .eq('auto_billing_enabled', true)
-    .gte('next_run_date', `${todayStr}T00:00:00Z`)
-    .lt('next_run_date', `${todayStr}T23:59:59Z`)
+    .gte('next_run_date', `${todayStr}`)
+    .lt('next_run_date', `${year}-${month}-${String(Number(day) + 1).padStart(2, '0')}`)
 
   if (error) {
     console.error('[ELIGIBILITY] Error fetching contracts:', error)
