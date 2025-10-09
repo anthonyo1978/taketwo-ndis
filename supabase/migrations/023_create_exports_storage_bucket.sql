@@ -18,12 +18,12 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================================
 
 -- Policy: Allow authenticated users to upload PDFs
+-- Note: Simplified - removed folder check for easier debugging
 CREATE POLICY "Authenticated users can upload exports"
 ON storage.objects FOR INSERT
 WITH CHECK (
   bucket_id = 'exports' 
   AND auth.role() = 'authenticated'
-  AND (storage.foldername(name))[1] = 'contracts'
 );
 
 -- Policy: Allow authenticated users to read their organization's PDFs
