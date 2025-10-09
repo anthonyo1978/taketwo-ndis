@@ -147,7 +147,7 @@ export async function getEligibleContracts(): Promise<ContractEligibilityResult[
       )
     `)
     .eq('auto_billing_enabled', true)
-    .lte('next_run_date', todayStr) // Next run date is today or earlier (overdue)
+    .eq('next_run_date', todayStr) // EXACTLY today only (no overdue contracts)
 
   if (error) {
     console.error('Error fetching contracts:', error)
@@ -297,15 +297,11 @@ function validateNextRunDate(today: Date, nextRunDate: Date | null): boolean {
   }
 
   // Normalize dates to compare (remove time component)
-  const todayStr = today.toISOString().split('T')[0]
-  const nextRunStr = nextRunDate.toISOString().split('T')[0]
+  const todayStr = today.toISOString().split('T')[0] as string
+  const nextRunStr = nextRunDate.toISOString().split('T')[0] as string
   
-  // Next run date must be today or earlier (overdue contracts should run)
-  // But not more than 7 days overdue (prevent runaway automation)
-  const sevenDaysAgo = new Date(today)
-  sevenDaysAgo.setDate(today.getDate() - 7)
-  
-  return nextRunDate <= today && nextRunDate >= sevenDaysAgo
+  // Next run date must be EXACTLY today (not overdue, not future)
+  return nextRunStr === todayStr
 }
 
 /**
@@ -364,14 +360,12 @@ function getEligibilityReasons(checks: EligibilityCheck, contract: ContractWithD
       reasons.push('Next run date is not set')
     } else {
       const today = new Date()
-      const sevenDaysAgo = new Date(today)
-      sevenDaysAgo.setDate(today.getDate() - 7)
       const nextRunDate = new Date(contract.next_run_date)
       const todayStr = today.toISOString().split('T')[0] as string
       const nextRunStr = nextRunDate.toISOString().split('T')[0] as string
       
-      if (nextRunDate < sevenDaysAgo) {
-        reasons.push(`Next run date is too far in the past (${contract.next_run_date}) - more than 7 days overdue`)
+      if (nextRunStr < todayStr) {
+        reasons.push(`Next run date is in the past (${contract.next_run_date}) - overdue, not scheduled for today`)
       } else if (nextRunStr > todayStr) {
         reasons.push(`Next run date is scheduled for the future (${contract.next_run_date}) - not due today`)
       }
