@@ -1,11 +1,13 @@
 /**
  * Email Notification Service
  * 
- * Sends email notifications for automation runs
- * 
- * TODO: Integrate with actual email service (Resend, SendGrid, AWS SES, etc.)
- * For now, logs notifications to console
+ * Sends email notifications for automation runs using Resend
  */
+
+import { Resend } from 'resend'
+
+// Initialize Resend client
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 export interface AutomationEmailData {
   executionDate: string
@@ -42,7 +44,7 @@ export async function sendAutomationCompletionEmail(
 
     const emailBody = generateEmailBody(data)
 
-    // Log the email (for now)
+    // Log the email (always log for debugging)
     console.log('='.repeat(80))
     console.log('📧 EMAIL NOTIFICATION')
     console.log('='.repeat(80))
@@ -52,17 +54,39 @@ export async function sendAutomationCompletionEmail(
     console.log(emailBody)
     console.log('='.repeat(80))
 
-    // TODO: Replace with actual email service integration
-    // Example with Resend:
-    // const { data, error } = await resend.emails.send({
-    //   from: 'automation@yourdomain.com',
-    //   to: adminEmails,
-    //   subject: emailSubject,
-    //   html: emailBody
-    // })
+    // Send email via Resend if configured
+    if (!resend) {
+      console.warn('⚠️ RESEND_API_KEY not configured - email not sent')
+      return { success: false, error: 'RESEND_API_KEY not configured' }
+    }
 
-    // For now, just log and return success
-    return { success: true }
+    if (!process.env.FROM_EMAIL) {
+      console.warn('⚠️ FROM_EMAIL not configured - email not sent')
+      return { success: false, error: 'FROM_EMAIL not configured' }
+    }
+
+    try {
+      const { data: emailData, error: emailError } = await resend.emails.send({
+        from: process.env.FROM_EMAIL,
+        to: adminEmails,
+        subject: emailSubject,
+        html: emailBody
+      })
+
+      if (emailError) {
+        console.error('❌ Resend API error:', emailError)
+        return { success: false, error: emailError.message }
+      }
+
+      console.log('✅ Email sent successfully via Resend:', emailData)
+      return { success: true }
+    } catch (error) {
+      console.error('❌ Failed to send email via Resend:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
 
   } catch (error) {
     console.error('Failed to send email notification:', error)
@@ -260,8 +284,39 @@ export async function sendAutomationErrorEmail(
     console.log('Details:', details)
     console.log('='.repeat(80))
 
-    // TODO: Replace with actual email service
-    return { success: true }
+    // Send email via Resend if configured
+    if (!resend) {
+      console.warn('⚠️ RESEND_API_KEY not configured - error email not sent')
+      return { success: false, error: 'RESEND_API_KEY not configured' }
+    }
+
+    if (!process.env.FROM_EMAIL) {
+      console.warn('⚠️ FROM_EMAIL not configured - error email not sent')
+      return { success: false, error: 'FROM_EMAIL not configured' }
+    }
+
+    try {
+      const { data: emailData, error: emailError } = await resend.emails.send({
+        from: process.env.FROM_EMAIL,
+        to: adminEmails,
+        subject: emailSubject,
+        html: emailBody
+      })
+
+      if (emailError) {
+        console.error('❌ Resend API error (error email):', emailError)
+        return { success: false, error: emailError.message }
+      }
+
+      console.log('✅ Error email sent successfully via Resend:', emailData)
+      return { success: true }
+    } catch (error) {
+      console.error('❌ Failed to send error email via Resend:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
 
   } catch (err) {
     console.error('Failed to send error email notification:', err)
