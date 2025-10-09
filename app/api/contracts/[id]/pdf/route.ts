@@ -171,18 +171,26 @@ export async function POST(
       timezone
     }
     
-    console.log('[PDF API] Variables built, validating...')
+    console.log('[PDF API] Variables built:', JSON.stringify(vars, null, 2))
+    console.log('[PDF API] Validating against schema...')
     
     // 6. Validate variables against schema
     const validation = ndisServiceAgreementV1Schema.safeParse(vars)
     
     if (!validation.success) {
-      console.error('[PDF API] Validation failed:', validation.error.issues)
+      console.error('[PDF API] Validation failed!')
+      console.error('[PDF API] Missing/invalid fields:', JSON.stringify(validation.error.issues, null, 2))
+      
+      // Create user-friendly error message
+      const missingFields = validation.error.issues
+        .map(issue => `${issue.path.join('.')} (${issue.message})`)
+        .join('; ')
+      
       return NextResponse.json(
         { 
           error: { 
             code: 'VALIDATION_ERROR', 
-            message: 'Missing required contract data',
+            message: `Missing required contract data: ${missingFields}`,
             issues: validation.error.issues 
           } 
         },

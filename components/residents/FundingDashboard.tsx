@@ -39,11 +39,21 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       const result = await response.json() as {
         success?: boolean
         signedUrl?: string
-        error?: { code: string; message: string }
+        error?: { code: string; message: string; issues?: any[] }
       }
       
       if (!response.ok || !result.success) {
-        throw new Error(result.error?.message || 'Failed to generate PDF')
+        // Log detailed error for debugging
+        console.error('[PDF Generation] Error details:', result.error)
+        
+        // Show user-friendly error with details if available
+        let errorMessage = result.error?.message || 'Failed to generate PDF'
+        if (result.error?.issues && result.error.issues.length > 0) {
+          const missingFields = result.error.issues.map((issue: any) => issue.path?.join('.') || issue.message).join(', ')
+          errorMessage = `${errorMessage}: ${missingFields}`
+        }
+        
+        throw new Error(errorMessage)
       }
       
       // Download the PDF
