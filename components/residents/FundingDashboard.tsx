@@ -2,6 +2,7 @@
 
 import { format } from "date-fns"
 import { useState } from "react"
+import toast from 'react-hot-toast'
 import type { FundingInformation } from "types/resident"
 import { ContractStatusManager } from "./ContractStatusManager"
 import { FundingManager } from "./FundingManager"
@@ -15,10 +16,49 @@ interface FundingDashboardProps {
 
 export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: FundingDashboardProps) {
   const [showAddForm, setShowAddForm] = useState(false)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
   
   const activeContract = fundingInfo.find(c => c.contractStatus === 'Active')
   const draftContract = fundingInfo.find(c => c.contractStatus === 'Draft')
   const currentContract = activeContract || draftContract
+  
+  // Generate PDF handler
+  const handleGeneratePdf = async () => {
+    if (!currentContract?.id) {
+      toast.error('No contract available to generate PDF')
+      return
+    }
+    
+    setIsGeneratingPdf(true)
+    
+    try {
+      const response = await fetch(`/api/contracts/${currentContract.id}/pdf`, {
+        method: 'POST'
+      })
+      
+      const result = await response.json()
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error?.message || 'Failed to generate PDF')
+      }
+      
+      // Download the PDF
+      const link = document.createElement('a')
+      link.href = result.signedUrl
+      link.download = `NDIS-Contract-${currentContract.id.substring(0, 8)}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      toast.success('PDF generated successfully!')
+      
+    } catch (error) {
+      console.error('PDF generation error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to generate PDF')
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }
   
   // Calculate financial figures
   const getAllocatedAmount = () => {
@@ -82,13 +122,25 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
           <h2 className="text-2xl font-bold text-gray-900">Funding & Contracts</h2>
           <p className="text-gray-600 mt-1">Manage funding contracts and financial allocations</p>
         </div>
-        <Button
-          onClick={() => setShowAddForm(true)}
-          className="bg-blue-600 text-white hover:bg-blue-700 flex items-center space-x-2"
-        >
-          <span>{currentContract ? '✏️' : '+'}</span>
-          <span>{currentContract ? 'Edit Contract' : 'New Contract'}</span>
-        </Button>
+        <div className="flex items-center gap-3">
+          {currentContract && (
+            <Button
+              onClick={handleGeneratePdf}
+              disabled={isGeneratingPdf}
+              className="bg-purple-600 text-white hover:bg-purple-700 flex items-center space-x-2"
+            >
+              <span>📄</span>
+              <span>{isGeneratingPdf ? 'Generating...' : 'Generate PDF'}</span>
+            </Button>
+          )}
+          <Button
+            onClick={() => setShowAddForm(true)}
+            className="bg-blue-600 text-white hover:bg-blue-700 flex items-center space-x-2"
+          >
+            <span>{currentContract ? '✏️' : '+'}</span>
+            <span>{currentContract ? 'Edit Contract' : 'New Contract'}</span>
+          </Button>
+        </div>
       </div>
 
       {currentContract ? (
@@ -241,6 +293,14 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
+                <Button
+                  onClick={handleGeneratePdf}
+                  disabled={isGeneratingPdf}
+                  className="w-full justify-start bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200"
+                >
+                  <span className="mr-2">📄</span>
+                  {isGeneratingPdf ? 'Generating PDF...' : 'Generate PDF Contract'}
+                </Button>
                 <Button
                   onClick={() => setShowAddForm(true)}
                   className="w-full justify-start bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
