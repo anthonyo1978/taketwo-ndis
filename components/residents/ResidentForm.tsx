@@ -96,8 +96,20 @@ export function ResidentForm({ houseId, mode = "house-context", open, onClose, o
       if (data.notes) formData.append('notes', data.notes)
       
       // Add photo file if provided
-      if (data.photo && Array.isArray(data.photo) && data.photo.length > 0) {
-        formData.append('photo', data.photo[0] as File)
+      // Note: data.photo is a FileList from the file input, not an array
+      console.log('[ResidentForm] Photo data:', data.photo, 'Type:', typeof data.photo)
+      if (data.photo) {
+        // Handle both FileList and File[] types
+        const photoFile = Array.isArray(data.photo) 
+          ? data.photo[0] 
+          : (data.photo as FileList)[0]
+        
+        if (photoFile && photoFile instanceof File) {
+          console.log('[ResidentForm] Appending photo:', photoFile.name, photoFile.size)
+          formData.append('photo', photoFile)
+        } else {
+          console.log('[ResidentForm] No valid photo file found')
+        }
       }
 
       // Use the appropriate API endpoint
