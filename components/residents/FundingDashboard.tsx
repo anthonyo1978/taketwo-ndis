@@ -56,17 +56,12 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
         throw new Error(errorMessage)
       }
       
-      // Download the PDF
+      // Open PDF in new tab
       if (result.signedUrl) {
-        const link = document.createElement('a')
-        link.href = result.signedUrl
-        link.download = `NDIS-Contract-${currentContract.id.substring(0, 8)}.pdf`
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
+        window.open(result.signedUrl, '_blank')
       }
       
-      toast.success('PDF generated successfully!')
+      toast.success('PDF opened in new tab!')
       
     } catch (error) {
       console.error('PDF generation error:', error)
