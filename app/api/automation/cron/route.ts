@@ -110,6 +110,9 @@ export async function GET(request: NextRequest) {
     
     // Send email notifications to admin emails
     if (settings.admin_emails && settings.admin_emails.length > 0) {
+      console.log('[AUTOMATION CRON] Preparing email with', result.transactions.length, 'transactions')
+      console.log('[AUTOMATION CRON] Transaction IDs:', result.transactions.map(t => t.id))
+      
       // Fetch resident names and updated contract balances for email
       const transactionDetails = await Promise.all(
         result.transactions.map(async (txn) => {
@@ -125,14 +128,18 @@ export async function GET(request: NextRequest) {
             .eq('id', txn.contractId)
             .single()
           
-          return {
+          const detail = {
             residentName: resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown',
             amount: txn.amount,
             remainingBalance: contract?.current_balance || 0,
             nextRunDate: contract?.next_run_date || new Date().toISOString()
           }
+          console.log('[AUTOMATION CRON] Transaction detail for email:', detail)
+          return detail
         })
       )
+      
+      console.log('[AUTOMATION CRON] Final transactionDetails for email:', transactionDetails)
       
       // Add resident names to errors
       const errorsWithNames = await Promise.all(
