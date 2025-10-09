@@ -381,9 +381,21 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       const result = await response.json() as { success: boolean; data?: any; error?: string }
 
       if (result.success) {
-        setSelectedTransaction(result.data)
+        const transaction = result.data
+        
+        // Enhance transaction with resident and house names
+        const resident = residents.find(r => r.id === transaction.residentId)
+        const house = resident ? houses.find(h => h.id === resident.houseId) : null
+        
+        const enhancedTransaction = {
+          ...transaction,
+          residentName: resident ? `${resident.firstName || ''} ${resident.lastName || ''}`.trim() || 'Unknown' : 'Unknown',
+          houseName: house ? (house.descriptor || `${house.address1}, ${house.suburb}`) : 'Unknown'
+        }
+        
+        setSelectedTransaction(enhancedTransaction)
         // Set edit form data but exclude the note field (it's read-only)
-        const { note, ...editData } = result.data
+        const { note, ...editData } = enhancedTransaction
         setEditFormData(editData)
         setIsEditing(false)
         setShowTransactionModal(true)
