@@ -34,12 +34,7 @@ const fundingFormSchema = z.object({
     .max(200, "Description must be no more than 200 characters")
     .optional()
     .or(z.literal('')),
-  isActive: z.boolean(),
   renewalDate: z.string().optional(),
-  supportItemCode: z.string()
-    .max(50, "Support item code must be no more than 50 characters")
-    .optional()
-    .or(z.literal('')),
   // Automation fields
   autoBillingEnabled: z.boolean().default(false),
   automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
@@ -145,9 +140,7 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       startDate: editingContract.startDate ? new Date(editingContract.startDate).toISOString().split('T')[0] : undefined,
       endDate: editingContract.endDate ? new Date(editingContract.endDate).toISOString().split('T')[0] : undefined,
       description: editingContract.description || '',
-      isActive: editingContract.contractStatus === 'Active',
       renewalDate: editingContract.renewalDate ? new Date(editingContract.renewalDate).toISOString().split('T')[0] : undefined,
-      supportItemCode: editingContract.supportItemCode || '',
       // Automation fields
       autoBillingEnabled: editingContract.autoBillingEnabled || false,
       automatedDrawdownFrequency: editingContract.automatedDrawdownFrequency || 'fortnightly',
@@ -159,8 +152,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       type: 'Draw Down',
       amount: 0,
       startDate: new Date().toISOString().split('T')[0],
-      isActive: true,
-      supportItemCode: '',
       // Automation fields
       autoBillingEnabled: false,
       automatedDrawdownFrequency: 'fortnightly',
@@ -247,8 +238,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       type: 'Draw Down',
       amount: 0,
       startDate: new Date().toISOString().split('T')[0],
-      isActive: true,
-      supportItemCode: '',
       // Automation fields
       autoBillingEnabled: false,
       automatedDrawdownFrequency: 'fortnightly',
@@ -274,9 +263,7 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       startDate: formatDateForInput(funding.startDate),
       endDate: formatDateForInput(funding.endDate),
       description: funding.description || '',
-      isActive: funding.isActive,
       renewalDate: formatDateForInput(funding.renewalDate),
-      supportItemCode: funding.supportItemCode || '',
       // Automation fields
       autoBillingEnabled: funding.autoBillingEnabled || false,
       automatedDrawdownFrequency: funding.automatedDrawdownFrequency || 'fortnightly',
@@ -302,14 +289,8 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       // Calculate daily support item cost
       const dailySupportItemCost = calculateDailySupportItemCost(data.amount, new Date(data.startDate), data.endDate ? new Date(data.endDate) : undefined)
       
-      // Handle contract status based on isActive checkbox
-      let contractStatus: ContractStatus = 'Draft'
-      if (data.isActive) {
-        contractStatus = 'Active'
-      } else if (editingFunding) {
-        // Keep existing status if unchecking isActive
-        contractStatus = editingFunding.contractStatus === 'Active' ? 'Draft' : editingFunding.contractStatus
-      }
+      // All new contracts start as Draft - will be activated separately
+      const contractStatus: ContractStatus = editingFunding?.contractStatus || 'Draft'
       
       // Calculate next run date if automation is enabled
       let nextRunDate = data.nextRunDate ? new Date(data.nextRunDate) : undefined
@@ -691,20 +672,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
               )}
             </div>
 
-            {/* Support Item Code */}
-            <div>
-              <Input
-                label="Support Item Code (Optional)"
-                placeholder="e.g., 01_011_0107_1_1"
-                {...form.register("supportItemCode")}
-                error={form.formState.errors.supportItemCode?.message}
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                NDIS support item code for billing and compliance
-              </p>
-            </div>
-            
-
             {/* Renewal Date */}
             <div>
               <Input
@@ -716,23 +683,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
               <p className="text-xs text-gray-500 mt-1">
                 Set a reminder date for contract renewal
               </p>
-            </div>
-
-            {/* Contract Settings */}
-            <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-700">Contract Settings</h4>
-              
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  {...form.register("isActive")}
-                  id="isActive"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
-                  This contract is currently active
-                </label>
-              </div>
             </div>
 
             {/* Automation Settings */}
