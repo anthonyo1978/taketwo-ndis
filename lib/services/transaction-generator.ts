@@ -191,7 +191,7 @@ export async function generateTransactionForContract(
       quantity: 1,
       unit_price: transactionAmount,
       status: 'draft', // Draft status - requires manual approval
-      drawdown_status: 'draft', // Draft drawdown status
+      drawdown_status: 'pending', // Pending until validated and posted (NOT 'draft' - that's not in the constraint)
       is_drawdown_transaction: true,
       created_by: 'automation-system',
       posted_at: null, // Not posted yet
