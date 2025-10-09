@@ -237,6 +237,8 @@ export class HouseService {
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes
       if (updates.goLiveDate !== undefined) dbUpdates.go_live_date = updates.goLiveDate
       if (updates.resident !== undefined) dbUpdates.resident = updates.resident
+      if (updates.imageUrl !== undefined) dbUpdates.image_url = updates.imageUrl
+      if (updates.descriptor !== undefined) dbUpdates.descriptor = updates.descriptor
 
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
