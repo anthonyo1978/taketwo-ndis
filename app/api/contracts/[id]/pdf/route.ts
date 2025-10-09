@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
-import { renderContractPdf } from 'lib/contracts/renderer.tsx'
+import { renderContractPdf } from 'lib/contracts/renderer'
 import { ndisServiceAgreementV1Schema } from 'lib/contracts/schemas/ndis-service-agreement-v1'
 import { organizationService } from 'lib/supabase/services/organization'
 import { createHash } from 'crypto'
