@@ -17,6 +17,7 @@ interface FundingDashboardProps {
 export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: FundingDashboardProps) {
   const [showAddForm, setShowAddForm] = useState(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+  const [isActivating, setIsActivating] = useState(false)
   
   const activeContract = fundingInfo.find(c => c.contractStatus === 'Active')
   const draftContract = fundingInfo.find(c => c.contractStatus === 'Draft')
@@ -68,6 +69,60 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       toast.error(error instanceof Error ? error.message : 'Failed to generate PDF')
     } finally {
       setIsGeneratingPdf(false)
+    }
+  }
+  
+  // Activate contract handler
+  const handleActivateContract = async () => {
+    if (!currentContract?.id) {
+      toast.error('No contract available to activate')
+      return
+    }
+    
+    if (currentContract.contractStatus === 'Active') {
+      toast.error('Contract is already active')
+      return
+    }
+    
+    if (!window.confirm('Are you sure you want to activate this contract? This will enable billing and make the contract operational.')) {
+      return
+    }
+    
+    setIsActivating(true)
+    
+    try {
+      const response = await fetch(`/api/residents/${residentId}/funding/${currentContract.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'Active'
+        })
+      })
+      
+      const result = await response.json() as {
+        success?: boolean
+        data?: FundingInformation[]
+        error?: string
+      }
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to activate contract')
+      }
+      
+      // Update local state
+      if (result.data) {
+        onFundingChange(result.data)
+      }
+      
+      toast.success('Contract activated successfully!')
+      
+    } catch (error) {
+      console.error('Contract activation error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to activate contract')
+    } finally {
+      setIsActivating(false)
     }
   }
   
@@ -304,6 +359,16 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
+                {currentContract?.contractStatus === 'Draft' && (
+                  <Button
+                    onClick={handleActivateContract}
+                    disabled={isActivating}
+                    className="w-full justify-start bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+                  >
+                    <span className="mr-2">✅</span>
+                    {isActivating ? 'Activating...' : 'Activate Contract'}
+                  </Button>
+                )}
                 <Button
                   onClick={handleGeneratePdf}
                   disabled={isGeneratingPdf}
