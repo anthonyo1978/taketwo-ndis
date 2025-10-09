@@ -16,9 +16,16 @@ export interface AutomationEmailData {
   successfulTransactions: number
   failedTransactions: number
   totalAmount: number
+  transactions: Array<{
+    residentName: string
+    amount: number
+    remainingBalance: number
+    nextRunDate: string
+  }>
   errors: Array<{
     contractId: string
     residentId: string
+    residentName?: string
     error: string
     details?: any
   }>
@@ -98,7 +105,7 @@ export async function sendAutomationCompletionEmail(
 }
 
 /**
- * Generate HTML email body
+ * Generate HTML email body - Simple table format
  */
 function generateEmailBody(data: AutomationEmailData): string {
   const date = new Date(data.executionDate).toLocaleString('en-AU', {
@@ -107,127 +114,106 @@ function generateEmailBody(data: AutomationEmailData): string {
     timeZone: 'Australia/Sydney'
   })
 
-  let body = `
+  return `
 <!DOCTYPE html>
 <html>
 <head>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; }
-    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; }
-    .header h1 { margin: 0; font-size: 24px; }
-    .content { background: #f7fafc; padding: 30px; border: 1px solid #e2e8f0; border-top: none; }
-    .summary-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .stat { display: inline-block; margin: 10px 20px 10px 0; }
-    .stat-label { font-size: 12px; color: #718096; text-transform: uppercase; }
-    .stat-value { font-size: 24px; font-weight: bold; color: #2d3748; }
-    .success { color: #38a169; }
-    .error { color: #e53e3e; }
-    .warning { color: #d69e2e; }
-    .section { margin: 20px 0; }
-    .section-title { font-size: 16px; font-weight: bold; color: #2d3748; margin-bottom: 10px; }
-    .error-list { background: #fff5f5; border-left: 4px solid #e53e3e; padding: 15px; margin: 10px 0; }
-    .error-item { margin: 10px 0; }
-    .footer { text-align: center; padding: 20px; color: #718096; font-size: 12px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1f2937; margin: 0; padding: 20px; background: #f9fafb; }
+    .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .header { background: #4f46e5; color: white; padding: 24px; }
+    .header h1 { margin: 0 0 8px 0; font-size: 22px; font-weight: 600; }
+    .header p { margin: 0; opacity: 0.9; font-size: 14px; }
+    .summary { padding: 24px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+    .summary-stats { display: flex; gap: 32px; }
+    .stat { flex: 1; }
+    .stat-label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .stat-value { font-size: 24px; font-weight: 700; color: #4f46e5; }
+    .content { padding: 24px; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th { background: #f3f4f6; padding: 12px; text-align: left; font-size: 12px; font-weight: 600; color: #374151; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #e5e7eb; }
+    td { padding: 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
+    tr:last-child td { border-bottom: none; }
+    .amount { font-weight: 600; color: #059669; }
+    .balance { color: #6b7280; }
+    .date { color: #6b7280; font-size: 13px; }
+    .error-section { background: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 16px 0; }
+    .error-item { padding: 8px 0; }
+    .footer { padding: 20px 24px; background: #f9fafb; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #6b7280; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>🤖 Automated Billing Run Report</h1>
-      <p style="margin: 10px 0 0 0; opacity: 0.9;">${date}</p>
+      <h1>Automated Billing Report</h1>
+      <p>${date}</p>
+    </div>
+    
+    <div class="summary">
+      <div class="summary-stats">
+        <div class="stat">
+          <div class="stat-label">Total Billed</div>
+          <div class="stat-value">$${data.totalAmount.toFixed(2)}</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Participants</div>
+          <div class="stat-value">${data.successfulTransactions}</div>
+        </div>
+        ${data.failedTransactions > 0 ? `
+        <div class="stat">
+          <div class="stat-label">Failed</div>
+          <div class="stat-value" style="color: #dc2626;">${data.failedTransactions}</div>
+        </div>
+        ` : ''}
+      </div>
     </div>
     
     <div class="content">
-      <div class="summary-box">
-        <div class="section-title">📊 Run Summary</div>
-        <div style="margin-top: 20px;">
-          <div class="stat">
-            <div class="stat-label">Contracts Processed</div>
-            <div class="stat-value">${data.processedContracts}</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Successful</div>
-            <div class="stat-value success">${data.successfulTransactions}</div>
-          </div>
-          ${data.failedTransactions > 0 ? `
-          <div class="stat">
-            <div class="stat-label">Failed</div>
-            <div class="stat-value error">${data.failedTransactions}</div>
-          </div>
-          ` : ''}
-          <div class="stat">
-            <div class="stat-label">Total Amount</div>
-            <div class="stat-value">$${data.totalAmount.toFixed(2)}</div>
-          </div>
-          <div class="stat">
-            <div class="stat-label">Execution Time</div>
-            <div class="stat-value">${data.executionTime}ms</div>
-          </div>
-        </div>
-      </div>
-
-      ${Object.keys(data.summary.frequencyBreakdown).length > 0 ? `
-      <div class="section">
-        <div class="section-title">📈 Frequency Breakdown</div>
-        <div class="summary-box">
-          ${Object.entries(data.summary.frequencyBreakdown).map(([freq, count]) => `
-            <div style="padding: 8px 0; border-bottom: 1px solid #e2e8f0;">
-              <strong>${freq}:</strong> ${count} transaction${count !== 1 ? 's' : ''}
-            </div>
+      ${data.transactions.length > 0 ? `
+      <table>
+        <thead>
+          <tr>
+            <th>Resident</th>
+            <th>Amount</th>
+            <th>Remaining Balance</th>
+            <th>Next Run Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.transactions.map(txn => `
+            <tr>
+              <td>${txn.residentName}</td>
+              <td class="amount">$${txn.amount.toFixed(2)}</td>
+              <td class="balance">$${txn.remainingBalance.toFixed(2)}</td>
+              <td class="date">${new Date(txn.nextRunDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+            </tr>
           `).join('')}
-        </div>
+        </tbody>
+      </table>
+      ` : `
+      <p style="color: #6b7280; text-align: center; padding: 20px;">No transactions processed</p>
+      `}
+      
+      ${data.errors.length > 0 ? `
+      <div class="error-section">
+        <strong style="color: #dc2626;">⚠️ Errors (${data.errors.length})</strong>
+        ${data.errors.map((error, index) => `
+          <div class="error-item">
+            <strong>${index + 1}.</strong> ${error.residentName || 'Unknown'}: ${error.error}
+          </div>
+        `).join('')}
       </div>
       ` : ''}
-
-      ${data.errors.length > 0 ? `
-      <div class="section">
-        <div class="section-title error">⚠️ Errors (${data.errors.length})</div>
-        <div class="error-list">
-          ${data.errors.slice(0, 10).map((error, index) => `
-            <div class="error-item">
-              <strong>${index + 1}.</strong> Contract ${error.contractId.substring(0, 8)}...<br>
-              <span style="color: #718096;">Error: ${error.error}</span>
-            </div>
-          `).join('')}
-          ${data.errors.length > 10 ? `
-            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #feb2b2;">
-              <em>... and ${data.errors.length - 10} more errors</em>
-            </div>
-          ` : ''}
-        </div>
-      </div>
-      ` : `
-      <div class="section">
-        <div style="text-align: center; padding: 20px; background: #f0fff4; border-radius: 8px; border: 1px solid #9ae6b4;">
-          <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
-          <div style="font-size: 18px; font-weight: bold; color: #38a169;">All Transactions Successful</div>
-          <div style="color: #718096; margin-top: 5px;">No errors encountered during this run</div>
-        </div>
-      </div>
-      `}
-
-      <div class="section">
-        <div class="section-title">📝 Important Note</div>
-        <div class="summary-box">
-          <p style="margin: 0; color: #718096;">
-            All automated transactions are created in <strong>DRAFT</strong> status and require manual approval 
-            before they are posted. Please review the transactions in your admin dashboard and approve them when ready.
-          </p>
-        </div>
-      </div>
     </div>
     
     <div class="footer">
-      <p>This is an automated message from your NDIS Management System</p>
-      <p>Execution Date: ${data.executionDate}</p>
+      <p><strong>All transactions are in DRAFT status and require manual approval.</strong></p>
+      <p style="margin-top: 8px;">Automated NDIS Billing System</p>
     </div>
   </div>
 </body>
 </html>
-`
-
-  return body
+  `
 }
 
 /**

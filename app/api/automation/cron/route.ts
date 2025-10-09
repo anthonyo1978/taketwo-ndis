@@ -110,6 +110,46 @@ export async function GET(request: NextRequest) {
     
     // Send email notifications to admin emails
     if (settings.admin_emails && settings.admin_emails.length > 0) {
+      // Fetch resident names and updated contract balances for email
+      const transactionDetails = await Promise.all(
+        result.transactions.map(async (txn) => {
+          const { data: resident } = await supabase
+            .from('residents')
+            .select('first_name, last_name')
+            .eq('id', txn.residentId)
+            .single()
+          
+          const { data: contract } = await supabase
+            .from('funding_contracts')
+            .select('current_balance, next_run_date')
+            .eq('id', txn.contractId)
+            .single()
+          
+          return {
+            residentName: resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown',
+            amount: txn.amount,
+            remainingBalance: contract?.current_balance || 0,
+            nextRunDate: contract?.next_run_date || new Date().toISOString()
+          }
+        })
+      )
+      
+      // Add resident names to errors
+      const errorsWithNames = await Promise.all(
+        result.errors.map(async (error) => {
+          const { data: resident } = await supabase
+            .from('residents')
+            .select('first_name, last_name')
+            .eq('id', error.residentId)
+            .single()
+          
+          return {
+            ...error,
+            residentName: resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown'
+          }
+        })
+      )
+      
       const emailResult = await sendAutomationCompletionEmail(
         settings.admin_emails,
         {
@@ -119,7 +159,8 @@ export async function GET(request: NextRequest) {
           successfulTransactions: result.successfulTransactions,
           failedTransactions: result.failedTransactions,
           totalAmount: result.summary.totalAmount,
-          errors: result.errors,
+          transactions: transactionDetails,
+          errors: errorsWithNames,
           summary: result.summary
         }
       )
