@@ -6,6 +6,7 @@ import { Controller, useForm } from "react-hook-form"
 import { z } from "zod"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "components/ui/Dialog"
 import { Input } from "components/ui/Input"
+import toast from "react-hot-toast"
 import type { ContractStatus, FundingInformation, FundingModel } from "types/resident"
 
 interface FundingManagerProps {
@@ -20,6 +21,11 @@ interface ApiResponse {
   data?: FundingInformation | FundingInformation[]
   error?: string
   details?: Array<{ message: string }>
+  catchupTransactions?: {
+    created: number
+    transactions: Array<{ id: string; date: string; amount: number }>
+    warnings?: string[]
+  }
 }
 
 const fundingFormSchema = z.object({
@@ -40,6 +46,7 @@ const fundingFormSchema = z.object({
   automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
   firstRunDate: z.string().optional(),
   nextRunDate: z.string().optional(),
+  generateCatchupClaims: z.boolean().default(false),
   // Duration field (calculated from start/end dates)
   durationDays: z.number().int().positive().optional()
 }).refine(
@@ -71,6 +78,12 @@ const fundingFormSchema = z.object({
   {
     message: "First run date is required when automated billing is enabled",
     path: ["firstRunDate"]
+  }
+).refine(
+  (data) => !data.nextRunDate || !data.startDate || new Date(data.nextRunDate) >= new Date(data.startDate),
+  {
+    message: "Next run date cannot be before contract start date",
+    path: ["nextRunDate"]
   }
 )
 
@@ -365,6 +378,24 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
         if (result.success && result.data) {
           const newFunding = [...fundingInfo, result.data as FundingInformation]
           onFundingChange?.(newFunding)
+          
+          // Show catch-up transaction results if any were generated
+          if (result.catchupTransactions && result.catchupTransactions.created > 0) {
+            const totalAmount = result.catchupTransactions.transactions.reduce((sum, t) => sum + t.amount, 0)
+            toast.success(
+              `✅ Contract created with ${result.catchupTransactions.created} catch-up transactions. Total: $${totalAmount.toFixed(2)}`
+            )
+            
+            // Show warnings if any
+            if (result.catchupTransactions.warnings && result.catchupTransactions.warnings.length > 0) {
+              setTimeout(() => {
+                toast.error(`⚠️ Balance Warning: ${result.catchupTransactions!.warnings![0]}`)
+              }, 1000)
+            }
+          } else {
+            toast.success('✅ Contract created successfully')
+          }
+          
           closeForm()
         } else {
           setError(result.error || 'Failed to add funding information')
@@ -784,22 +815,46 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
                       error={form.formState.errors.firstRunDate?.message}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      When should automated billing start for this contract? Must be today or in the future.
+                      When should automated billing start for this contract? Can be today or in the future.
                     </p>
                   </div>
 
-                  {/* Next Run Date (calculated, read-only) */}
+                  {/* Next Run Date (now editable for catch-up scenarios) */}
                   <div>
                     <Input
-                      label="Next Run Date (Auto-calculated)"
+                      label="Next Run Date"
                       type="date"
-                      value={form.watch("nextRunDate") || ''}
-                      disabled
-                      className="bg-gray-100"
+                      {...form.register("nextRunDate")}
+                      error={form.formState.errors.nextRunDate?.message}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Automatically calculated based on first run date and frequency
+                      Next billing date. Can be in the past (not before contract start date) for catch-up billing.
                     </p>
+                  </div>
+
+                  {/* Catch-up Claims Checkbox */}
+                  <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <label className="flex items-start space-x-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        {...form.register("generateCatchupClaims")}
+                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                      />
+                      <div className="flex-1">
+                        <span className="text-sm font-medium text-gray-900">
+                          Automatically generate catch-up claims
+                        </span>
+                        <p className="text-xs text-gray-600 mt-1">
+                          If enabled, the system will create retrospective transactions from the Next Run Date until today, based on your billing frequency.
+                        </p>
+                        <p className="text-xs text-gray-600 mt-2">
+                          <strong>Example:</strong> If Next Run Date is 30 days ago with daily frequency, this will create 30 draft transactions for review.
+                        </p>
+                        <p className="text-xs text-blue-700 font-medium mt-2">
+                          ⚠️ All catch-up transactions will be created in Draft status for your review before posting.
+                        </p>
+                      </div>
+                    </label>
                   </div>
                 </div>
               )}

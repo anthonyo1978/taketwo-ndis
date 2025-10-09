@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { fundingInformationSchema } from 'lib/schemas/resident'
 import { residentService } from 'lib/supabase/services/residents'
+import { generateCatchupTransactions, validateCatchupGeneration } from '@/lib/services/catchup-transaction-generator'
 
 interface RouteParams {
   id: string
@@ -88,6 +89,7 @@ export async function POST(
       automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
       firstRunDate: z.coerce.date().optional(),
       nextRunDate: z.coerce.date().optional(),
+      generateCatchupClaims: z.boolean().default(false),
       // Duration field (calculated from start/end dates)
       durationDays: z.number().int().positive().optional()
     }).refine(
@@ -126,6 +128,12 @@ export async function POST(
         message: "First run date is required when automated billing is enabled",
         path: ["firstRunDate"]
       }
+    ).refine(
+      (data) => !data.nextRunDate || data.nextRunDate >= data.startDate,
+      {
+        message: "Next run date cannot be before contract start date",
+        path: ["nextRunDate"]
+      }
     )
     
     const validation = createFundingSchema.safeParse(body)
@@ -140,6 +148,29 @@ export async function POST(
         }, 
         { status: 400 }
       )
+    }
+    
+    // Validate catch-up generation if enabled
+    if (validation.data.generateCatchupClaims && validation.data.nextRunDate) {
+      const catchupValidation = validateCatchupGeneration(
+        validation.data.nextRunDate,
+        validation.data.startDate,
+        validation.data.automatedDrawdownFrequency
+      )
+      
+      if (!catchupValidation.valid) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: catchupValidation.error || 'Catch-up generation validation failed'
+          }, 
+          { status: 400 }
+        )
+      }
+      
+      if (catchupValidation.warning) {
+        console.log('[CATCHUP] Warning:', catchupValidation.warning)
+      }
     }
     
     // Simulate realistic delay for loading states
@@ -179,10 +210,39 @@ export async function POST(
       durationDays: durationDays
     })
     
+    // Generate catch-up transactions if enabled
+    let catchupResult = null
+    if (validation.data.generateCatchupClaims && validation.data.nextRunDate && validation.data.dailySupportItemCost) {
+      console.log('[CATCHUP] Generating catch-up transactions for contract:', newFunding.id)
+      
+      catchupResult = await generateCatchupTransactions({
+        contractId: newFunding.id,
+        residentId: id,
+        nextRunDate: validation.data.nextRunDate,
+        frequency: validation.data.automatedDrawdownFrequency,
+        amount: validation.data.dailySupportItemCost,
+        currentBalance: validation.data.amount,
+        startDate: validation.data.startDate,
+        createdBy: 'system' // TODO: Get from authenticated user
+      })
+      
+      if (!catchupResult.success) {
+        console.error('[CATCHUP] Failed to generate catch-up transactions:', catchupResult.error)
+        // Don't fail the whole request, just log and return warning
+      } else {
+        console.log(`[CATCHUP] Successfully created ${catchupResult.transactionsCreated} catch-up transactions`)
+      }
+    }
+    
     return NextResponse.json({
       success: true,
       data: newFunding,
-      message: 'Funding information added successfully'
+      message: 'Funding information added successfully',
+      catchupTransactions: catchupResult ? {
+        created: catchupResult.transactionsCreated,
+        transactions: catchupResult.transactions,
+        warnings: catchupResult.warnings
+      } : undefined
     }, { status: 201 })
   } catch (error) {
     console.error('Error adding funding information:', error)
