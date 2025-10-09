@@ -9,22 +9,15 @@ import React from 'react'
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
 import type { NdisServiceAgreementV1Vars } from '../schemas/ndis-service-agreement-v1'
 
-// Register fonts
-Font.register({
-  family: 'Inter',
-  fonts: [
-    { src: 'https://fonts.gstatic.com/s/inter/v12/Inter-Regular.ttf' },
-    { src: 'https://fonts.gstatic.com/s/inter/v12/Inter-Medium.ttf', fontWeight: 500 },
-    { src: 'https://fonts.gstatic.com/s/inter/v12/Inter-SemiBold.ttf', fontWeight: 600 },
-    { src: 'https://fonts.gstatic.com/s/inter/v12/Inter-Bold.ttf', fontWeight: 700 }
-  ]
-})
+// Register Helvetica (built-in font, no external loading needed)
+// Note: @react-pdf/renderer has issues with Google Fonts
+// Using built-in fonts is more reliable for Vercel deployment
 
 // Styles
 const styles = StyleSheet.create({
   page: {
     padding: 40,
-    fontFamily: 'Inter',
+    fontFamily: 'Helvetica',
     fontSize: 10,
     lineHeight: 1.5
   },
