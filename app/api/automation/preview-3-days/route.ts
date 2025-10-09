@@ -46,8 +46,12 @@ export async function GET() {
     
     // Generate preview for next 3 days
     const today = new Date()
+    today.setHours(0, 0, 0, 0) // Reset to start of day
     const previewDays = 3
     const contractsByDay: Record<string, any[]> = {}
+    
+    // Track simulated next_run_dates as we go through days (for daily contracts)
+    const simulatedNextRunDates: Record<string, Date> = {}
     
     for (let dayOffset = 0; dayOffset < previewDays; dayOffset++) {
       const checkDate = new Date(today)
@@ -58,22 +62,21 @@ export async function GET() {
       
       // Check each contract to see if it would run on this date
       for (const contract of contracts || []) {
-        const nextRunDate = contract.next_run_date ? new Date(contract.next_run_date) : null
+        const originalNextRunDate = contract.next_run_date ? new Date(contract.next_run_date) : null
         
-        if (!nextRunDate) continue
+        if (!originalNextRunDate) continue
         
-        // Determine if this contract should run on this day
-        let shouldRunOnThisDay = false
+        // Get the simulated next_run_date (accounts for previous days in the preview)
+        const contractKey = contract.id
+        const simulatedNextRun = simulatedNextRunDates[contractKey] || new Date(originalNextRunDate)
+        simulatedNextRun.setHours(0, 0, 0, 0)
         
-        // For daily contracts, check each day
-        if (contract.automated_drawdown_frequency === 'daily') {
-          // Will run if checkDate >= nextRunDate
-          shouldRunOnThisDay = checkDate >= nextRunDate
-        } else {
-          // For weekly/fortnightly, only runs on specific date
-          const nextRunDateStr = nextRunDate.toISOString().split('T')[0]
-          shouldRunOnThisDay = nextRunDateStr === dateKey
-        }
+        // Normalize dates for comparison
+        const simulatedNextRunStr = simulatedNextRun.toISOString().split('T')[0]
+        const checkDateStr = checkDate.toISOString().split('T')[0]
+        
+        // Check if this contract should run on this day
+        const shouldRunOnThisDay = simulatedNextRunStr === checkDateStr
         
         if (shouldRunOnThisDay) {
           // Calculate transaction amount
@@ -113,6 +116,9 @@ export async function GET() {
             hasSufficientBalance,
             scheduledRunDate: dateKey
           })
+          
+          // Update simulated next_run_date for future iterations
+          simulatedNextRunDates[contractKey] = nextRunAfter
         }
       }
     }
