@@ -87,7 +87,6 @@ export async function POST(
       // Automation fields
       autoBillingEnabled: z.boolean().default(false),
       automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
-      firstRunDate: z.coerce.date().optional(),
       nextRunDate: z.coerce.date().optional(),
       generateCatchupClaims: z.boolean().default(false),
       // Duration field (calculated from start/end dates)
@@ -105,28 +104,10 @@ export async function POST(
         path: ["renewalDate"]
       }
     ).refine(
-      (data) => !data.firstRunDate || data.firstRunDate >= data.startDate,
+      (data) => !data.autoBillingEnabled || data.nextRunDate,
       {
-        message: "First run date must be on or after contract start date",
-        path: ["firstRunDate"]
-      }
-    ).refine(
-      (data) => !data.firstRunDate || !data.endDate || data.firstRunDate <= data.endDate,
-      {
-        message: "First run date must be on or before contract end date",
-        path: ["firstRunDate"]
-      }
-    ).refine(
-      (data) => !data.firstRunDate || data.firstRunDate >= new Date(new Date().setHours(0, 0, 0, 0)),
-      {
-        message: "First run date must be today or in the future",
-        path: ["firstRunDate"]
-      }
-    ).refine(
-      (data) => !data.autoBillingEnabled || data.firstRunDate,
-      {
-        message: "First run date is required when automated billing is enabled",
-        path: ["firstRunDate"]
+        message: "Next run date is required when automated billing is enabled",
+        path: ["nextRunDate"]
       }
     ).refine(
       (data) => !data.nextRunDate || data.nextRunDate >= data.startDate,
@@ -204,7 +185,6 @@ export async function POST(
       // Automation fields
       autoBillingEnabled: validation.data.autoBillingEnabled,
       automatedDrawdownFrequency: validation.data.automatedDrawdownFrequency,
-      firstRunDate: validation.data.firstRunDate,
       nextRunDate: validation.data.nextRunDate,
       // Duration field
       durationDays: durationDays
@@ -318,7 +298,6 @@ export async function PUT(
       // Automation fields
       autoBillingEnabled: z.boolean().optional(),
       automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).optional(),
-      firstRunDate: z.coerce.date().optional(),
       nextRunDate: z.coerce.date().optional(),
       // Duration field (calculated from start/end dates)
       durationDays: z.number().int().positive().optional()
@@ -335,28 +314,16 @@ export async function PUT(
         path: ["renewalDate"]
       }
     ).refine(
-      (data) => !data.firstRunDate || !data.startDate || data.firstRunDate >= data.startDate,
+      (data) => !data.autoBillingEnabled || data.nextRunDate,
       {
-        message: "First run date must be on or after contract start date",
-        path: ["firstRunDate"]
+        message: "Next run date is required when automated billing is enabled",
+        path: ["nextRunDate"]
       }
     ).refine(
-      (data) => !data.firstRunDate || !data.endDate || data.firstRunDate <= data.endDate,
+      (data) => !data.nextRunDate || !data.startDate || data.nextRunDate >= data.startDate,
       {
-        message: "First run date must be on or before contract end date",
-        path: ["firstRunDate"]
-      }
-    ).refine(
-      (data) => !data.firstRunDate || data.firstRunDate >= new Date(new Date().setHours(0, 0, 0, 0)),
-      {
-        message: "First run date must be today or in the future",
-        path: ["firstRunDate"]
-      }
-    ).refine(
-      (data) => !data.autoBillingEnabled || data.firstRunDate,
-      {
-        message: "First run date is required when automated billing is enabled",
-        path: ["firstRunDate"]
+        message: "Next run date cannot be before contract start date",
+        path: ["nextRunDate"]
       }
     )
     

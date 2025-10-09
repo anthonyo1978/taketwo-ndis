@@ -44,7 +44,6 @@ const fundingFormSchema = z.object({
   // Automation fields
   autoBillingEnabled: z.boolean().default(false),
   automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
-  firstRunDate: z.string().optional(),
   nextRunDate: z.string().optional(),
   generateCatchupClaims: z.boolean().default(false),
   // Duration field (calculated from start/end dates)
@@ -62,22 +61,10 @@ const fundingFormSchema = z.object({
     path: ["renewalDate"]
   }
 ).refine(
-  (data) => !data.firstRunDate || !data.startDate || new Date(data.firstRunDate) >= new Date(data.startDate),
+  (data) => !data.autoBillingEnabled || data.nextRunDate,
   {
-    message: "First run date must be on or after contract start date",
-    path: ["firstRunDate"]
-  }
-).refine(
-  (data) => !data.firstRunDate || !data.endDate || new Date(data.firstRunDate) <= new Date(data.endDate),
-  {
-    message: "First run date must be on or before contract end date",
-    path: ["firstRunDate"]
-  }
-).refine(
-  (data) => !data.autoBillingEnabled || data.firstRunDate,
-  {
-    message: "First run date is required when automated billing is enabled",
-    path: ["firstRunDate"]
+    message: "Next run date is required when automated billing is enabled",
+    path: ["nextRunDate"]
   }
 ).refine(
   (data) => !data.nextRunDate || !data.startDate || new Date(data.nextRunDate) >= new Date(data.startDate),
@@ -157,7 +144,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       // Automation fields
       autoBillingEnabled: editingContract.autoBillingEnabled || false,
       automatedDrawdownFrequency: editingContract.automatedDrawdownFrequency || 'fortnightly',
-      firstRunDate: editingContract.firstRunDate ? new Date(editingContract.firstRunDate).toISOString().split('T')[0] : undefined,
       nextRunDate: editingContract.nextRunDate ? new Date(editingContract.nextRunDate).toISOString().split('T')[0] : undefined,
       // Duration field
       durationDays: editingContract.durationDays || undefined
@@ -168,7 +154,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       // Automation fields
       autoBillingEnabled: false,
       automatedDrawdownFrequency: 'fortnightly',
-      firstRunDate: undefined,
       nextRunDate: undefined,
       // Duration field
       durationDays: undefined
@@ -254,7 +239,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       // Automation fields
       autoBillingEnabled: false,
       automatedDrawdownFrequency: 'fortnightly',
-      firstRunDate: undefined,
       nextRunDate: undefined
     })
     setShowAddForm(true)
@@ -280,7 +264,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       // Automation fields
       autoBillingEnabled: funding.autoBillingEnabled || false,
       automatedDrawdownFrequency: funding.automatedDrawdownFrequency || 'fortnightly',
-      firstRunDate: formatDateForInput(funding.firstRunDate),
       nextRunDate: formatDateForInput(funding.nextRunDate)
     })
     setShowAddForm(true)
@@ -305,12 +288,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
       // All new contracts start as Draft - will be activated separately
       const contractStatus: ContractStatus = editingFunding?.contractStatus || 'Draft'
       
-      // Calculate next run date if automation is enabled
-      let nextRunDate = data.nextRunDate ? new Date(data.nextRunDate) : undefined
-      if (data.autoBillingEnabled && data.firstRunDate && data.automatedDrawdownFrequency) {
-        nextRunDate = calculateNextRunDate(new Date(data.firstRunDate), data.automatedDrawdownFrequency)
-      }
-
       // Calculate duration in days if both start and end dates are provided
       let durationDays: number | undefined = undefined
       if (data.startDate && data.endDate) {
@@ -323,10 +300,9 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
         startDate: new Date(data.startDate),
         endDate: data.endDate ? new Date(data.endDate) : undefined,
         renewalDate: data.renewalDate ? new Date(data.renewalDate) : undefined,
-        firstRunDate: data.firstRunDate ? new Date(data.firstRunDate) : undefined,
+        nextRunDate: data.nextRunDate ? new Date(data.nextRunDate) : undefined,
         dailySupportItemCost,
         contractStatus,
-        nextRunDate,
         durationDays
       }
       
@@ -745,14 +721,6 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
                       render={({ field }) => (
                         <select
                           {...field}
-                          onChange={(e) => {
-                            field.onChange(e)
-                            const firstRunDate = form.getValues("firstRunDate")
-                            if (firstRunDate && e.target.value) {
-                              const nextRunDate = calculateNextRunDate(new Date(firstRunDate), e.target.value)
-                              form.setValue("nextRunDate", nextRunDate.toISOString().split('T')[0])
-                            }
-                          }}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                           {automatedDrawdownFrequencyOptions.map(option => (
@@ -796,39 +764,24 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
                     </div>
                   )}
                   
-                  {/* First Run Date */}
-                  <div>
+                  {/* Next Run Date - User sets directly */}
+                  <div className="col-span-2">
                     <Input
-                      label="First Run Date *"
-                      type="date"
-                      min={getTodayDate()}
-                      {...form.register("firstRunDate", {
-                        onChange: () => {
-                          const firstRunDate = form.getValues("firstRunDate")
-                          const frequency = form.getValues("automatedDrawdownFrequency")
-                          if (firstRunDate && frequency) {
-                            const nextRunDate = calculateNextRunDate(new Date(firstRunDate), frequency)
-                            form.setValue("nextRunDate", nextRunDate.toISOString().split('T')[0])
-                          }
-                        }
-                      })}
-                      error={form.formState.errors.firstRunDate?.message}
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      When should automated billing start for this contract? Can be today or in the future.
-                    </p>
-                  </div>
-
-                  {/* Next Run Date (now editable for catch-up scenarios) */}
-                  <div>
-                    <Input
-                      label="Next Run Date"
+                      label="Next Run Date *"
                       type="date"
                       {...form.register("nextRunDate")}
                       error={form.formState.errors.nextRunDate?.message}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Next billing date. Can be in the past (not before contract start date) for catch-up billing.
+                      <strong>When should billing start?</strong> This can be:
+                    </p>
+                    <ul className="text-xs text-gray-600 mt-1 ml-4 space-y-1">
+                      <li>• <strong>Today</strong> - Start billing from today</li>
+                      <li>• <strong>Future date</strong> - Schedule billing to start later</li>
+                      <li>• <strong>Past date</strong> - Backdate and use catch-up claims below</li>
+                    </ul>
+                    <p className="text-xs text-gray-500 mt-2">
+                      ⚠️ Must be on or after contract start date ({form.watch("startDate") ? new Date(form.watch("startDate")).toLocaleDateString() : 'not set'})
                     </p>
                   </div>
 
