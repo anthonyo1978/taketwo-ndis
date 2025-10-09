@@ -111,10 +111,10 @@ export default function DashboardPage() {
             isLoading={isLoading}
           />
           <MetricCard
-            title="Total Balance"
+            title="Available Funding"
             value={stats ? formatCurrency(stats.portfolio.totalBalance) : '$0'}
             icon="💰"
-            subtitle="Available funding"
+            subtitle="Remaining funds (active contracts)"
             color="orange"
             isLoading={isLoading}
           />
