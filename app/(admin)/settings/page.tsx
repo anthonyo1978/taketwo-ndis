@@ -64,12 +64,12 @@ export default function SettingsPage() {
             <div className="flex items-center mb-4">
               <div className="p-2 bg-orange-100 rounded-lg">
                 <svg className="size-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM4.828 7l6.586 6.586a2 2 0 002.828 0l6.586-6.586A2 2 0 0019.414 4H4.586A2 2 0 003.172 7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Integrations</h3>
-            <p className="text-gray-600 text-sm mb-4">Connect with third-party services and APIs.</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Contract Templates</h3>
+            <p className="text-gray-600 text-sm mb-4">View and manage contract templates</p>
             <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
               Configure →
             </button>
