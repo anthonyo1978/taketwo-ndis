@@ -153,7 +153,7 @@ export async function generateCatchupTransactions(
       
       createdTransactions.push({
         id: transaction.id,
-        date: billingDate.toISOString().split('T')[0],
+        date: billingDate.toISOString().split('T')[0] as string,
         amount: amount
       })
     }

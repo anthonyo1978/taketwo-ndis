@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { fundingInformationSchema } from 'lib/schemas/resident'
 import { residentService } from 'lib/supabase/services/residents'
-import { generateCatchupTransactions, validateCatchupGeneration } from '@/lib/services/catchup-transaction-generator'
+import { generateCatchupTransactions, validateCatchupGeneration } from 'lib/services/catchup-transaction-generator'
 
 interface RouteParams {
   id: string
