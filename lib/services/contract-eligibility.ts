@@ -117,22 +117,36 @@ export async function checkContractEligibility(contractId: string): Promise<Cont
 
 /**
  * Get all contracts eligible for automation TODAY ONLY
- * Used by "Run Automation Now" button
+ * Used by "Run Automation Now" button and scheduled cron jobs
+ * 
+ * @param timezone - IANA timezone string (e.g., "Australia/Sydney"). If not provided, fetches from database.
  */
-export async function getEligibleContracts(): Promise<ContractEligibilityResult[]> {
+export async function getEligibleContracts(timezone?: string): Promise<ContractEligibilityResult[]> {
   const supabase = await createClient()
   
-  // Get today's date in YYYY-MM-DD format in SYDNEY timezone
+  // If timezone not provided, fetch from automation settings
+  if (!timezone) {
+    const { data: settings } = await supabase
+      .from('automation_settings')
+      .select('timezone')
+      .eq('organization_id', '00000000-0000-0000-0000-000000000000')
+      .single()
+    
+    timezone = settings?.timezone || 'Australia/Sydney'
+  }
+  
+  // Get today's date in YYYY-MM-DD format in the configured timezone
   // This ensures consistent behavior whether cron runs from UTC or local machine
   const now = new Date()
-  const sydneyDate = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Sydney' }))
-  const year = sydneyDate.getFullYear()
-  const month = String(sydneyDate.getMonth() + 1).padStart(2, '0')
-  const day = String(sydneyDate.getDate()).padStart(2, '0')
+  const localDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
+  const year = localDate.getFullYear()
+  const month = String(localDate.getMonth() + 1).padStart(2, '0')
+  const day = String(localDate.getDate()).padStart(2, '0')
   const todayStr = `${year}-${month}-${day}`
   
+  console.log('[ELIGIBILITY] Configured timezone:', timezone)
   console.log('[ELIGIBILITY] Current time (UTC):', now.toISOString())
-  console.log('[ELIGIBILITY] Current time (Sydney):', sydneyDate.toLocaleString('en-AU', { timeZone: 'Australia/Sydney' }))
+  console.log('[ELIGIBILITY] Current time (Local):', localDate.toLocaleString('en-AU', { timeZone: timezone }))
   console.log('[ELIGIBILITY] Checking for contracts with next_run_date =', todayStr)
 
   // Get all contracts with automation enabled that have next_run_date DATE portion = TODAY (Sydney date)

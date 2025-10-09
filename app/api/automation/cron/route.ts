@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient()
     const { data: settings } = await supabase
       .from('automation_settings')
-      .select('enabled, run_time, admin_emails')
+      .select('enabled, run_time, timezone, admin_emails')
       .eq('organization_id', '00000000-0000-0000-0000-000000000000')
       .single()
     
@@ -74,7 +74,8 @@ export async function GET(request: NextRequest) {
     
     // Generate transactions for all eligible contracts
     console.log(`[AUTOMATION CRON] Starting automated billing run at ${executionDate}`)
-    const result = await generateTransactionsForEligibleContracts()
+    console.log(`[AUTOMATION CRON] Using timezone: ${settings.timezone || 'Australia/Sydney'}`)
+    const result = await generateTransactionsForEligibleContracts(settings.timezone)
     
     const executionTime = Date.now() - startTime
     
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
       contracts_failed: result.failedTransactions,
       execution_time_ms: executionTime,
       errors: result.errors,
-      summary: generateHumanReadableSummary(result, executionDate)
+      summary: generateHumanReadableSummary(result, executionDate, settings.timezone)
     }
     
     // Save log to database
@@ -168,7 +169,8 @@ export async function GET(request: NextRequest) {
           totalAmount: result.summary.totalAmount,
           transactions: transactionDetails,
           errors: errorsWithNames,
-          summary: result.summary
+          summary: result.summary,
+          timezone: settings.timezone || 'Australia/Sydney'
         }
       )
       
@@ -228,11 +230,11 @@ export async function GET(request: NextRequest) {
 /**
  * Generate a human-readable summary of the automation run
  */
-function generateHumanReadableSummary(result: any, executionDate: string): string {
+function generateHumanReadableSummary(result: any, executionDate: string, timezone: string = 'Australia/Sydney'): string {
   const date = new Date(executionDate).toLocaleString('en-AU', {
     dateStyle: 'full',
     timeStyle: 'short',
-    timeZone: 'Australia/Sydney'
+    timeZone: timezone
   })
   
   let summary = `Automated Billing Run - ${date}\n\n`

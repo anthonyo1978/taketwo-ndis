@@ -38,11 +38,13 @@ export interface TransactionError {
 
 /**
  * Generate transactions for all eligible contracts
+ * 
+ * @param timezone - IANA timezone string (e.g., "Australia/Sydney"). If not provided, fetches from database.
  */
-export async function generateTransactionsForEligibleContracts(): Promise<TransactionGenerationResult> {
+export async function generateTransactionsForEligibleContracts(timezone?: string): Promise<TransactionGenerationResult> {
   try {
-    // Get all eligible contracts
-    const eligibleContracts = await getEligibleContracts()
+    // Get all eligible contracts (timezone will be fetched from DB if not provided)
+    const eligibleContracts = await getEligibleContracts(timezone)
     
     if (eligibleContracts.length === 0) {
       return {

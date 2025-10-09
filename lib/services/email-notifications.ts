@@ -34,6 +34,7 @@ export interface AutomationEmailData {
     averageAmount: number
     frequencyBreakdown: Record<string, number>
   }
+  timezone?: string // IANA timezone (e.g., "Australia/Sydney")
 }
 
 /**
@@ -108,10 +109,11 @@ export async function sendAutomationCompletionEmail(
  * Generate HTML email body - Simple table format
  */
 function generateEmailBody(data: AutomationEmailData): string {
+  const timezone = data.timezone || 'Australia/Sydney'
   const date = new Date(data.executionDate).toLocaleString('en-AU', {
     dateStyle: 'full',
     timeStyle: 'short',
-    timeZone: 'Australia/Sydney'
+    timeZone: timezone
   })
 
   return `
