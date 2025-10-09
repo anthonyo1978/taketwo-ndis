@@ -36,19 +36,25 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
         method: 'POST'
       })
       
-      const result = await response.json()
+      const result = await response.json() as {
+        success?: boolean
+        signedUrl?: string
+        error?: { code: string; message: string }
+      }
       
       if (!response.ok || !result.success) {
         throw new Error(result.error?.message || 'Failed to generate PDF')
       }
       
       // Download the PDF
-      const link = document.createElement('a')
-      link.href = result.signedUrl
-      link.download = `NDIS-Contract-${currentContract.id.substring(0, 8)}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      if (result.signedUrl) {
+        const link = document.createElement('a')
+        link.href = result.signedUrl
+        link.download = `NDIS-Contract-${currentContract.id.substring(0, 8)}.pdf`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
       
       toast.success('PDF generated successfully!')
       
