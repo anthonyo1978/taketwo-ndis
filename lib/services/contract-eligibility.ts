@@ -121,9 +121,15 @@ export async function checkContractEligibility(contractId: string): Promise<Cont
  */
 export async function getEligibleContracts(): Promise<ContractEligibilityResult[]> {
   const supabase = await createClient()
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const todayStr = today.toISOString().split('T')[0] // YYYY-MM-DD format
+  
+  // Get today's date in YYYY-MM-DD format (local date, not UTC)
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const todayStr = `${year}-${month}-${day}`
+  
+  console.log('[ELIGIBILITY] Checking for contracts with next_run_date =', todayStr)
 
   // Get all contracts with automation enabled that have next_run_date = TODAY
   const { data: contracts, error } = await supabase
@@ -147,11 +153,20 @@ export async function getEligibleContracts(): Promise<ContractEligibilityResult[
       )
     `)
     .eq('auto_billing_enabled', true)
-    .eq('next_run_date', todayStr) // EXACTLY today only (no overdue contracts)
+    .gte('next_run_date', `${todayStr}T00:00:00Z`)
+    .lt('next_run_date', `${todayStr}T23:59:59Z`)
 
   if (error) {
-    console.error('Error fetching contracts:', error)
+    console.error('[ELIGIBILITY] Error fetching contracts:', error)
     return []
+  }
+
+  console.log(`[ELIGIBILITY] Found ${contracts?.length || 0} contracts with next_run_date on ${todayStr}`)
+  
+  if (contracts) {
+    contracts.forEach(c => {
+      console.log(`[ELIGIBILITY] - ${c.resident?.first_name} ${c.resident?.last_name}: next_run_date=${c.next_run_date}, frequency=${c.automated_drawdown_frequency}`)
+    })
   }
 
   // Check eligibility for each contract
@@ -160,6 +175,8 @@ export async function getEligibleContracts(): Promise<ContractEligibilityResult[
     const eligibilityChecks = await performEligibilityChecks(contract)
     const reasons = getEligibilityReasons(eligibilityChecks, contract)
     const isEligible = Object.values(eligibilityChecks).every(check => check === true)
+    
+    console.log(`[ELIGIBILITY] ${contract.resident?.first_name} ${contract.resident?.last_name}: isEligible=${isEligible}, reasons=${JSON.stringify(reasons)}`)
     
     results.push({
       contractId: contract.id,
@@ -171,6 +188,9 @@ export async function getEligibleContracts(): Promise<ContractEligibilityResult[
       eligibilityChecks
     })
   }
+
+  const eligibleCount = results.filter(result => result.isEligible).length
+  console.log(`[ELIGIBILITY] Returning ${eligibleCount} eligible contracts out of ${results.length} total`)
 
   return results.filter(result => result.isEligible)
 }
