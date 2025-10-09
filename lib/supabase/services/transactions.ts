@@ -110,7 +110,7 @@ export class TransactionService {
   /**
    * Generate the next sequential TXN ID
    */
-  private async generateNextTxnId(): Promise<string> {
+  async generateNextTxnId(): Promise<string> {
     const supabase = await createClient()
     
     // Get all TXN IDs and filter for sequential format

@@ -1,6 +1,7 @@
 import { createClient } from '../supabase/server'
 import { getEligibleContracts, ContractEligibilityResult } from './contract-eligibility'
 import { getTransactionAmount } from './contract-rate-calculator'
+import { transactionService } from '../supabase/services/transactions'
 
 export interface TransactionGenerationResult {
   success: boolean
@@ -174,14 +175,14 @@ export async function generateTransactionForContract(
       }
     }
     
-    // Generate unique IDs
-    const transactionId = generateId()
+    // Generate unique sequential TXN ID (same as manual transactions)
+    const transactionId = await transactionService.generateNextTxnId()
     const automationLogId = generateId()
     const now = new Date()
     
     // Create transaction record in DRAFT status (requires manual approval)
     const transactionData = {
-      id: transactionId,
+      id: transactionId, // Uses TXN-A000001 format (same as manual transactions)
       resident_id: resident.id,
       contract_id: contract.id,
       amount: transactionAmount,
