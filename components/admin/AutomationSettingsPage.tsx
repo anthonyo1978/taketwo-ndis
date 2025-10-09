@@ -59,6 +59,8 @@ export function AutomationSettingsPage() {
   const [showTransactionPreview, setShowTransactionPreview] = useState(false)
   const [transactionPreview, setTransactionPreview] = useState<any>(null)
   const [isGeneratingTransactions, setIsGeneratingTransactions] = useState(false)
+  const [showRunResults, setShowRunResults] = useState(false)
+  const [runResults, setRunResults] = useState<any>(null)
 
   const form = useForm<AutomationSettingsData>({
     resolver: zodResolver(automationSettingsSchema),
@@ -364,17 +366,11 @@ export function AutomationSettingsPage() {
         if (result.skipped) {
           setError(result.message || 'Automation run was skipped')
         } else if (result.data) {
-          const successMsg = `✅ Automation run completed successfully!
-          
-• Processed: ${result.data.processedContracts} contracts
-• Success: ${result.data.successfulTransactions} transactions
-• Failed: ${result.data.failedTransactions || 0} transactions
-• Total Amount: $${result.data.totalAmount?.toFixed(2) || '0.00'}
-• Execution Time: ${result.data.executionTime}ms`
-          
-          setSuccess(successMsg)
-          // Refresh data
-          fetchEligibleContracts()
+          // Store results and show modal
+          setRunResults(result.data)
+          setShowRunResults(true)
+          // Clear any previous errors
+          setError(null)
         } else {
           setSuccess('Automation run completed')
         }
@@ -1018,6 +1014,152 @@ export function AutomationSettingsPage() {
                   {isGeneratingTransactions ? 'Generating...' : 'Generate Transactions'}
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Run Automation Results Modal */}
+      {showRunResults && runResults && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl mx-4 shadow-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                Automation Run Results
+              </h3>
+              <button
+                onClick={() => setShowRunResults(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            {runResults.processedContracts === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">
+                  Nothing to Process Today
+                </h4>
+                <p className="text-gray-600 mb-4">
+                  No contracts are scheduled to run today.
+                </p>
+                <div className="bg-blue-50 rounded-lg p-4 text-left">
+                  <p className="text-sm font-medium text-blue-900 mb-2">This could be because:</p>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• All contracts have <strong>next_run_date</strong> in the future</li>
+                    <li>• Contracts are expired or don't meet eligibility criteria</li>
+                    <li>• No contracts have automation enabled</li>
+                  </ul>
+                </div>
+                <div className="mt-4 p-3 bg-purple-50 rounded-lg">
+                  <p className="text-sm text-purple-800">
+                    💡 <strong>Tip:</strong> Use "Preview Next 3 Days" to see when contracts are scheduled.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <svg className="w-6 h-6 text-green-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h4 className="text-lg font-semibold text-green-900">
+                        ✅ Automation Completed Successfully!
+                      </h4>
+                      <p className="text-sm text-green-700">
+                        {runResults.successfulTransactions} transaction{runResults.successfulTransactions !== 1 ? 's' : ''} created in DRAFT status
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-blue-50 rounded-lg p-4 text-center">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {runResults.processedContracts}
+                    </div>
+                    <div className="text-sm text-blue-800 mt-1">
+                      Contract{runResults.processedContracts !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-green-50 rounded-lg p-4 text-center">
+                    <div className="text-3xl font-bold text-green-600">
+                      {runResults.successfulTransactions}
+                    </div>
+                    <div className="text-sm text-green-800 mt-1">
+                      Transaction{runResults.successfulTransactions !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                  
+                  <div className="bg-purple-50 rounded-lg p-4 text-center">
+                    <div className="text-3xl font-bold text-purple-600">
+                      ${runResults.totalAmount?.toFixed(2) || '0.00'}
+                    </div>
+                    <div className="text-sm text-purple-800 mt-1">
+                      Total Amount
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-yellow-600 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-yellow-900 mb-1">
+                        📝 Transactions Require Approval
+                      </p>
+                      <p className="text-sm text-yellow-800">
+                        All transactions are in <strong>DRAFT</strong> status. Please review and post them in the Transactions page.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {runResults.failedTransactions > 0 && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <h5 className="font-medium text-red-900 mb-2">
+                      ⚠️ {runResults.failedTransactions} Failed
+                    </h5>
+                    <p className="text-sm text-red-800">
+                      Some contracts could not be processed. Check automation logs for details.
+                    </p>
+                  </div>
+                )}
+
+                <div className="border-t pt-4">
+                  <div className="text-sm text-gray-600">
+                    <strong>Execution Time:</strong> {runResults.executionTime}ms
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-6 flex justify-between">
+              {runResults.processedContracts > 0 && (
+                <button
+                  onClick={() => window.location.href = '/transactions'}
+                  className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  View Transactions →
+                </button>
+              )}
+              <button
+                onClick={() => setShowRunResults(false)}
+                className={`px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors ${runResults.processedContracts === 0 ? 'w-full' : ''}`}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
