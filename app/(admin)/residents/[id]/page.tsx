@@ -8,6 +8,7 @@ import { FundingDashboard } from "components/residents/FundingDashboard"
 import { ResidentBalanceWidget } from "components/residents/ResidentBalanceWidget"
 import { ResidentEditForm } from "components/residents/ResidentEditForm"
 import { ResidentTransactionsList } from "components/residents/ResidentTransactionsList"
+import { ResidentDocumentsList } from "components/residents/ResidentDocumentsList"
 import { StatusManager } from "components/residents/StatusManager"
 import { Button } from "components/Button/Button"
 import { type TabItem, Tabs } from "components/ui/Tabs"
@@ -440,6 +441,19 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
     return <AuditTrail entries={resident.auditTrail} />
   }
 
+  const renderDocumentsTab = () => {
+    if (!resident) return null
+    
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg border shadow-sm p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Generated Documents</h3>
+          <ResidentDocumentsList residentId={resident.id} />
+        </div>
+      </div>
+    )
+  }
+
   const tabItems: TabItem[] = [
     {
       id: 'overview',
@@ -458,6 +472,12 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
       label: 'Transactions',
       icon: '💳',
       content: renderTransactionsTab()
+    },
+    {
+      id: 'documents',
+      label: 'Documents',
+      icon: '📄',
+      content: renderDocumentsTab()
     },
     {
       id: 'audit',

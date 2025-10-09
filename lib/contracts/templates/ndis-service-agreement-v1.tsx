@@ -137,7 +137,7 @@ export function NdisServiceAgreementTemplate({ vars }: ContractTemplateProps) {
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>NDIS Service Agreement</Text>
+          <Text style={styles.title}>NDIS - SDA - Agreement</Text>
           <Text style={styles.subtitle}>Contract ID: {agreement.contractId}</Text>
           <Text style={styles.subtitle}>Generated: {formatDate(generatedAt)}</Text>
         </View>
