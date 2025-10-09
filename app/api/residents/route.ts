@@ -144,9 +144,12 @@ export async function POST(request: NextRequest) {
     const photoFile = formData.get('photo') as File | null
     let photoBase64: string | undefined
 
+    console.log('[RESIDENT CREATE] Photo file received:', photoFile ? `${photoFile.name} (${photoFile.size} bytes)` : 'No photo')
+
     if (photoFile && photoFile.size > 0) {
       try {
         photoBase64 = await fileToBase64(photoFile)
+        console.log('[RESIDENT CREATE] Photo converted to base64, length:', photoBase64?.length)
       } catch (error) {
         console.error('Photo conversion error:', error)
         return NextResponse.json(
@@ -193,8 +196,19 @@ export async function POST(request: NextRequest) {
       notes: validation.data.notes || undefined,
     }
 
+    console.log('[RESIDENT CREATE] Data being sent to Supabase:', {
+      ...residentData,
+      photoBase64: photoBase64 ? `base64 string (length: ${photoBase64.length})` : 'none'
+    })
+
     // Create resident in Supabase
     const newResident = await residentService.create(residentData)
+    
+    console.log('[RESIDENT CREATE] Created resident:', {
+      id: newResident.id,
+      name: `${newResident.firstName} ${newResident.lastName}`,
+      hasPhoto: !!newResident.photoBase64
+    })
 
     return NextResponse.json(
       { 

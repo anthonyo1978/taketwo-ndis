@@ -91,9 +91,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const photoFile = formData.get('photo') as File | null
     let photoBase64: string | undefined
 
+    console.log('[HOUSE RESIDENT CREATE] Photo file received:', photoFile ? `${photoFile.name} (${photoFile.size} bytes)` : 'No photo')
+
     if (photoFile && photoFile.size > 0) {
       try {
         photoBase64 = await fileToBase64(photoFile)
+        console.log('[HOUSE RESIDENT CREATE] Photo converted to base64, length:', photoBase64?.length)
       } catch (error) {
         console.error('Photo conversion error:', error)
         return NextResponse.json(
