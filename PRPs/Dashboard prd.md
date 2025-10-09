@@ -70,11 +70,19 @@ Mobile view should collapse cards into a single column.
 
 8. UX & Visual Design Notes
 
-Use Haven brand palette: emerald green + soft neutral greys.
+DECISIONS (Confirmed with User):
+1. Brand Colors: Use existing purple/blue theme (consistency with app)
+2. House Performance: Expandable list showing all metrics (residents, transactions, revenue, occupancy)
+3. Transaction Metrics: Amount + count + trend (e.g., "$45,678 from 23 transactions ↑ 12%")
+4. Chart Defaults: 30 days with toggle (7d / 30d / 6m / 12m)
+5. Recent Activity: Last 10 transactions with resident name, amount, date, status
+6. Quick Actions: REMOVED from Phase 1 (add later if needed)
+7. Data Aggregation: Supabase RPC functions for performance
+8. Charting: Recharts (as per original PRD)
+
 Metric cards should have icons (🏠, 👥, 💰) and smooth loading shimmer states.
-Charts should default to the last 6 months view with toggle (7d / 30d / 12m).
 Include contextual labels like:
-“↑ 12% vs last month” (basic trend calc in client-side code).
+"↑ 12% vs last month" (basic trend calc in client-side code).
 
 11. Future Enhancements
 

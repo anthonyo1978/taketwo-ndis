@@ -1,93 +1,175 @@
-import { Metadata } from "next"
+"use client"
 
-export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "Admin dashboard overview",
-}
+import { useEffect, useState } from 'react'
+import { Metadata } from 'next'
+import { MetricCard } from 'components/dashboard/MetricCard'
+import { TransactionTrendsChart } from 'components/dashboard/TransactionTrendsChart'
+import { RecentActivityFeed } from 'components/dashboard/RecentActivityFeed'
+import { HousePerformanceList } from 'components/dashboard/HousePerformanceList'
+import type { DashboardStats } from 'app/api/dashboard/stats/route'
 
 export default function DashboardPage() {
-  return (
-    <div className="p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Stats Cards */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600">Total Houses</p>
-                <p className="text-2xl font-bold text-gray-900">1,234</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600">Active Listings</p>
-                <p className="text-2xl font-bold text-gray-900">856</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600">Monthly Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">$45,678</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600">Pending Reviews</p>
-                <p className="text-2xl font-bold text-gray-900">23</p>
-              </div>
-            </div>
+  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  
+  useEffect(() => {
+    fetchDashboardStats()
+  }, [])
+  
+  const fetchDashboardStats = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      
+      const response = await fetch('/api/dashboard/stats')
+      const result = await response.json() as {
+        success: boolean
+        data?: DashboardStats
+        error?: string
+      }
+      
+      if (result.success && result.data) {
+        setStats(result.data)
+      } else {
+        setError(result.error || 'Failed to load dashboard')
+      }
+    } catch (err) {
+      console.error('Dashboard fetch error:', err)
+      setError('Failed to load dashboard')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-AU', {
+      style: 'currency',
+      currency: 'AUD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount)
+  }
+  
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-AU').format(num)
+  }
+  
+  if (error) {
+    return (
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <p className="text-red-600 font-medium">{error}</p>
+            <button
+              onClick={fetchDashboardStats}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            >
+              Retry
+            </button>
           </div>
         </div>
-
-        {/* Recent Activity */}
-        <div className="bg-white rounded-lg border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <div className="size-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-medium text-blue-600">NH</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">New house added: 123 Main St</p>
-                  <p className="text-xs text-gray-500">2 hours ago</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="size-8 bg-green-100 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-medium text-green-600">PD</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">Payment processed: $2,500</p>
-                  <p className="text-xs text-gray-500">4 hours ago</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center space-x-4">
-                <div className="size-8 bg-orange-100 rounded-full flex items-center justify-center">
-                  <span className="text-xs font-medium text-orange-600">RG</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-900">Report generated: Monthly Summary</p>
-                  <p className="text-xs text-gray-500">6 hours ago</p>
-                </div>
-              </div>
-            </div>
-          </div>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-1">
+            Welcome back! Here's your portfolio overview
+          </p>
+        </div>
+        
+        {/* Portfolio Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard
+            title="Total Houses"
+            value={stats?.portfolio.totalHouses || 0}
+            icon="🏠"
+            subtitle="Active properties"
+            color="blue"
+            isLoading={isLoading}
+          />
+          <MetricCard
+            title="Total Residents"
+            value={stats?.portfolio.totalResidents || 0}
+            icon="👥"
+            subtitle="Active participants"
+            color="purple"
+            isLoading={isLoading}
+          />
+          <MetricCard
+            title="Active Contracts"
+            value={stats?.portfolio.totalContracts || 0}
+            icon="📋"
+            subtitle="Funding agreements"
+            color="green"
+            isLoading={isLoading}
+          />
+          <MetricCard
+            title="Total Balance"
+            value={stats ? formatCurrency(stats.portfolio.totalBalance) : '$0'}
+            icon="💰"
+            subtitle="Available funding"
+            color="orange"
+            isLoading={isLoading}
+          />
+        </div>
+        
+        {/* Transaction Volume Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <MetricCard
+            title="Last 7 Days"
+            value={stats ? formatCurrency(stats.transactions.period7d.amount) : '$0'}
+            icon="📊"
+            trend={stats?.transactions.period7d.trend}
+            subtitle={stats ? `${stats.transactions.period7d.count} transactions` : '0 transactions'}
+            color="purple"
+            isLoading={isLoading}
+          />
+          <MetricCard
+            title="Last 30 Days"
+            value={stats ? formatCurrency(stats.transactions.period30d.amount) : '$0'}
+            icon="📈"
+            trend={stats?.transactions.period30d.trend}
+            subtitle={stats ? `${stats.transactions.period30d.count} transactions` : '0 transactions'}
+            color="purple"
+            isLoading={isLoading}
+          />
+          <MetricCard
+            title="Last 12 Months"
+            value={stats ? formatCurrency(stats.transactions.period12m.amount) : '$0'}
+            icon="📉"
+            trend={stats?.transactions.period12m.trend}
+            subtitle={stats ? `${stats.transactions.period12m.count} transactions` : '0 transactions'}
+            color="purple"
+            isLoading={isLoading}
+          />
+        </div>
+        
+        {/* Chart */}
+        <TransactionTrendsChart
+          data={stats?.monthlyTrends || []}
+          isLoading={isLoading}
+        />
+        
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Activity */}
+          <RecentActivityFeed
+            activities={stats?.recentActivity || []}
+            isLoading={isLoading}
+          />
+          
+          {/* House Performance */}
+          <HousePerformanceList
+            houses={stats?.housePerformance || []}
+            isLoading={isLoading}
+          />
         </div>
       </div>
     </div>
