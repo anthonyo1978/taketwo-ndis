@@ -5,10 +5,14 @@
 
 import { Resend } from 'resend'
 
-// Initialize Resend only if API key is available (prevents build-time errors)
-const resend = process.env.RESEND_API_KEY 
-  ? new Resend(process.env.RESEND_API_KEY)
-  : null
+// Helper to get Resend client (initialized at runtime, not build time)
+function getResendClient() {
+  if (!process.env.RESEND_API_KEY) {
+    console.error('[USER EMAIL] RESEND_API_KEY not found in environment variables')
+    return null
+  }
+  return new Resend(process.env.RESEND_API_KEY)
+}
 
 interface WelcomeEmailData {
   firstName: string
@@ -142,6 +146,8 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
   `
 
   try {
+    const resend = getResendClient()
+    
     if (!resend) {
       console.error('[USER EMAIL] Resend API key not configured')
       return {
@@ -219,6 +225,8 @@ export async function sendPasswordResetReminder(email: string, firstName: string
   `
 
   try {
+    const resend = getResendClient()
+    
     if (!resend) {
       return {
         success: false,
