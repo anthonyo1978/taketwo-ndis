@@ -52,15 +52,10 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                 <tr>
                   <td style="padding: 0;">
                     <img 
-                      src="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/assets/haven-welcome.png" 
-                      alt="Haven" 
-                      style="width: 100%; height: 200px; object-fit: cover; display: block;"
+                      src="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/assets/haven-email-header.png" 
+                      alt="Haven - Automate your SDA business" 
+                      style="width: 100%; height: auto; display: block;"
                     />
-                    <!-- Overlay with brand -->
-                    <div style="position: relative; margin-top: -200px; height: 200px; background: linear-gradient(to bottom, rgba(0,0,0,0.3), rgba(0,0,0,0.5)); display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                      <h1 style="color: white; font-size: 48px; font-weight: bold; margin: 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.5);">Haven</h1>
-                      <p style="color: white; font-size: 18px; margin: 8px 0 0 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">Automate your SDA business</p>
-                    </div>
                   </td>
                 </tr>
 
