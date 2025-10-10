@@ -136,21 +136,25 @@ export async function getEligibleContracts(timezone?: string): Promise<ContractE
   }
   
   // Get today's date in YYYY-MM-DD format in the configured timezone
-  // This ensures consistent behavior whether cron runs from UTC or local machine
+  // Note: next_run_date is now a DATE column (no timezone), so we just need the date string
   const now = new Date()
-  const localDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }))
-  const year = localDate.getFullYear()
-  const month = String(localDate.getMonth() + 1).padStart(2, '0')
-  const day = String(localDate.getDate()).padStart(2, '0')
-  const todayStr = `${year}-${month}-${day}`
+  
+  // Get today's date in the target timezone using toLocaleDateString
+  // 'en-CA' locale gives us YYYY-MM-DD format which is what PostgreSQL DATE expects
+  const todayStr = now.toLocaleDateString('en-CA', { 
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
   
   console.log('[ELIGIBILITY] Configured timezone:', timezone)
   console.log('[ELIGIBILITY] Current time (UTC):', now.toISOString())
-  console.log('[ELIGIBILITY] Current time (Local):', localDate.toLocaleString('en-AU', { timeZone: timezone }))
+  console.log('[ELIGIBILITY] Today in', timezone, ':', todayStr)
   console.log('[ELIGIBILITY] Checking for contracts with next_run_date =', todayStr)
 
-  // Get all contracts with automation enabled that have next_run_date DATE portion = TODAY (Sydney date)
-  // We match on the DATE portion only, ignoring time
+  // Get all contracts with automation enabled that have next_run_date = TODAY
+  // Simple equality check since next_run_date is now DATE type (no timezone component)
   const { data: contracts, error } = await supabase
     .from('funding_contracts')
     .select(`
@@ -172,8 +176,7 @@ export async function getEligibleContracts(timezone?: string): Promise<ContractE
       )
     `)
     .eq('auto_billing_enabled', true)
-    .gte('next_run_date', `${todayStr}`)
-    .lt('next_run_date', `${year}-${month}-${String(Number(day) + 1).padStart(2, '0')}`)
+    .eq('next_run_date', todayStr)
 
   if (error) {
     console.error('[ELIGIBILITY] Error fetching contracts:', error)
@@ -335,9 +338,12 @@ function validateNextRunDate(today: Date, nextRunDate: Date | null): boolean {
     return false
   }
 
-  // Normalize dates to compare (remove time component)
+  // Since next_run_date is now a DATE column, it comes back as a string "YYYY-MM-DD"
+  // Convert today to the same format for comparison
   const todayStr = today.toISOString().split('T')[0] as string
-  const nextRunStr = nextRunDate.toISOString().split('T')[0] as string
+  const nextRunStr = typeof nextRunDate === 'string' 
+    ? nextRunDate 
+    : nextRunDate.toISOString().split('T')[0] as string
   
   // Next run date must be EXACTLY today (not overdue, not future)
   return nextRunStr === todayStr

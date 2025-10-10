@@ -224,7 +224,7 @@ export async function generateTransactionForContract(
       .from('funding_contracts')
       .update({
         current_balance: newBalance,
-        next_run_date: nextRunDate.toISOString(),
+        next_run_date: nextRunDate.toISOString().split('T')[0] as string,  // DATE format: YYYY-MM-DD
         last_drawdown_date: now.toISOString(),
         updated_at: now.toISOString()
       })
