@@ -1,28 +1,60 @@
 import { Metadata } from "next"
 import { LoginForm } from "components/login/LoginForm"
+import Image from "next/image"
 
 export const metadata: Metadata = {
-  title: "Sign in - Next.js Enterprise",
-  description: "Sign in to your account to access the application",
-  robots: "noindex, nofollow", // Prevent indexing of login page
+  title: "Sign in - Haven",
+  description: "Automate your SDA business with Haven",
+  robots: "noindex, nofollow",
 }
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="mt-6 text-3xl font-extrabold text-gray-900">Sign in to your account</h1>
-          <p className="mt-2 text-sm text-gray-600">Enter your credentials to access the application</p>
+    <div className="flex min-h-screen">
+      {/* Left side - Warm background image with overlay text */}
+      <div className="relative hidden w-1/2 lg:block">
+        <Image
+          src="/assets/ChatGPT Image Aug 28, 2025, 03_27_10 PM.png"
+          alt="Haven - A warm welcome"
+          fill
+          className="object-cover"
+          priority
+        />
+        {/* Overlay with brand text */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50">
+          <div className="flex h-full flex-col justify-center px-12">
+            <h1 className="mb-4 text-6xl font-bold text-white drop-shadow-lg">
+              Haven
+            </h1>
+            <p className="text-2xl text-white drop-shadow-md">
+              Automate your SDA business
+            </p>
+          </div>
         </div>
+      </div>
 
-        <div className="rounded-xl border border-gray-200 bg-white px-6 py-8 shadow-lg">
-          <LoginForm />
-        </div>
+      {/* Right side - Login form */}
+      <div className="flex w-full items-center justify-center bg-white px-6 lg:w-1/2 lg:px-12">
+        <div className="w-full max-w-md space-y-8">
+          {/* Mobile-only branding */}
+          <div className="text-center lg:hidden">
+            <h1 className="text-4xl font-bold text-gray-900">Haven</h1>
+            <p className="mt-2 text-sm text-gray-600">Automate your SDA business</p>
+          </div>
 
-        <div className="text-center">
-          <p className="text-xs text-gray-500">For demonstration purposes, use:</p>
-          <p className="mt-1 font-mono text-xs text-gray-600">test@example.com / password123</p>
+          {/* Login form */}
+          <div className="space-y-6">
+            <div className="text-center">
+              <h2 className="text-3xl font-bold text-gray-900">Welcome back</h2>
+              <p className="mt-2 text-sm text-gray-600">
+                Sign in to your account to continue
+              </p>
+            </div>
+
+            <div className="mt-8">
+              <LoginForm />
+            </div>
+          </div>
         </div>
       </div>
     </div>
