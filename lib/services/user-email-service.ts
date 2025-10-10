@@ -52,9 +52,10 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                 <tr>
                   <td style="padding: 0;">
                     <img 
-                      src="${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/assets/haven-email-header.png" 
+                      src="https://${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_SITE_URL?.replace('https://', '') || 'localhost:3000'}/assets/haven-email-header.png" 
                       alt="Haven - Automate your SDA business" 
-                      style="width: 100%; height: auto; display: block;"
+                      width="600"
+                      style="width: 100%; max-width: 600px; height: auto; display: block; border: 0;"
                     />
                   </td>
                 </tr>
