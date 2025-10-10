@@ -166,7 +166,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
       to: email,
       subject: 'Welcome to Haven - Your Account is Ready',
       html: htmlContent,
-      reply_to: 'anthonyo1978@gmail.com', // Users can reply to your email
+      replyTo: 'anthonyo1978@gmail.com', // Users can reply to your email
     })
 
     if (result.error) {
@@ -245,7 +245,7 @@ export async function sendPasswordResetReminder(email: string, firstName: string
       to: email,
       subject: 'Reminder: Complete Your Haven Account Setup',
       html: htmlContent,
-      reply_to: 'anthonyo1978@gmail.com',
+      replyTo: 'anthonyo1978@gmail.com',
     })
 
     return {
