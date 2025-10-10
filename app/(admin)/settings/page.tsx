@@ -14,7 +14,10 @@ export default function SettingsPage() {
         
         {/* Settings Categories */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <Link 
+            href="/settings/users" 
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer block"
+          >
             <div className="flex items-center mb-4">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <svg className="size-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -24,10 +27,10 @@ export default function SettingsPage() {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
             <p className="text-gray-600 text-sm mb-4">Invite users, manage accounts, and control access.</p>
-            <Link href="/settings/users" className="text-blue-600 text-sm font-medium hover:text-blue-800">
+            <div className="text-blue-600 text-sm font-medium hover:text-blue-800">
               Configure →
-            </Link>
-          </div>
+            </div>
+          </Link>
           
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center mb-4">
