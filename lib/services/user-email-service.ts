@@ -33,6 +33,20 @@ interface WelcomeEmailData {
 export async function sendWelcomeEmail(data: WelcomeEmailData) {
   const { firstName, lastName, email, setupLink, role } = data
 
+  // Generate the image URL
+  const baseUrl = process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.NEXT_PUBLIC_SITE_URL 
+    ? process.env.NEXT_PUBLIC_SITE_URL
+    : 'http://localhost:3000'
+  
+  const imageUrl = `${baseUrl}/assets/haven-email-header.png`
+  
+  console.log('[USER EMAIL] Base URL:', baseUrl)
+  console.log('[USER EMAIL] Image URL:', imageUrl)
+  console.log('[USER EMAIL] VERCEL_URL:', process.env.VERCEL_URL)
+  console.log('[USER EMAIL] NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL)
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -52,7 +66,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                 <tr>
                   <td style="padding: 0;">
                     <img 
-                      src="https://${process.env.VERCEL_URL || process.env.NEXT_PUBLIC_SITE_URL?.replace('https://', '') || 'localhost:3000'}/assets/haven-email-header.png" 
+                      src="${imageUrl}" 
                       alt="Haven - Automate your SDA business" 
                       width="600"
                       style="width: 100%; max-width: 600px; height: auto; display: block; border: 0;"
