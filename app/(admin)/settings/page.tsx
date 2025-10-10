@@ -14,20 +14,20 @@ export default function SettingsPage() {
         
         {/* Settings Categories */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <Link href="/settings/users" className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all block">
             <div className="flex items-center mb-4">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <svg className="size-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
               </div>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">User Management</h3>
-            <p className="text-gray-600 text-sm mb-4">Manage user accounts, permissions, and access levels.</p>
-            <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
+            <p className="text-gray-600 text-sm mb-4">Invite users, manage accounts, and control access.</p>
+            <span className="text-blue-600 text-sm font-medium hover:text-blue-800">
               Configure →
-            </button>
-          </div>
+            </span>
+          </Link>
           
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center mb-4">
