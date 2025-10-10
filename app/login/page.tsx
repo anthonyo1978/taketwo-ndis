@@ -14,7 +14,7 @@ export default function LoginPage() {
       {/* Left side - Warm background image with overlay text */}
       <div className="relative hidden w-1/2 lg:block">
         <Image
-          src="/assets/ChatGPT Image Aug 28, 2025, 03_27_10 PM.png"
+          src="/assets/haven-welcome.png"
           alt="Haven - A warm welcome"
           fill
           className="object-cover"
