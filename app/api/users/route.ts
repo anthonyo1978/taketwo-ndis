@@ -61,10 +61,14 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('[USERS API] POST /api/users - Starting user creation')
     const body = await request.json()
+    console.log('[USERS API] Request body:', JSON.stringify(body, null, 2))
+    
     const validation = createUserSchema.safeParse(body)
 
     if (!validation.success) {
+      console.log('[USERS API] Validation failed:', validation.error.issues)
       return NextResponse.json(
         { 
           success: false, 
@@ -76,8 +80,10 @@ export async function POST(request: NextRequest) {
     }
 
     const { firstName, lastName, email, phone, jobTitle, role, sendWelcomeEmail: shouldSendEmail } = validation.data
+    console.log('[USERS API] Creating user:', email, 'Role:', role)
 
     const supabase = await createClient()
+    console.log('[USERS API] Supabase client created')
 
     // Check if user with this email already exists
     const { data: existingUser } = await supabase
@@ -171,9 +177,15 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
 
   } catch (error) {
-    console.error('[USERS API] Error:', error)
+    console.error('[USERS API] Unexpected error in POST:', error)
+    console.error('[USERS API] Error details:', error instanceof Error ? error.message : 'Unknown')
+    console.error('[USERS API] Error stack:', error instanceof Error ? error.stack : 'No stack')
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { 
+        success: false, 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : String(error)
+      },
       { status: 500 }
     )
   }
