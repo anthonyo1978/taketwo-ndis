@@ -7,11 +7,16 @@ import { Resend } from 'resend'
 
 // Helper to get Resend client (initialized at runtime, not build time)
 function getResendClient() {
-  if (!process.env.RESEND_API_KEY) {
+  const apiKey = process.env.RESEND_API_KEY || process.env.RESEND_KEY
+  
+  if (!apiKey) {
     console.error('[USER EMAIL] RESEND_API_KEY not found in environment variables')
+    console.error('[USER EMAIL] Available env vars:', Object.keys(process.env).filter(k => k.includes('RESEND')))
     return null
   }
-  return new Resend(process.env.RESEND_API_KEY)
+  
+  console.log('[USER EMAIL] Resend API key found, initializing client')
+  return new Resend(apiKey)
 }
 
 interface WelcomeEmailData {
