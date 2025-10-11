@@ -11,19 +11,19 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
-      {/* Left side - Haven background image (60% width) */}
-      <div className="relative hidden lg:block lg:w-[60%] bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700">
+      {/* Left side - Haven background image (full width) */}
+      <div className="relative hidden lg:block lg:w-full">
         <Image
           src="/assets/haven-welcome.png"
           alt="Haven - A warm welcome"
           fill
-          className="object-contain"
+          className="object-cover"
           priority
         />
       </div>
 
-      {/* Right side - Login form (40% width) */}
-      <div className="flex w-full items-center justify-center bg-white px-6 lg:w-[40%] lg:px-12">
+      {/* Right side - Login form (overlay) */}
+      <div className="absolute right-0 top-0 flex h-full w-[40%] items-center justify-center bg-white/95 px-6 lg:px-12">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile-only branding */}
           <div className="text-center lg:hidden">
