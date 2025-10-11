@@ -70,19 +70,17 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
               <!-- Main container -->
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
                 
-                <!-- Header with Haven branding (night sky with stars) -->
+                <!-- Header with Haven branding (light sky blue) -->
                 <tr>
-                  <td style="padding: 0; background: linear-gradient(to top, #3b82f6 0%, #1e40af 50%, #1e3a8a 100%); height: 200px; position: relative; overflow: hidden;">
-                    <!-- Stars background -->
-                    <div style="position: absolute; inset: 0; background-image: radial-gradient(2px 2px at 20% 30%, white, transparent), radial-gradient(2px 2px at 60% 70%, white, transparent), radial-gradient(1px 1px at 50% 50%, white, transparent), radial-gradient(1px 1px at 80% 10%, white, transparent), radial-gradient(2px 2px at 90% 60%, white, transparent), radial-gradient(1px 1px at 33% 80%, white, transparent), radial-gradient(1px 1px at 15% 90%, white, transparent); background-size: 200% 200%; background-position: 0% 0%; opacity: 0.7;"></div>
+                  <td style="padding: 0; background: linear-gradient(to bottom, #87CEEB 0%, #5FA8D3 100%); height: 200px; position: relative; overflow: hidden;">
                     <table width="100%" cellpadding="0" cellspacing="0" style="height: 200px; position: relative; z-index: 1;">
                       <tr>
                         <td align="center" style="padding: 40px;">
-                          <h1 style="color: white; font-size: 48px; font-weight: bold; margin: 0 0 12px 0; text-shadow: 2px 2px 8px rgba(0,0,0,0.5);">
+                          <h1 style="color: white; font-size: 48px; font-weight: bold; margin: 0 0 12px 0; text-shadow: 2px 2px 8px rgba(0,0,0,0.3);">
                             Haven
                           </h1>
-                          <p style="color: white; font-size: 20px; margin: 0; text-shadow: 1px 1px 4px rgba(0,0,0,0.5);">
-                            Automate your SDA business
+                          <p style="color: white; font-size: 20px; margin: 0; text-shadow: 1px 1px 4px rgba(0,0,0,0.3);">
+                            Running an SDA business made easy
                           </p>
                         </td>
                       </tr>
@@ -161,15 +159,13 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                   </td>
                 </tr>
 
-                <!-- Footer with night sky -->
+                <!-- Footer with light blue -->
                 <tr>
-                  <td style="padding: 30px 40px; background: linear-gradient(to top, #3b82f6 0%, #1e40af 50%, #1e3a8a 100%); text-align: center; position: relative; overflow: hidden;">
-                    <!-- Stars background -->
-                    <div style="position: absolute; inset: 0; background-image: radial-gradient(2px 2px at 25% 40%, white, transparent), radial-gradient(1px 1px at 70% 20%, white, transparent), radial-gradient(1px 1px at 45% 60%, white, transparent), radial-gradient(2px 2px at 85% 75%, white, transparent), radial-gradient(1px 1px at 15% 80%, white, transparent); background-size: 200% 200%; opacity: 0.7;"></div>
+                  <td style="padding: 30px 40px; background: linear-gradient(to bottom, #87CEEB 0%, #5FA8D3 100%); text-align: center; position: relative; overflow: hidden;">
                     <p style="color: white; font-size: 14px; margin: 0; position: relative; z-index: 1;">
                       Welcome to the team! 🏡
                     </p>
-                    <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin: 8px 0 0 0; position: relative; z-index: 1;">
+                    <p style="color: rgba(255,255,255,0.9); font-size: 13px; margin: 8px 0 0 0; position: relative; z-index: 1;">
                       The Haven Team
                     </p>
                   </td>
