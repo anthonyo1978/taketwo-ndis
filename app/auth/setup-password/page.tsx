@@ -157,6 +157,7 @@ function SetupPasswordContent() {
           fill
           className="object-cover object-left"
           priority
+          unoptimized
         />
       </div>
 
