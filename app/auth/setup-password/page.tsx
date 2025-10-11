@@ -38,9 +38,18 @@ function SetupPasswordContent() {
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
+    watch
   } = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema)
+  })
+
+  // Debug: Watch form values
+  const watchedPassword = watch('password')
+  console.log('[FRONTEND] Form state:', {
+    password: watchedPassword,
+    passwordLength: watchedPassword?.length,
+    errors: errors
   })
 
   // Validate token on mount
@@ -73,6 +82,7 @@ function SetupPasswordContent() {
   }, [token])
 
   const onSubmit = async (data: PasswordFormData) => {
+    console.log('[FRONTEND] onSubmit called!', data)
     setIsSubmitting(true)
     setError('')
 
