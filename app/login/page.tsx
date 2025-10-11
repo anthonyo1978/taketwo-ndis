@@ -11,13 +11,13 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <div className="relative min-h-screen bg-gray-900">
-      {/* Full-screen background image */}
-      <div className="absolute inset-0 hidden lg:block bg-gray-900">
+      {/* Left-aligned background image */}
+      <div className="absolute left-0 top-0 h-full w-[60%] hidden lg:block bg-gray-900">
         <Image
           src="/assets/haven-welcome.png"
           alt="Haven - A warm welcome"
           fill
-          className="object-contain"
+          className="object-cover object-left"
           priority
         />
       </div>
