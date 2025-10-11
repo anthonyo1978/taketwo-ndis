@@ -19,9 +19,15 @@ const setupPasswordSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as { token: string; password: string }
+    console.log('[SETUP PASSWORD] Request body:', { 
+      token: body.token?.substring(0, 10) + '...', 
+      password: body.password,
+      passwordLength: body.password?.length 
+    })
     const validation = setupPasswordSchema.safeParse(body)
 
     if (!validation.success) {
+      console.log('[SETUP PASSWORD] Validation failed:', validation.error.issues)
       const errorMessage = validation.error.issues[0]?.message || 'Invalid request data'
       return NextResponse.json(
         { success: false, error: errorMessage },
