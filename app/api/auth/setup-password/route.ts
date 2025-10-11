@@ -19,6 +19,12 @@ const setupPasswordSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as { token: string; password: string }
+    console.log('[BACKEND] Received request:', {
+      password: body.password,
+      passwordLength: body.password?.length,
+      token: body.token?.substring(0, 10) + '...',
+      userAgent: request.headers.get('user-agent')?.substring(0, 50) + '...'
+    })
     const validation = setupPasswordSchema.safeParse(body)
 
     if (!validation.success) {

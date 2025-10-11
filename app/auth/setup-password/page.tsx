@@ -76,6 +76,16 @@ function SetupPasswordContent() {
     setIsSubmitting(true)
     setError('')
 
+    // Debug logging to see what's happening
+    console.log('[FRONTEND] Form submission:', {
+      password: data.password,
+      passwordLength: data.password?.length,
+      confirmPassword: data.confirmPassword,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      devToolsOpen: window.outerHeight - window.innerHeight > 100
+    })
+
     try {
       const response = await fetch('/api/auth/setup-password', {
         method: 'POST',
