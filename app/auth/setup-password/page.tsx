@@ -109,7 +109,7 @@ function SetupPasswordContent() {
   return (
     <div className="relative min-h-screen bg-gray-900">
       {/* Full-screen background image */}
-      <div className="absolute inset-0 hidden lg:block">
+      <div className="absolute inset-0 hidden lg:block bg-gray-900">
         <Image
           src="/assets/haven-welcome.png"
           alt="Haven - A warm welcome"
