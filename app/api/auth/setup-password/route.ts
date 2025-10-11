@@ -5,7 +5,11 @@ import { z } from 'zod'
 
 const setupPasswordSchema = z.object({
   token: z.string(),
-  password: z.string().min(8)
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
 })
 
 /**
@@ -18,8 +22,9 @@ export async function POST(request: NextRequest) {
     const validation = setupPasswordSchema.safeParse(body)
 
     if (!validation.success) {
+      const errorMessage = validation.error.issues[0]?.message || 'Invalid request data'
       return NextResponse.json(
-        { success: false, error: 'Invalid request data' },
+        { success: false, error: errorMessage },
         { status: 400 }
       )
     }
