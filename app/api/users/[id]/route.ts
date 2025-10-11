@@ -123,7 +123,7 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/users/[id] - Deactivate a user (soft delete)
+ * DELETE /api/users/[id] - Hard delete a user (for testing)
  */
 export async function DELETE(
   request: NextRequest,
@@ -132,31 +132,58 @@ export async function DELETE(
   try {
     const { id } = await params
     const supabase = await createClient()
+    
+    const { searchParams } = new URL(request.url)
+    const hardDelete = searchParams.get('hard') === 'true'
 
-    // Soft delete: set status to inactive
-    const { data: deactivatedUser, error } = await supabase
-      .from('users')
-      .update({
-        status: 'inactive',
-        updated_at: new Date().toISOString()
+    if (hardDelete) {
+      // Hard delete: completely remove user and related data
+      console.log('[USERS API] Hard deleting user:', id)
+      
+      // Delete invites first (foreign key constraint)
+      await supabase.from('user_invites').delete().eq('user_id', id)
+      
+      // Delete user
+      const { error } = await supabase.from('users').delete().eq('id', id)
+      
+      if (error) {
+        console.error('[USERS API] Error deleting user:', error)
+        return NextResponse.json(
+          { success: false, error: 'Failed to delete user' },
+          { status: 500 }
+        )
+      }
+      
+      return NextResponse.json({
+        success: true,
+        message: 'User deleted successfully'
       })
-      .eq('id', id)
-      .select()
-      .single()
+    } else {
+      // Soft delete: set status to inactive
+      const { data: deactivatedUser, error } = await supabase
+        .from('users')
+        .update({
+          status: 'inactive',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single()
 
-    if (error) {
-      console.error('[USERS API] Error deactivating user:', error)
-      return NextResponse.json(
-        { success: false, error: 'Failed to deactivate user' },
-        { status: 500 }
-      )
+      if (error) {
+        console.error('[USERS API] Error deactivating user:', error)
+        return NextResponse.json(
+          { success: false, error: 'Failed to deactivate user' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: deactivatedUser,
+        message: 'User deactivated successfully'
+      })
     }
-
-    return NextResponse.json({
-      success: true,
-      data: deactivatedUser,
-      message: 'User deactivated successfully'
-    })
 
   } catch (error) {
     console.error('[USERS API] Error:', error)

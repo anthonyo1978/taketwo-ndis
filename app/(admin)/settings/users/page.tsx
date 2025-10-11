@@ -139,6 +139,30 @@ export default function UserManagementPage() {
     }
   }
 
+  // Hard delete user (for testing)
+  const handleDelete = async (userId: string, userName: string) => {
+    if (!confirm(`⚠️ PERMANENTLY DELETE ${userName}?\n\nThis will completely remove the user and all related data. This action cannot be undone.\n\nAre you sure?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/users/${userId}?hard=true`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json() as { success: boolean; message?: string; error?: string }
+
+      if (result.success) {
+        toast.success(`${userName} has been deleted`)
+        fetchUsers()
+      } else {
+        toast.error(result.error || 'Failed to delete user')
+      }
+    } catch (error) {
+      toast.error('Network error')
+    }
+  }
+
   // Get status badge color
   const getStatusBadge = (status: string) => {
     const styles = {
@@ -253,23 +277,31 @@ export default function UserManagementPage() {
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {new Date(user.invited_at).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-right space-x-2">
-                    {user.status === 'invited' && (
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      {user.status === 'invited' && (
+                        <button
+                          onClick={() => handleResendInvite(user.id, user.email)}
+                          className="text-sm text-indigo-600 hover:text-indigo-900 font-medium"
+                        >
+                          Resend Invite
+                        </button>
+                      )}
+                      {user.status === 'active' && (
+                        <button
+                          onClick={() => handleDeactivate(user.id, `${user.first_name} ${user.last_name}`)}
+                          className="text-sm text-orange-600 hover:text-orange-900 font-medium"
+                        >
+                          Deactivate
+                        </button>
+                      )}
                       <button
-                        onClick={() => handleResendInvite(user.id, user.email)}
-                        className="text-sm text-indigo-600 hover:text-indigo-900 font-medium"
-                      >
-                        Resend Invite
-                      </button>
-                    )}
-                    {user.status === 'active' && (
-                      <button
-                        onClick={() => handleDeactivate(user.id, `${user.first_name} ${user.last_name}`)}
+                        onClick={() => handleDelete(user.id, `${user.first_name} ${user.last_name}`)}
                         className="text-sm text-red-600 hover:text-red-900 font-medium"
                       >
-                        Deactivate
+                        Delete
                       </button>
-                    )}
+                    </div>
                   </td>
                 </tr>
               ))}
