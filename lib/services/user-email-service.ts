@@ -76,10 +76,10 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                     <table width="100%" cellpadding="0" cellspacing="0" style="height: 200px; position: relative; z-index: 1;">
                       <tr>
                         <td align="center" style="padding: 40px;">
-                          <h1 style="color: white; font-size: 48px; font-weight: bold; margin: 0 0 12px 0; text-shadow: 2px 2px 8px rgba(0,0,0,0.3);">
+                          <h1 style="color: white; font-size: 48px; font-weight: bold; margin: 0 0 8px 0; text-shadow: 2px 2px 8px rgba(0,0,0,0.3); line-height: 1.2;">
                             Haven
                           </h1>
-                          <p style="color: white; font-size: 20px; margin: 0; text-shadow: 1px 1px 4px rgba(0,0,0,0.3);">
+                          <p style="color: white; font-size: 18px; margin: 0; text-shadow: 1px 1px 4px rgba(0,0,0,0.3); line-height: 1.4;">
                             Running an SDA business made easy
                           </p>
                         </td>
