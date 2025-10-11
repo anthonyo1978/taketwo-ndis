@@ -187,7 +187,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
     }
 
     const result = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>',
+      from: process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>',
       to: email,
       subject: 'Welcome to Haven - Your Account is Ready',
       html: htmlContent,
@@ -266,7 +266,7 @@ export async function sendPasswordResetReminder(email: string, firstName: string
     }
 
     const result = await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>',
+      from: process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>',
       to: email,
       subject: 'Reminder: Complete Your Haven Account Setup',
       html: htmlContent,
