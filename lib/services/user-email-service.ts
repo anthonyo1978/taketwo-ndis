@@ -40,7 +40,7 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
     ? process.env.NEXT_PUBLIC_SITE_URL
     : 'http://localhost:3000'
   
-  const imageUrl = `${baseUrl}/assets/haven-email-header.png`
+  const imageUrl = `${baseUrl}/assets/haven-email-header.jpg`
   
   console.log('[USER EMAIL] Base URL:', baseUrl)
   console.log('[USER EMAIL] Image URL:', imageUrl)
