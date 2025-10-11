@@ -32,7 +32,7 @@ export default function SettingsPage() {
             </div>
           </Link>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
             <div className="flex items-center mb-4">
               <div className="p-2 bg-green-100 rounded-lg">
                 <svg className="size-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -48,7 +48,7 @@ export default function SettingsPage() {
             </button>
           </div>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
             <div className="flex items-center mb-4">
               <div className="p-2 bg-purple-100 rounded-lg">
                 <svg className="size-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -63,7 +63,7 @@ export default function SettingsPage() {
             </button>
           </div>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
             <div className="flex items-center mb-4">
               <div className="p-2 bg-orange-100 rounded-lg">
                 <svg className="size-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -78,7 +78,10 @@ export default function SettingsPage() {
             </button>
           </div>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <Link 
+            href="/settings/automation"
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer block"
+          >
             <div className="flex items-center mb-4">
               <div className="p-2 bg-indigo-100 rounded-lg">
                 <svg className="size-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -88,10 +91,10 @@ export default function SettingsPage() {
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">Automation</h3>
             <p className="text-gray-600 text-sm mb-4">Configure automated billing and transaction generation.</p>
-            <Link href="/settings/automation" className="text-blue-600 text-sm font-medium hover:text-blue-800">
+            <div className="text-blue-600 text-sm font-medium hover:text-blue-800">
               Configure →
-            </Link>
-          </div>
+            </div>
+          </Link>
         </div>
 
         {/* Configuration Panel */}
