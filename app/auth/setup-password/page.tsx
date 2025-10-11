@@ -150,8 +150,8 @@ function SetupPasswordContent() {
         />
       </div>
 
-      {/* Right side - Password setup form (overlay) */}
-      <div className="absolute right-0 top-0 flex h-full w-[40%] items-center justify-center bg-white/95 px-6 lg:px-12">
+      {/* Right side - Password setup form (overlay) - Desktop only */}
+      <div className="absolute right-0 top-0 hidden lg:flex h-full w-[40%] items-center justify-center bg-white/95 px-6 lg:px-12">
         <div className="w-full max-w-md space-y-8">
           {/* Mobile-only branding */}
           <div className="text-center lg:hidden">
