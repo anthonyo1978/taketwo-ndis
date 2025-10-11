@@ -254,6 +254,7 @@ function SetupPasswordContent() {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <Input
                   {...register('password')}
+                  id="password-desktop"
                   type="password"
                   label="Password"
                   placeholder="Enter your password"
@@ -263,6 +264,7 @@ function SetupPasswordContent() {
 
                 <Input
                   {...register('confirmPassword')}
+                  id="confirmPassword-desktop"
                   type="password"
                   label="Confirm Password"
                   placeholder="Re-enter your password"
