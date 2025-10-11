@@ -62,15 +62,21 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
               <!-- Main container -->
               <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); overflow: hidden;">
                 
-                <!-- Header with Haven image -->
+                <!-- Header with Haven branding -->
                 <tr>
-                  <td style="padding: 0;">
-                    <img 
-                      src="${imageUrl}" 
-                      alt="Haven - Automate your SDA business" 
-                      width="600"
-                      style="width: 100%; max-width: 600px; height: auto; display: block; border: 0;"
-                    />
+                  <td style="padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 200px; position: relative;">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="height: 200px;">
+                      <tr>
+                        <td align="center" style="padding: 40px;">
+                          <h1 style="color: white; font-size: 48px; font-weight: bold; margin: 0 0 12px 0; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">
+                            Haven
+                          </h1>
+                          <p style="color: white; font-size: 20px; margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">
+                            Automate your SDA business
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
 
