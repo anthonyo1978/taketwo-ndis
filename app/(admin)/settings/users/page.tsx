@@ -174,60 +174,61 @@ export default function UserManagementPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">User Management</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Invite and manage users who can access Haven
-          </p>
-        </div>
+    <div className="p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Invite and manage users who can access Haven
+            </p>
+          </div>
         <Button
           intent="primary"
           onClick={() => setShowAddModal(true)}
         >
           + Add User
         </Button>
-      </div>
+        </div>
 
-      {/* Users table */}
-      {isLoading ? (
-        <div className="text-center py-12">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent"></div>
-          <p className="mt-4 text-gray-600">Loading users...</p>
-        </div>
-      ) : users.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-            />
-          </svg>
-          <h3 className="mt-4 text-lg font-medium text-gray-900">No users yet</h3>
-          <p className="mt-2 text-sm text-gray-600">Get started by adding your first user</p>
-          <Button
-            intent="primary"
-            onClick={() => setShowAddModal(true)}
-            className="mt-4"
-          >
-            + Add First User
-          </Button>
-        </div>
-      ) : (
-        <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+        {/* Users table */}
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent"></div>
+            <p className="mt-4 text-gray-600">Loading users...</p>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+              />
+            </svg>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No users yet</h3>
+            <p className="mt-2 text-sm text-gray-600">Get started by adding your first user</p>
+            <Button
+              intent="primary"
+              onClick={() => setShowAddModal(true)}
+              className="mt-4"
+            >
+              + Add First User
+            </Button>
+          </div>
+        ) : (
+          <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   User
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -305,20 +306,20 @@ export default function UserManagementPage() {
                   </td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      {/* Add User Modal */}
-      <Dialog open={showAddModal} onClose={() => setShowAddModal(false)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add New User</DialogTitle>
-          </DialogHeader>
+        {/* Add User Modal */}
+        <Dialog open={showAddModal} onClose={() => setShowAddModal(false)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add New User</DialogTitle>
+            </DialogHeader>
 
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
               <Input
                 {...form.register('firstName')}
                 label="First Name *"
@@ -407,10 +408,11 @@ export default function UserManagementPage() {
               >
                 {form.formState.isSubmitting ? 'Creating...' : 'Create User'}
               </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   )
 }

@@ -388,7 +388,7 @@ export function AutomationSettingsPage() {
   if (isLoading) {
     return (
       <div className="p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/3 mb-8"></div>
             <div className="space-y-6">
@@ -403,7 +403,7 @@ export function AutomationSettingsPage() {
 
   return (
     <div className="p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
