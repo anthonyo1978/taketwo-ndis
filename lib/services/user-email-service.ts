@@ -96,8 +96,11 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                     <h2 style="color: #111827; font-size: 24px; font-weight: 600; margin: 0 0 16px 0;">
                       Welcome to Haven, ${firstName}!
                     </h2>
-                    <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                    <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">
                       Your account has been created and you're ready to get started. We're excited to have you on the team!
+                    </p>
+                    <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;">
+                      Your username is your email address: <strong style="color: #4f46e5;">${email}</strong>
                     </p>
                   </td>
                 </tr>
@@ -135,11 +138,13 @@ export async function sendWelcomeEmail(data: WelcomeEmailData) {
                       Once you're in, you'll be able to:
                     </p>
                     <ul style="color: #4b5563; font-size: 15px; line-height: 1.8; margin: 0; padding-left: 20px;">
-                      <li>Manage residents and houses</li>
+                      <li>Create & manage residents and houses</li>
                       <li>Track funding contracts and balances</li>
                       <li>View automated billing transactions</li>
+                      <li>Claim automatically from the NDIA & reconcile payments</li>
                       <li>Generate reports and export data</li>
                       <li>Configure system settings</li>
+                      <li>...and so much more</li>
                     </ul>
                   </td>
                 </tr>
