@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 import { z } from 'zod'
 
 const setupPasswordSchema = z.object({
@@ -74,7 +75,16 @@ export async function POST(request: NextRequest) {
 
     // Create Supabase Auth user using admin API
     // Note: This requires SUPABASE_SERVICE_ROLE_KEY
-    const supabaseAdmin = await createClient()
+    const supabaseAdmin = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll: () => [],
+          setAll: () => {},
+        },
+      }
+    )
     
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: user.email,
@@ -117,8 +127,8 @@ export async function POST(request: NextRequest) {
       .update({ used_at: new Date().toISOString() })
       .eq('id', invite.id)
 
-    // Sign the user in automatically
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    // Sign the user in automatically using service role
+    const { error: signInError } = await supabaseAdmin.auth.signInWithPassword({
       email: user.email,
       password: password
     })

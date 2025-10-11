@@ -88,14 +88,25 @@ function SetupPasswordContent() {
         })
       })
 
-      const result = await response.json() as { success: boolean; error?: string; requiresLogin?: boolean }
+      const result = await response.json() as { success: boolean; error?: string; requiresLogin?: boolean; message?: string }
 
       if (result.success) {
-        setIsSuccess(true)
-        // Redirect to dashboard after 2 seconds
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 2000)
+        if (result.requiresLogin) {
+          // Password set but need to login manually
+          setError('Password set successfully. Please sign in with your new password.')
+          setIsSubmitting(false)
+          // Redirect to login after 3 seconds
+          setTimeout(() => {
+            router.push('/login')
+          }, 3000)
+        } else {
+          // Successfully logged in automatically
+          setIsSuccess(true)
+          // Redirect to dashboard after 2 seconds
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 2000)
+        }
       } else {
         setError(result.error || 'Failed to set password')
         setIsSubmitting(false)
