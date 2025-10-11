@@ -253,23 +253,23 @@ function SetupPasswordContent() {
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 <Input
-                  {...register('password')}
                   id="password-desktop"
                   type="password"
                   label="Password"
                   placeholder="Enter your password"
                   error={errors.password?.message}
                   autoComplete="new-password"
+                  {...register('password')}
                 />
 
                 <Input
-                  {...register('confirmPassword')}
                   id="confirmPassword-desktop"
                   type="password"
                   label="Confirm Password"
                   placeholder="Re-enter your password"
                   error={errors.confirmPassword?.message}
                   autoComplete="new-password"
+                  {...register('confirmPassword')}
                 />
 
                 {/* Password requirements */}
