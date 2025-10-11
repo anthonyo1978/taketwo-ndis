@@ -107,14 +107,14 @@ function SetupPasswordContent() {
   }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Left side - Haven background image (full width) */}
-      <div className="relative hidden lg:block lg:w-full">
+    <div className="relative min-h-screen bg-gray-900">
+      {/* Full-screen background image */}
+      <div className="absolute inset-0 hidden lg:block">
         <Image
           src="/assets/haven-welcome.png"
           alt="Haven - A warm welcome"
           fill
-          className="object-cover"
+          className="object-contain"
           priority
         />
       </div>
@@ -243,6 +243,118 @@ function SetupPasswordContent() {
                 {error && (
                   <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-600">
                     {error}
+                  </div>
+                )}
+
+                <Button
+                  type="submit"
+                  intent="primary"
+                  size="lg"
+                  disabled={isSubmitting}
+                  className="w-full"
+                >
+                  {isSubmitting ? 'Setting up your account...' : 'Set Password & Continue'}
+                </Button>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Mobile form (full width on mobile) */}
+      <div className="relative z-10 flex w-full items-center justify-center bg-white px-6 lg:hidden">
+        <div className="w-full max-w-md space-y-8">
+          {/* Mobile-only branding */}
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-gray-900">Haven</h1>
+            <p className="mt-2 text-sm text-gray-600">Automate your SDA business</p>
+          </div>
+
+          {/* Loading state */}
+          {isLoading && (
+            <div className="text-center py-12">
+              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-indigo-600 border-r-transparent"></div>
+              <p className="mt-4 text-gray-600">Validating your invitation...</p>
+            </div>
+          )}
+
+          {/* Invalid token */}
+          {!isLoading && !isValid && (
+            <div className="space-y-6 text-center">
+              <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+                <svg
+                  className="mx-auto h-12 w-12 text-red-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+                <h2 className="mt-4 text-xl font-semibold text-red-900">Invalid Invitation</h2>
+                <p className="mt-2 text-sm text-red-700">{error}</p>
+              </div>
+              <Button
+                type="button"
+                intent="secondary"
+                onClick={() => router.push('/login')}
+                className="w-full"
+              >
+                Go to Login
+              </Button>
+            </div>
+          )}
+
+          {/* Valid token - password setup form */}
+          {!isLoading && isValid && (
+            <div className="space-y-6">
+              <div className="text-center">
+                <h2 className="text-3xl font-bold text-gray-900">Set up your account</h2>
+                <p className="mt-2 text-sm text-gray-600">
+                  Create a secure password to get started
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                    placeholder="Enter your password"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-indigo-500"
+                    placeholder="Confirm your password"
+                  />
+                </div>
+
+                {error && (
+                  <div className="rounded-md bg-red-50 p-4">
+                    <div className="text-sm text-red-700">{error}</div>
                   </div>
                 )}
 
