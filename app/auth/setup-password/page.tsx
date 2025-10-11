@@ -109,12 +109,12 @@ function SetupPasswordContent() {
   return (
     <div className="flex min-h-screen">
       {/* Left side - Haven background image (60% width) */}
-      <div className="relative hidden lg:block lg:w-[60%]">
+      <div className="relative hidden lg:block lg:w-[60%] bg-gradient-to-b from-blue-900 via-blue-800 to-blue-700">
         <Image
           src="/assets/haven-welcome.png"
           alt="Haven - A warm welcome"
           fill
-          className="object-cover"
+          className="object-contain"
           priority
         />
       </div>
