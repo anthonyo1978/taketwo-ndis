@@ -103,6 +103,53 @@ export async function POST(request: NextRequest) {
 
     if (authError || !authData.user) {
       console.error('[SETUP PASSWORD] Supabase Auth error:', authError)
+      
+      // Handle specific error cases
+      if (authError?.code === 'email_exists') {
+        // User already exists in Supabase Auth, try to sign them in instead
+        console.log('[SETUP PASSWORD] User already exists, attempting sign in...')
+        
+        const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+          email: user.email,
+          password: password
+        })
+        
+        if (signInError) {
+          return NextResponse.json(
+            { success: false, error: 'Account already exists. Please sign in instead.' },
+            { status: 400 }
+          )
+        }
+        
+        // Update user record with auth_user_id if not already set
+        await supabase
+          .from('users')
+          .update({
+            auth_user_id: signInData.user.id,
+            status: 'active',
+            activated_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+        
+        // Mark invite as used
+        await supabase
+          .from('user_invites')
+          .update({ used_at: new Date().toISOString() })
+          .eq('id', invite.id)
+        
+        return NextResponse.json({
+          success: true,
+          message: 'Password updated successfully',
+          user: {
+            id: user.id,
+            email: user.email,
+            firstName: user.first_name,
+            lastName: user.last_name
+          }
+        })
+      }
+      
       return NextResponse.json(
         { success: false, error: 'Failed to create account. Please contact support.' },
         { status: 500 }

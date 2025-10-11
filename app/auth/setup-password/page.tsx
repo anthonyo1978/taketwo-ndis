@@ -108,7 +108,17 @@ function SetupPasswordContent() {
           }, 2000)
         }
       } else {
-        setError(result.error || 'Failed to set password')
+        console.error('[FRONTEND] Setup password error:', result.error)
+        
+        // Handle specific error cases
+        if (result.error?.includes('already exists')) {
+          setError('Account already exists. Please sign in instead.')
+          setTimeout(() => {
+            router.push('/login')
+          }, 3000)
+        } else {
+          setError(result.error || 'Failed to set password')
+        }
         setIsSubmitting(false)
       }
     } catch (err) {
