@@ -14,7 +14,7 @@ export default function LoginPage() {
       {/* Left-aligned background image */}
       <div className="absolute left-0 top-0 h-full w-[60%] hidden lg:block bg-gray-900">
         <Image
-          src="/assets/haven-welcome.png"
+          src="/assets/ChatGPT Image Oct 11, 2025, 06_46_56 PM.png"
           alt="Haven - A warm welcome"
           fill
           className="object-cover object-left"
