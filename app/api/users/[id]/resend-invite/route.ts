@@ -66,7 +66,15 @@ export async function POST(
     }
 
     // Send welcome email
-    const setupLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/setup-password?token=${token}`
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_SITE_URL 
+      ? process.env.NEXT_PUBLIC_SITE_URL
+      : 'http://localhost:3000'
+    
+    const setupLink = `${baseUrl}/auth/setup-password?token=${token}`
+    
+    console.log('[RESEND INVITE] Setup link:', setupLink)
     
     const emailResult = await sendWelcomeEmail({
       firstName: user.first_name,

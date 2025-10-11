@@ -150,7 +150,16 @@ export async function POST(request: NextRequest) {
 
     // Send welcome email if requested
     if (shouldSendEmail && token) {
-      const setupLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/setup-password?token=${token}`
+      // Generate setup link using Vercel URL or public site URL
+      const baseUrl = process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}`
+        : process.env.NEXT_PUBLIC_SITE_URL 
+        ? process.env.NEXT_PUBLIC_SITE_URL
+        : 'http://localhost:3000'
+      
+      const setupLink = `${baseUrl}/auth/setup-password?token=${token}`
+      
+      console.log('[USERS API] Setup link:', setupLink)
       
       const emailResult = await sendWelcomeEmail({
         firstName,
