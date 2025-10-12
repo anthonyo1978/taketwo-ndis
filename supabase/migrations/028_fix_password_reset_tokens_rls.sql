@@ -26,4 +26,3 @@ CREATE POLICY "Allow server to delete reset tokens"
   ON password_reset_tokens
   FOR DELETE
   USING (true);
-
