@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { ResidentAvatars } from "components/residents/ResidentAvatars"
 import { Pagination } from "components/ui/Pagination"
 import { SearchAndFilter } from "components/ui/SearchAndFilter"
+import { LoadingSpinner } from "components/ui/LoadingSpinner"
 import type { House } from "types/house"
 
 interface ApiResponse {
@@ -193,66 +194,13 @@ function HousesPageContent() {
             </Link>
           </div>
           
-          {/* Skeleton Loading Table */}
+          {/* Loading State */}
           <div className="bg-white rounded-lg border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">Property Listings</h2>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      House ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Address
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Resident(s)
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {[1, 2, 3].map(i => (
-                    <tr key={i}>
-                      <td className="px-6 py-4">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="space-y-2">
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-                          <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="h-6 bg-gray-200 rounded-full animate-pulse w-16" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex space-x-1">
-                          <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
-                          <div className="h-8 w-8 bg-gray-200 rounded-full animate-pulse" />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="h-4 bg-gray-200 rounded animate-pulse w-12" />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="p-12">
+              <LoadingSpinner size="lg" message="Loading houses..." />
             </div>
           </div>
         </div>

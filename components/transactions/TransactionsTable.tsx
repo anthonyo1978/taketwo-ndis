@@ -5,6 +5,7 @@ import { format } from "date-fns"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "components/Button/Button"
 import { Pagination } from "components/ui/Pagination"
+import { LoadingSpinner, TableLoadingSkeleton } from "components/ui/LoadingSpinner"
 import {
   useReactTable,
   getCoreRowModel,
@@ -633,9 +634,9 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   if (loading && data.length === 0) {
     return (
       <div className="p-8">
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="space-y-3">
+        <LoadingSpinner size="lg" message="Loading transactions..." />
+        <div className="mt-8">
+          <div className="animate-pulse space-y-3">
             {[...Array(10)].map((_, i) => (
               <div key={i} className="h-4 bg-gray-200 rounded"></div>
             ))}

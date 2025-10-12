@@ -4,6 +4,7 @@ import { useState, Suspense } from "react"
 
 import { GlobalResidentTable } from "components/residents/GlobalResidentTable"
 import { ResidentForm } from "components/residents/ResidentForm"
+import { LoadingSpinner } from "components/ui/LoadingSpinner"
 import type { Resident } from "types/resident"
 
 function ResidentsPageContent() {
@@ -61,8 +62,8 @@ export default function ResidentsPage() {
               <p className="text-gray-600 mt-1">Manage residents across all houses</p>
             </div>
           </div>
-          <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-            <div className="text-gray-600">Loading residents...</div>
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <LoadingSpinner size="lg" message="Loading residents..." />
           </div>
         </div>
       </div>
