@@ -34,7 +34,7 @@ function HousesPageContent() {
   // Initialize pagination from URL params
   const [pagination, setPagination] = useState({
     page: parseInt(searchParams.get('page') || '1'),
-    limit: parseInt(searchParams.get('limit') || '10'),
+    limit: parseInt(searchParams.get('limit') || '10'), // Default 10 records per page
     total: 0,
     totalPages: 0,
     hasNext: false,

@@ -45,7 +45,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
   
   // Pagination state - initialize from URL params
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'))
-  const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '25'))
+  const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '10'))
   
   // Filtering state - initialize from URL params
   const [search, setSearch] = useState(searchParams.get('search') || '')
