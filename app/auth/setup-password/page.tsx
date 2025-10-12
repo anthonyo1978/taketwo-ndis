@@ -152,7 +152,7 @@ function SetupPasswordContent() {
       {/* Left-aligned background image */}
       <div className="absolute left-0 top-0 h-full w-[60%] hidden lg:block bg-gray-900">
         <Image
-          src="/assets/haven-login-bg.png"
+          src="/assets/image-small-text.png"
           alt="Haven - A warm welcome"
           fill
           className="object-cover object-left"
