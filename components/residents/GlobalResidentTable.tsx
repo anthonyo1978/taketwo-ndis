@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { calculateBalanceSummary } from "lib/utils/funding-calculations"
 import { Pagination } from "components/ui/Pagination"
 import { ResidentSearchAndFilter } from "components/ui/ResidentSearchAndFilter"
+import { LoadingSpinner } from "components/ui/LoadingSpinner"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 
@@ -215,86 +216,15 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
   const endIndex = startIndex + pageSize
   const paginatedResidents = residents.slice(startIndex, endIndex)
 
-  // Loading state with skeleton table
+  // Loading state
   if (loading) {
     return (
       <div className="bg-white rounded-lg border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">All Residents</h3>
         </div>
-        <div className="overflow-x-auto">
-          <table className="min-w-full w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                  Photo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                  House
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  Age
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-                  Gender
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                  NDIS ID
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-                  Created
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {[1, 2, 3].map(i => (
-                <tr key={i}>
-                  <td className="px-6 py-4">
-                    <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-32" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="h-6 bg-gray-200 rounded-full animate-pulse w-16" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-16" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-32" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-24" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-20" />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-12" />
-                      <div className="h-4 bg-gray-200 rounded animate-pulse w-12" />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="p-12">
+          <LoadingSpinner size="lg" message="Loading residents..." />
         </div>
       </div>
     )
