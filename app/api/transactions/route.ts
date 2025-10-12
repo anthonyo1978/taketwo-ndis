@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { transactionService } from 'lib/supabase/services/transactions'
 import { processDrawdownTransaction } from 'lib/utils/drawdown-validation'
 import { getTransactionBalancePreview } from 'lib/utils/transaction-storage'
+import { getCurrentUserId, logAction, getRequestMetadata } from 'lib/services/audit-logger'
 import type { 
   Transaction,
   TransactionCreateInput, 
@@ -199,10 +200,14 @@ export async function POST(request: NextRequest) {
     
     const input = result.data as TransactionCreateInput
     
+    // Get current user ID for logging
+    const userId = await getCurrentUserId()
+    const metadata = getRequestMetadata(request)
+    
     // Check if this is a Drawing Down transaction
     if (input.isDrawdownTransaction) {
       // Use the complete Drawing Down workflow
-      const result = await processDrawdownTransaction(input, 'current-user')
+      const result = await processDrawdownTransaction(input, userId || 'system')
       
       if (!result.success) {
         return NextResponse.json(
@@ -213,6 +218,23 @@ export async function POST(request: NextRequest) {
           },
           { status: 400 }
         )
+      }
+      
+      // Log the action
+      if (userId && result.transaction) {
+        await logAction({
+          userId,
+          entityType: 'transaction',
+          entityId: result.transaction.id,
+          action: 'create',
+          details: {
+            residentId: input.residentId,
+            contractId: input.contractId,
+            amount: input.amount || (input.quantity * input.unitPrice),
+            type: 'drawdown'
+          },
+          ...metadata
+        })
       }
       
       // Get balance preview for the posted transaction
@@ -228,9 +250,26 @@ export async function POST(request: NextRequest) {
       }, { status: 201 })
     } else {
       // Regular transaction creation - use database service
-      const transaction = await transactionService.create(input, 'current-user')
+      const transaction = await transactionService.create(input, userId || 'system')
       
       console.log('Created transaction in database:', transaction.id)
+      
+      // Log the action
+      if (userId) {
+        await logAction({
+          userId,
+          entityType: 'transaction',
+          entityId: transaction.id,
+          action: 'create',
+          details: {
+            residentId: input.residentId,
+            contractId: input.contractId,
+            amount: input.amount || (input.quantity * input.unitPrice),
+            type: 'manual'
+          },
+          ...metadata
+        })
+      }
       
       return NextResponse.json({
         success: true,

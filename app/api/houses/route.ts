@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { houseCreateSchema } from "lib/schemas/house"
 import { houseService } from "lib/supabase/services/houses"
+import { getCurrentUserId, logAction, getRequestMetadata } from "lib/services/audit-logger"
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,13 +25,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Get current user ID for logging
+    const userId = await getCurrentUserId()
+
     // Create house in Supabase
     const newHouse = await houseService.create({
       ...validation.data,
       country: validation.data.country || 'Australia', // Default to Australia
-      createdBy: 'system', // TODO: Get from auth context
-      updatedBy: 'system' // TODO: Get from auth context
+      createdBy: userId || 'system',
+      updatedBy: userId || 'system'
     })
+
+    // Log the action
+    if (userId) {
+      const metadata = getRequestMetadata(request)
+      await logAction({
+        userId,
+        entityType: 'house',
+        entityId: newHouse.id,
+        action: 'create',
+        details: {
+          address: newHouse.address,
+          suburb: newHouse.suburb,
+          state: newHouse.state
+        },
+        ...metadata
+      })
+    }
 
     return NextResponse.json(
       { 

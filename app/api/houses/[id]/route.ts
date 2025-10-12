@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { houseCreateSchema } from "lib/schemas/house"
 import { HouseService } from "lib/supabase/services/houses"
+import { getCurrentUserId, logAction, getRequestMetadata } from "lib/services/audit-logger"
 
 /**
  * GET /api/houses/[id] - Get a specific house by ID
@@ -76,13 +77,31 @@ export async function PUT(
       )
     }
 
+    // Get current user ID for logging
+    const userId = await getCurrentUserId()
+
     // Update the house with full validation
-      const updatedHouse = await houseService.update(id, {
-        ...validation.data,
-        // Preserve audit fields
-        createdBy: existingHouse.createdBy,
-        updatedBy: 'system' // TODO: Get from auth context
+    const updatedHouse = await houseService.update(id, {
+      ...validation.data,
+      // Preserve audit fields
+      createdBy: existingHouse.createdBy,
+      updatedBy: userId || 'system'
+    })
+
+    // Log the action
+    if (userId) {
+      const metadata = getRequestMetadata(request)
+      await logAction({
+        userId,
+        entityType: 'house',
+        entityId: id,
+        action: 'update',
+        details: {
+          changes: validation.data
+        },
+        ...metadata
       })
+    }
 
     return NextResponse.json({ success: true, data: updatedHouse })
   } catch (error) {
@@ -114,8 +133,27 @@ export async function DELETE(
       )
     }
 
+    // Get current user ID for logging
+    const userId = await getCurrentUserId()
+
     // Delete the house
     await houseService.delete(id)
+
+    // Log the action
+    if (userId) {
+      const metadata = getRequestMetadata(request)
+      await logAction({
+        userId,
+        entityType: 'house',
+        entityId: id,
+        action: 'delete',
+        details: {
+          address: existingHouse.address,
+          descriptor: existingHouse.descriptor
+        },
+        ...metadata
+      })
+    }
 
     return NextResponse.json({ success: true, message: "House deleted successfully" })
   } catch (error) {
