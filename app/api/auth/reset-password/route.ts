@@ -70,6 +70,13 @@ export async function POST(request: NextRequest) {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
       || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
     const resetLink = `${baseUrl}/auth/reset-password?token=${token}`
+    
+    console.log('[PASSWORD RESET] Environment check:', {
+      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+      VERCEL_URL: process.env.VERCEL_URL,
+      baseUrl: baseUrl,
+      resetLink: resetLink
+    })
 
     // Send custom password reset email
     const emailResult = await sendPasswordResetEmail(
