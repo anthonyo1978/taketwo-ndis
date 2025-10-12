@@ -66,14 +66,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Build the reset link
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+    // Build the reset link - use hardcoded production URL for now
+    const baseUrl = 'https://taketwo-ndis.vercel.app'
     const resetLink = `${baseUrl}/auth/reset-password?token=${token}`
     
-    console.log('[PASSWORD RESET] Environment check:', {
-      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-      VERCEL_URL: process.env.VERCEL_URL,
+    console.log('[PASSWORD RESET] Using hardcoded production URL:', {
       baseUrl: baseUrl,
       resetLink: resetLink
     })
