@@ -45,9 +45,10 @@ export async function POST(request: NextRequest) {
         entityId: newHouse.id,
         action: 'create',
         details: {
-          address: newHouse.address,
+          address1: newHouse.address1,
           suburb: newHouse.suburb,
-          state: newHouse.state
+          state: newHouse.state,
+          descriptor: newHouse.descriptor
         },
         ...metadata
       })

@@ -148,7 +148,9 @@ export async function DELETE(
         entityId: id,
         action: 'delete',
         details: {
-          address: existingHouse.address,
+          address1: existingHouse.address1,
+          suburb: existingHouse.suburb,
+          state: existingHouse.state,
           descriptor: existingHouse.descriptor
         },
         ...metadata
