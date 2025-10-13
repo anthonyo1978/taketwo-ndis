@@ -20,7 +20,7 @@ export function migrateTransaction(transaction: Record<string, unknown>): Transa
     quantity: (transaction.quantity as number) || 1,
     unitPrice: (transaction.unitPrice as number) || 0,
     amount: (transaction.amount as number) || 0,
-    status: (transaction.status as 'draft' | 'posted' | 'voided') || 'posted',
+    status: (transaction.status as 'draft' | 'picked_up' | 'submitted' | 'paid' | 'rejected') || 'paid',
     createdBy: (transaction.createdBy as string) || 'system',
     serviceCode: (transaction.serviceCode as string) || 'LEGACY',
     drawdownStatus: (transaction.drawdownStatus as 'pending' | 'validated' | 'posted' | 'rejected' | 'voided') || 'posted', // Assume existing transactions are posted
