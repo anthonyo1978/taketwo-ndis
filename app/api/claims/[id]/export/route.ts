@@ -9,10 +9,10 @@ import { format } from 'date-fns'
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const claimId = params.id
+    const { id: claimId } = await params
     const supabase = await createClient()
     const userId = await getCurrentUserId()
     const metadata = getRequestMetadata(request)
