@@ -32,7 +32,10 @@ export default function SettingsPage() {
             </div>
           </Link>
           
-          <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
+          <Link
+            href="/settings/system"
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer block"
+          >
             <div className="flex items-center mb-4">
               <div className="p-2 bg-green-100 rounded-lg">
                 <svg className="size-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -42,11 +45,11 @@ export default function SettingsPage() {
               </div>
             </div>
             <h3 className="text-lg font-semibold text-gray-900 mb-2">System Preferences</h3>
-            <p className="text-gray-600 text-sm mb-4">Configure application behavior and default settings.</p>
-            <button className="text-blue-600 text-sm font-medium hover:text-blue-800">
+            <p className="text-gray-600 text-sm mb-4">Configure application behavior and logging levels.</p>
+            <div className="text-blue-600 text-sm font-medium hover:text-blue-800">
               Configure →
-            </button>
-          </div>
+            </div>
+          </Link>
           
           <div className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
             <div className="flex items-center mb-4">
