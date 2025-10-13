@@ -9,6 +9,7 @@ import { ResidentBalanceWidget } from "components/residents/ResidentBalanceWidge
 import { ResidentEditForm } from "components/residents/ResidentEditForm"
 import { ResidentTransactionsList } from "components/residents/ResidentTransactionsList"
 import { ResidentDocumentsList } from "components/residents/ResidentDocumentsList"
+import { ContactList } from "components/residents/ContactList"
 import { StatusManager } from "components/residents/StatusManager"
 import { Button } from "components/Button/Button"
 import { type TabItem, Tabs } from "components/ui/Tabs"
@@ -460,6 +461,12 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
       label: 'Overview',
       icon: '👤',
       content: renderOverviewTab()
+    },
+    {
+      id: 'contacts',
+      label: 'Contact List',
+      icon: '📞',
+      content: <ContactList residentId={residentId} />
     },
     {
       id: 'funding',
