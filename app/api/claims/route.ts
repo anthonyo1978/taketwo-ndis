@@ -32,6 +32,9 @@ export async function GET() {
         submitted_at,
         submitted_by,
         updated_at,
+        file_path,
+        file_generated_at,
+        file_generated_by,
         users!claims_created_by_fkey (
           first_name,
           last_name
@@ -59,7 +62,10 @@ export async function GET() {
       status: claim.status,
       submittedAt: claim.submitted_at,
       submittedBy: claim.submitted_by,
-      updatedAt: claim.updated_at
+      updatedAt: claim.updated_at,
+      filePath: claim.file_path,
+      fileGeneratedAt: claim.file_generated_at,
+      fileGeneratedBy: claim.file_generated_by
     }))
 
     return NextResponse.json({

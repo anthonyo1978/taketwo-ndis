@@ -28,6 +28,9 @@ export async function GET(
         submitted_at,
         submitted_by,
         updated_at,
+        file_path,
+        file_generated_at,
+        file_generated_by,
         users!claims_created_by_fkey (
           first_name,
           last_name
