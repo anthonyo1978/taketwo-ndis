@@ -16,6 +16,12 @@ interface Claim {
   transactionCount: number
   totalAmount: number
   status: string
+  filtersJson?: {
+    residentId?: string
+    dateFrom?: string
+    dateTo?: string
+    includeAll?: boolean
+  }
 }
 
 export default function ClaimsPage() {
@@ -122,6 +128,9 @@ export default function ClaimsPage() {
                     Date Created
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Date Range
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Transactions
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -152,6 +161,17 @@ export default function ClaimsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-600">
                       {format(new Date(claim.createdAt), 'MMM d, yyyy h:mm a')}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {claim.filtersJson?.dateFrom && claim.filtersJson?.dateTo ? (
+                        <span className="whitespace-nowrap">
+                          {format(new Date(claim.filtersJson.dateFrom), 'MMM d, yyyy')} - {format(new Date(claim.filtersJson.dateTo), 'MMM d, yyyy')}
+                        </span>
+                      ) : claim.filtersJson?.includeAll ? (
+                        <span className="text-gray-500 italic">All dates</span>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {claim.transactionCount}

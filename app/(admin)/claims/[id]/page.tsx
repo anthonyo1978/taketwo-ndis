@@ -117,6 +117,12 @@ export default function ClaimDetailPage() {
               <div className="space-y-1 text-sm text-gray-600">
                 <p><span className="font-medium">Created by:</span> {claim.createdBy}</p>
                 <p><span className="font-medium">Date:</span> {format(new Date(claim.createdAt), 'MMMM d, yyyy h:mm a')}</p>
+                {claim.filtersJson?.dateFrom && claim.filtersJson?.dateTo && (
+                  <p><span className="font-medium">Transaction Date Range:</span> {format(new Date(claim.filtersJson.dateFrom), 'MMMM d, yyyy')} - {format(new Date(claim.filtersJson.dateTo), 'MMMM d, yyyy')}</p>
+                )}
+                {claim.filtersJson?.includeAll && (
+                  <p><span className="font-medium">Transaction Date Range:</span> <span className="italic">All dates</span></p>
+                )}
                 <p><span className="font-medium">Transactions:</span> {claim.transactionCount}</p>
                 <p><span className="font-medium">Total Amount:</span> ${claim.totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
               </div>
