@@ -188,13 +188,13 @@ export default function ClaimDetailPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {claim.transactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <Link 
-                        href={`/transactions/${tx.id}`}
-                        className="text-sm font-mono text-blue-600 hover:text-blue-900"
+                        href={`/transactions?search=${tx.id}`}
+                        className="text-sm font-mono text-blue-600 hover:text-blue-900 hover:underline"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {tx.id.substring(0, 8)}...
+                        {tx.id}
                       </Link>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
