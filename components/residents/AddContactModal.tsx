@@ -122,7 +122,7 @@ export function AddContactModal({ residentId, onClose, onSuccess }: AddContactMo
 
   return (
     <Dialog open={true} onClose={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Contact</DialogTitle>
         </DialogHeader>

@@ -68,7 +68,7 @@ export function EditContactModal({ contact, onClose, onSuccess }: EditContactMod
 
   return (
     <Dialog open={true} onClose={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Contact</DialogTitle>
         </DialogHeader>
