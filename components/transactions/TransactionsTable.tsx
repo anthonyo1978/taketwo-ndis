@@ -334,10 +334,12 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       cell: (info) => {
         const status = info.getValue() || 'draft'
         const isOrphaned = info.row.original.isOrphaned || false
-        const colorMap = {
+        const colorMap: Record<string, string> = {
           draft: 'bg-gray-100 text-gray-800',
-          posted: 'bg-green-100 text-green-800',
-          voided: 'bg-red-100 text-red-800',
+          picked_up: 'bg-blue-100 text-blue-800',
+          submitted: 'bg-indigo-100 text-indigo-800',
+          paid: 'bg-green-100 text-green-800',
+          rejected: 'bg-red-100 text-red-800',
         }
         return (
           <div className="flex flex-col gap-1">
