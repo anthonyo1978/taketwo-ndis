@@ -842,7 +842,9 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                     <div className="flex flex-col gap-2">
                       <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
                         selectedTransaction.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                        selectedTransaction.status === 'posted' ? 'bg-green-100 text-green-800' :
+                        selectedTransaction.status === 'picked_up' ? 'bg-blue-100 text-blue-800' :
+                        selectedTransaction.status === 'submitted' ? 'bg-indigo-100 text-indigo-800' :
+                        selectedTransaction.status === 'paid' ? 'bg-green-100 text-green-800' :
                         'bg-red-100 text-red-800'
                       }`}>
                         {selectedTransaction.status.charAt(0).toUpperCase() + selectedTransaction.status.slice(1)}
