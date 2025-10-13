@@ -76,7 +76,7 @@ export function getTransactionsFromStorage(): Transaction[] {
           quantity: tx.quantity || 1,
           unitPrice: tx.unitPrice || 0,
           amount: tx.amount || 0,
-          status: 'posted' as const,
+          status: 'paid' as const,
           drawdownStatus: 'posted' as const,
           createdAt: new Date(),
           createdBy: tx.createdBy || 'system',
@@ -159,16 +159,16 @@ export function calculateBalanceImpact(
     }
   }
   
-  // Calculate current balance by checking posted transactions
+  // Calculate current balance by checking paid transactions
   const transactions = getTransactionsFromStorage()
-  const postedTransactions = transactions.filter(tx => 
+  const paidTransactions = transactions.filter(tx => 
     tx.contractId === contractId && 
-    tx.status === 'posted' &&
+    tx.status === 'paid' &&
     (!excludeTransactionId || tx.id !== excludeTransactionId)
   )
   
-  const totalPosted = postedTransactions.reduce((sum, tx) => sum + tx.amount, 0)
-  const currentBalance = contract.originalAmount - totalPosted
+  const totalPaid = paidTransactions.reduce((sum, tx) => sum + tx.amount, 0)
+  const currentBalance = contract.originalAmount - totalPaid
   const newBalance = currentBalance - amount
   
   return {
@@ -302,7 +302,7 @@ export function updateTransaction(
 }
 
 /**
- * Post a transaction with Drawing Down validation (change status from draft to posted).
+ * Post a transaction with Drawing Down validation (change status from draft to paid).
  * 
  * @param id - The transaction ID to post
  * @param postedBy - The user posting the transaction (default: 'system')
@@ -364,7 +364,7 @@ export function postTransaction(
   }
   
   // Update transaction status with Drawing Down fields
-  transaction.status = 'posted'
+  transaction.status = 'paid'
   transaction.drawdownStatus = 'posted'
   transaction.postedAt = new Date()
   transaction.postedBy = postedBy
@@ -391,13 +391,13 @@ export function postTransaction(
 }
 
 /**
- * Void a transaction (change status from posted to voided).
+ * Void a transaction (change status from paid to rejected).
  * 
  * @param id - The transaction ID to void
  * @param reason - The reason for voiding
  * @param voidedBy - The user voiding the transaction (default: 'system')
  * @returns The voided transaction
- * @throws Error if transaction not found or not in posted status
+ * @throws Error if transaction not found or not in paid status
  */
 export function voidTransaction(
   id: string,
@@ -417,12 +417,12 @@ export function voidTransaction(
     throw new Error('Transaction not found')
   }
   
-  if (transaction.status !== 'posted') {
-    throw new Error('Can only void posted transactions')
+  if (transaction.status !== 'paid') {
+    throw new Error('Can only void paid transactions')
   }
   
   // Update transaction status
-  transaction.status = 'voided'
+  transaction.status = 'rejected'
   transaction.voidedAt = new Date()
   transaction.voidedBy = voidedBy
   transaction.voidReason = reason
@@ -460,17 +460,17 @@ function updateContractBalance(contractId: string): void {
   
   const contract = residentToUpdate.fundingInformation[contractIndex]
   
-  // Calculate total posted transactions
-  const postedTransactions = transactions.filter(tx => 
-    tx.contractId === contractId && tx.status === 'posted'
+  // Calculate total paid transactions
+  const paidTransactions = transactions.filter(tx => 
+    tx.contractId === contractId && tx.status === 'paid'
   )
   
   if (!contract) {
     throw new Error('Contract not found')
   }
   
-  const totalPosted = postedTransactions.reduce((sum, tx) => sum + tx.amount, 0)
-  const newBalance = Math.max(0, contract.originalAmount - totalPosted)
+  const totalPaid = paidTransactions.reduce((sum, tx) => sum + tx.amount, 0)
+  const newBalance = Math.max(0, contract.originalAmount - totalPaid)
   
   // Update the contract balance
   contract.currentBalance = newBalance
@@ -745,7 +745,7 @@ export function getResidentBalanceSummary(residentId: string): ResidentBalanceSu
   
   const contractSummaries = activeContracts.map(contract => {
     const contractTransactions = transactions.filter(tx => 
-      tx.contractId === contract.id && tx.status === 'posted'
+      tx.contractId === contract.id && tx.status === 'paid'
     )
     
     return {
