@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from 'components/Button/Button'
 import toast from 'react-hot-toast'
 
@@ -9,6 +9,58 @@ type DateRange = 'today' | 'yesterday' | 'last-week' | 'last-2-weeks' | 'last-12
 export default function SystemSettingsPage() {
   const [selectedRange, setSelectedRange] = useState<DateRange>('today')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [loggingEnabled, setLoggingEnabled] = useState(true)
+  const [isLoadingSettings, setIsLoadingSettings] = useState(true)
+  const [isTogglingLogging, setIsTogglingLogging] = useState(false)
+
+  // Fetch current logging setting
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch('/api/system/settings')
+        const result = await response.json() as { success: boolean; data?: Record<string, any>; error?: string }
+        
+        if (result.success && result.data) {
+          setLoggingEnabled(result.data.logging_enabled === true)
+        }
+      } catch (error) {
+        console.error('Error fetching settings:', error)
+      } finally {
+        setIsLoadingSettings(false)
+      }
+    }
+
+    fetchSettings()
+  }, [])
+
+  const handleToggleLogging = async () => {
+    setIsTogglingLogging(true)
+    
+    try {
+      const newValue = !loggingEnabled
+      
+      const response = await fetch('/api/system/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: 'logging_enabled',
+          value: newValue
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update setting')
+      }
+
+      setLoggingEnabled(newValue)
+      toast.success(`Logging ${newValue ? 'enabled' : 'disabled'} successfully`)
+    } catch (error) {
+      console.error('Error toggling logging:', error)
+      toast.error('Failed to update logging setting')
+    } finally {
+      setIsTogglingLogging(false)
+    }
+  }
 
   const dateRangeOptions: { value: DateRange; label: string }[] = [
     { value: 'today', label: 'Today' },
@@ -20,6 +72,10 @@ export default function SystemSettingsPage() {
   ]
 
   const handleGenerateReport = async () => {
+    if (!loggingEnabled) {
+      toast.error('Logging is disabled. Enable logging to generate reports.')
+      return
+    }
     setIsGenerating(true)
     
     try {
@@ -73,26 +129,51 @@ export default function SystemSettingsPage() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Logging Status (Cosmetic) */}
-              <div className="flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
+              {/* Logging Status (Functional) */}
+              <div className={`flex items-center justify-between p-4 rounded-lg border ${
+                loggingEnabled 
+                  ? 'bg-green-50 border-green-200' 
+                  : 'bg-gray-50 border-gray-200'
+              }`}>
                 <div className="flex items-center space-x-3">
-                  <div className="h-3 w-3 bg-green-500 rounded-full animate-pulse"></div>
+                  <div className={`h-3 w-3 rounded-full ${
+                    loggingEnabled 
+                      ? 'bg-green-500 animate-pulse' 
+                      : 'bg-gray-400'
+                  }`}></div>
                   <div>
                     <p className="text-sm font-medium text-gray-900">Logging Status</p>
-                    <p className="text-xs text-gray-600">System logging is currently active</p>
+                    <p className="text-xs text-gray-600">
+                      {loggingEnabled 
+                        ? 'System logging is currently active' 
+                        : 'System logging is currently disabled'
+                      }
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm font-medium text-green-700">Enabled</span>
-                  <div className="relative inline-flex items-center cursor-not-allowed opacity-75">
+                  <span className={`text-sm font-medium ${
+                    loggingEnabled ? 'text-green-700' : 'text-gray-600'
+                  }`}>
+                    {loggingEnabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                  <button
+                    onClick={handleToggleLogging}
+                    disabled={isTogglingLogging || isLoadingSettings}
+                    className="relative inline-flex items-center cursor-pointer disabled:opacity-50"
+                  >
                     <input 
                       type="checkbox" 
-                      checked={true}
-                      disabled
+                      checked={loggingEnabled}
+                      onChange={() => {}}
                       className="sr-only peer" 
                     />
-                    <div className="w-11 h-6 bg-green-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                  </div>
+                    <div className={`w-11 h-6 rounded-full peer after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all ${
+                      loggingEnabled
+                        ? 'bg-green-600 peer-checked:after:translate-x-full'
+                        : 'bg-gray-200'
+                    }`}></div>
+                  </button>
                 </div>
               </div>
 
@@ -131,7 +212,7 @@ export default function SystemSettingsPage() {
                 <div className="pt-2">
                   <Button
                     onClick={handleGenerateReport}
-                    disabled={isGenerating}
+                    disabled={isGenerating || !loggingEnabled}
                     intent="primary"
                     size="lg"
                   >

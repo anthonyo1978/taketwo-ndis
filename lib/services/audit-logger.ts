@@ -41,6 +41,27 @@ interface LogActionParams {
 }
 
 /**
+ * Check if logging is enabled
+ */
+async function isLoggingEnabled(): Promise<boolean> {
+  try {
+    const supabase = await createClient()
+    
+    const { data } = await supabase
+      .from('system_settings')
+      .select('setting_value')
+      .eq('setting_key', 'logging_enabled')
+      .single()
+
+    return data?.setting_value === true
+  } catch (error) {
+    // If there's an error checking, default to enabled (fail-safe)
+    console.error('[AUDIT LOG] Error checking logging status:', error)
+    return true
+  }
+}
+
+/**
  * Log a user action to the system_logs table
  */
 export async function logAction({
@@ -53,6 +74,14 @@ export async function logAction({
   userAgent
 }: LogActionParams): Promise<{ success: boolean; error?: string }> {
   try {
+    // Check if logging is enabled (except for logging toggle itself)
+    if (entityType !== 'setting' || action !== 'update') {
+      const loggingEnabled = await isLoggingEnabled()
+      if (!loggingEnabled) {
+        return { success: true } // Silently skip logging
+      }
+    }
+
     const supabase = await createClient()
 
     const { error } = await supabase
