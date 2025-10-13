@@ -120,12 +120,12 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
               href="/dashboard"
               className="flex items-center gap-3 font-semibold text-gray-900 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
             >
-              <div className="size-8 rounded-lg flex items-center justify-center overflow-hidden">
+              <div className="size-12 rounded-lg flex items-center justify-center overflow-hidden">
                 <Image
                   src="/assets/house.png"
                   alt="Haven"
-                  width={32}
-                  height={32}
+                  width={48}
+                  height={48}
                   className="object-contain"
                 />
               </div>
