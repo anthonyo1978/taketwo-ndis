@@ -15,15 +15,16 @@ interface HouseFormProps {
   onSubmit: (data: HouseCreateSchemaType) => Promise<void>
   isLoading?: boolean
   className?: string
+  initialData?: Partial<HouseCreateSchemaType>
 }
 
 /**
- * Form component for creating new houses.
+ * Form component for creating/editing houses.
  * 
  * @param props - The component props
  * @returns JSX element for the house form
  */
-export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormProps) {
+export function HouseForm({ onSubmit, isLoading = false, className, initialData }: HouseFormProps) {
   const {
     register,
     handleSubmit,
@@ -31,7 +32,7 @@ export function HouseForm({ onSubmit, isLoading = false, className }: HouseFormP
     reset,
   } = useForm<HouseCreateSchemaType>({
     resolver: zodResolver(houseCreateSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       status: 'Active',
       goLiveDate: new Date(),
     },

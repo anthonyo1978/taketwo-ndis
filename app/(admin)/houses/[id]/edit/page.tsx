@@ -214,6 +214,20 @@ export default function EditHousePage() {
               <HouseForm
                 onSubmit={handleFormSubmit}
                 isLoading={isSaving}
+                initialData={{
+                  descriptor: house.descriptor || '',
+                  address1: house.address1,
+                  address2: house.address2 || '',
+                  suburb: house.suburb,
+                  state: house.state,
+                  postcode: house.postcode,
+                  country: house.country,
+                  status: house.status,
+                  goLiveDate: house.goLiveDate ? new Date(house.goLiveDate) : undefined,
+                  ndisRegistered: house.ndisRegistered || false,
+                  propertyType: house.propertyType || '',
+                  notes: house.notes || ''
+                }}
               />
             </div>
           </div>
