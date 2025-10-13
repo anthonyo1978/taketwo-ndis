@@ -611,6 +611,7 @@ function convertDbTransactionToFrontend(dbTransaction: any): Transaction {
     unitPrice: parseFloat(dbTransaction.unit_price),
     amount: parseFloat(dbTransaction.amount),
     status: dbTransaction.status,
+    claimId: dbTransaction.claim_id,
     drawdownStatus: dbTransaction.drawdown_status,
     supportAgreementId: dbTransaction.support_agreement_id,
     isDrawdownTransaction: dbTransaction.is_drawdown_transaction,

@@ -82,11 +82,27 @@ Updated to status = picked_up and claim_id = CLM-0000001.
 
 Claim Detail View
 
-Header: Claim ID, Created By, Date Created.
+Header: Claim ID, Created By, Date Created, Transaction Date Range.
 
 Table: List of transactions linked to the claim.
+  - Transaction ID (clickable link to transactions page with search)
+  - Resident name
+  - Date
+  - Service code
+  - Amount
+  - Note
 
 Buttons (Future phase): Export
+
+Transaction Detail Modal
+
+When viewing a transaction, the following information is displayed:
+  - Transaction ID
+  - Status (with color-coded pill)
+  - Claim ID (clickable link to claim detail page)
+    - Shows "Not claimed" for draft transactions
+    - Shows claim ID as clickable link for picked_up/submitted/paid/rejected transactions
+  - Resident, House, Service Code, Date of Delivery, etc.
 
 Functional Requirements
 ID	Function	Description	Acceptance Criteria
@@ -115,9 +131,18 @@ status	enum (draft, submitted, paid, rejected)	Phase 1 → draft only
 Update Existing Table: transactions
 Add fields:
 
-claim_id (uuid, nullable)
+claim_id (uuid, nullable) - Links transaction to its parent claim
+  - NULL for draft transactions (not yet claimed)
+  - Populated when transaction status changes to picked_up
+  - Prevents transaction from being picked up by another claim
+  - Displayed in transaction detail modal as clickable link to claim
 
 status enum (draft, picked_up, submitted, paid, rejected)
+  - draft: Transaction created but not yet claimed
+  - picked_up: Transaction associated with a claim
+  - submitted: Claim has been submitted to government
+  - paid: Payment received from government
+  - rejected: Claim rejected by government
 
 Metrics / Success Criteria
 

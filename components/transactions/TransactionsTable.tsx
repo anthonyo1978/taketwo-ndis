@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react"
 import { format } from "date-fns"
 import { useRouter, useSearchParams } from "next/navigation"
+import Link from "next/link"
 import { Button } from "components/Button/Button"
 import { Pagination } from "components/ui/Pagination"
 import { LoadingSpinner, TableLoadingSkeleton } from "components/ui/LoadingSpinner"
@@ -855,6 +856,19 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                         </span>
                       )}
                     </div>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500">Claim ID</label>
+                    {selectedTransaction.claimId ? (
+                      <Link 
+                        href={`/claims/${selectedTransaction.claimId}`}
+                        className="text-sm font-mono text-blue-600 hover:text-blue-900 hover:underline"
+                      >
+                        {selectedTransaction.claimId}
+                      </Link>
+                    ) : (
+                      <p className="text-sm text-gray-400 italic">Not claimed</p>
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Resident</label>
