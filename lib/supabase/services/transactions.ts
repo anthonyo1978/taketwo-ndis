@@ -23,7 +23,12 @@ export class TransactionService {
       const supabase = await createClient()
       let query = supabase
         .from('transactions')
-        .select('*', { count: 'exact' })
+        .select(`
+          *,
+          claims!transactions_claim_id_fkey (
+            claim_number
+          )
+        `, { count: 'exact' })
 
       // Apply filters
       if (filters.dateRange?.from) {
@@ -88,7 +93,12 @@ export class TransactionService {
       const supabase = await createClient()
       const { data, error } = await supabase
         .from('transactions')
-        .select('*')
+        .select(`
+          *,
+          claims!transactions_claim_id_fkey (
+            claim_number
+          )
+        `)
         .eq('id', id)
         .single()
 
@@ -612,6 +622,7 @@ function convertDbTransactionToFrontend(dbTransaction: any): Transaction {
     amount: parseFloat(dbTransaction.amount),
     status: dbTransaction.status,
     claimId: dbTransaction.claim_id,
+    claimNumber: dbTransaction.claims?.claim_number,
     drawdownStatus: dbTransaction.drawdown_status,
     supportAgreementId: dbTransaction.support_agreement_id,
     isDrawdownTransaction: dbTransaction.is_drawdown_transaction,

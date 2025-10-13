@@ -859,12 +859,12 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Claim ID</label>
-                    {selectedTransaction.claimId ? (
+                    {selectedTransaction.claimId && selectedTransaction.claimNumber ? (
                       <Link 
                         href={`/claims/${selectedTransaction.claimId}`}
                         className="text-sm font-mono text-blue-600 hover:text-blue-900 hover:underline"
                       >
-                        {selectedTransaction.claimId}
+                        {selectedTransaction.claimNumber}
                       </Link>
                     ) : (
                       <p className="text-sm text-gray-400 italic">Not claimed</p>

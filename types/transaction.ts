@@ -18,7 +18,8 @@ export interface Transaction {
   unitPrice: number
   amount: number // quantity * unitPrice (can be overridden)
   status: TransactionStatus
-  claimId?: string // Links to claim if part of bulk claim
+  claimId?: string // Links to claim if part of bulk claim (UUID)
+  claimNumber?: string // Human-readable claim number (e.g., CLM-0000001)
   drawdownStatus?: DrawdownStatus // Optional for backward compatibility
   createdAt: Date
   createdBy: string
