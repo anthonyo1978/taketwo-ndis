@@ -16,6 +16,8 @@ interface HouseFormProps {
   isLoading?: boolean
   className?: string
   initialData?: Partial<HouseCreateSchemaType>
+  mode?: 'create' | 'edit'
+  onCancel?: () => void
 }
 
 /**
@@ -24,7 +26,7 @@ interface HouseFormProps {
  * @param props - The component props
  * @returns JSX element for the house form
  */
-export function HouseForm({ onSubmit, isLoading = false, className, initialData }: HouseFormProps) {
+export function HouseForm({ onSubmit, isLoading = false, className, initialData, mode = 'create', onCancel }: HouseFormProps) {
   const {
     register,
     handleSubmit,
@@ -257,15 +259,24 @@ export function HouseForm({ onSubmit, isLoading = false, className, initialData 
             disabled={submitDisabled}
             className="min-w-32"
           >
-            {submitDisabled ? "Creating..." : "Create House"}
+            {submitDisabled 
+              ? (mode === 'edit' ? "Saving..." : "Creating...") 
+              : (mode === 'edit' ? "Save Changes" : "Create House")
+            }
           </Button>
           <Button
             type="button"
             intent="secondary"
-            onClick={() => reset()}
+            onClick={() => {
+              if (mode === 'edit' && onCancel) {
+                onCancel()
+              } else {
+                reset()
+              }
+            }}
             disabled={submitDisabled}
           >
-            Clear Form
+            {mode === 'edit' ? 'Cancel' : 'Clear Form'}
           </Button>
         </div>
       </form>

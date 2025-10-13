@@ -212,7 +212,9 @@ export default function EditHousePage() {
             <div className="space-y-4">
               <h3 className="text-lg font-medium text-gray-900">House Details</h3>
               <HouseForm
+                mode="edit"
                 onSubmit={handleFormSubmit}
+                onCancel={() => router.push(`/houses/${houseId}`)}
                 isLoading={isSaving}
                 initialData={{
                   descriptor: house.descriptor || '',
