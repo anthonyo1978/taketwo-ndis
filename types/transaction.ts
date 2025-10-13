@@ -1,5 +1,5 @@
 /** Status options for transactions. */
-export type TransactionStatus = 'draft' | 'posted' | 'voided'
+export type TransactionStatus = 'draft' | 'picked_up' | 'submitted' | 'paid' | 'rejected'
 
 /** Drawing Down specific status for NDIS compliance. */
 export type DrawdownStatus = 'pending' | 'validated' | 'posted' | 'rejected' | 'voided'
@@ -18,6 +18,7 @@ export interface Transaction {
   unitPrice: number
   amount: number // quantity * unitPrice (can be overridden)
   status: TransactionStatus
+  claimId?: string // Links to claim if part of bulk claim
   drawdownStatus?: DrawdownStatus // Optional for backward compatibility
   createdAt: Date
   createdBy: string

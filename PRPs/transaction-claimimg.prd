@@ -1,0 +1,147 @@
+Overview
+
+Purpose
+
+The Claiming Module enables providers to group eligible transactions into formal claims that can be submitted to the government for payment approval.
+This feature creates the bridge between Haven’s internal transaction ledger and the external funding agencies’ reimbursement process.
+
+Problem Statement
+
+Haven currently generates and tracks transactions and spend, but there is no structured way to actually claim and get paid.
+Providers must manually extract transactions and prepare separate claim files for government systems. This is time-consuming, error-prone, and leaves no system of record for what has been claimed or paid.
+
+Phase 1 introduces the core claiming logic, allowing users to:
+
+1. search, group, select and group transactions,
+2. generate a claim container which is a big claim or bulk claim
+3. Manage transactions in the system  by moving those transactions through clear status transitions (draft → picked up → submitted, error, success, paid), and
+4. tie transactions to claims and therefore to a unique claim record for future checking, auditting and evidencing
+
+2. Goals & Non-Goals
+
+Goals
+
+Create a Claiming Module under the Haven > Claims section.
+Support manual and bulk creation of claim containers.
+Move eligible transactions from draft to picked_up state.
+Associate one or many transactions with a unique claim ID (e.g., CLM-0000001).
+reflect this relationship back on the transaction also
+Display claims and their linked transactions in a clear, auditable UI.
+
+Non-Goals (Phase 1)
+
+No integration yet with external government APIs (NDIA, PACE, etc.).
+No payment-status feedback handling (to come in Phase 2).
+
+Audience / Users
+
+Finance admins / claims officers responsible for submitting funding claims.
+Operational admins who review transaction readiness prior to claiming.
+All users share equal permissions in this initial release.
+
+In Scope (Phase 1)
+
+Create a new Claims section with the ability to:
+Create a claim 
+When creating a claim, choose filters (customer, date range, or all eligible transactions).
+Generate a claim record and associate transactions. This claims record details this event and has some psecifics.
+Transition transaction states (draft → picked_up).
+Display claims and linked transactions in the UI.
+Add backend logic to assign a unique claim ID (CLM-######).
+
+Out of Scope (Phase 1)
+
+Government API submission or response handling.
+Payment reconciliation (status paid / rejected).
+
+User Experience (UX)
+
+Navigation: Main menu → Claims
+
+Flow — Create Claim
+
+1️⃣ User clicks “Create Claim” (or “Create Bulk Claim”).
+2️⃣ Modal opens with filters:
+
+Resident (optional select box)
+
+Date range picker
+
+“Include all valid transactions” toggle
+3️⃣ User clicks Create Claim.
+4️⃣ System queries transactions matching filters where status = draft.
+5️⃣ All matching transactions are:
+
+Grouped under a new Claim record (claims table).
+
+Assigned a unique Claim ID (CLM-0000001).
+
+Updated to status = picked_up and claim_id = CLM-0000001.
+6️⃣ Success toast: “Claim CLM-0000001 created with 50 transactions.”
+7️⃣ User can click into the claim to view its transactions.
+
+Claim Detail View
+
+Header: Claim ID, Created By, Date Created.
+
+Table: List of transactions linked to the claim.
+
+Buttons (Future phase): Export
+
+Functional Requirements
+ID	Function	Description	Acceptance Criteria
+F-1	Create Claim	Create new claim record and associate transactions	Unique Claim ID assigned; transactions linked
+F-2	Filter transactions	Filter eligible transactions by resident or date range	Only draft transactions included
+F-3	State transition	Change transaction status from draft → picked_up	Status visible in UI and DB
+F-4	View claim details	Show transactions linked to a claim	List view loads ≤ 2 s
+F-5	Audit log	Record user ID who created claim and time stamp	Visible in claims.created_by
+F-6	Reversal logic (future)	Unlink transactions if claim deleted	Not Phase 1 but flag design consideration
+
+Technical Requirements
+Database
+
+New Table: claims
+
+Field	Type	Notes
+id	uuid	Primary key
+claim_number	text	Human-readable ID (CLM-0000001)
+organisation_id	uuid	Org scope
+created_by	uuid	User who created claim
+created_at	timestamptz	Timestamp
+filters_json	jsonb	Stores selected parameters (date range, resident id etc.)
+transaction_count	integer	# transactions included
+status	enum (draft, submitted, paid, rejected)	Phase 1 → draft only
+
+Update Existing Table: transactions
+Add fields:
+
+claim_id (uuid, nullable)
+
+status enum (draft, picked_up, submitted, paid, rejected)
+
+Metrics / Success Criteria
+
+Claim creation completes ≤ 5 seconds for up to 500 transactions.
+
+100 % of transactions linked to claim have status = picked_up.
+
+Claim number uniqueness guaranteed across organisation.
+
+Audit logs capture created_by and timestamp.
+
+Risks & Mitigations
+Risk	Impact	Mitigation
+Partial update (error mid-batch)	High	Wrap in atomic transaction / rollback on failure
+Duplicate claims on same transactions	High	Lock transactions during claim generation
+Performance for large bulk claims	Medium	Batch processing / async worker
+Future state expansion complexity	Low	Use enum with forward-compatible values
+Human error in filters	Low	Show confirmation summary before claim creation
+
+Future Enhancements in Phase 2
+
+Claim-file generation for NDIA uploads (XML or CSV).
+Integration with PACE / NDIA APIs for submission and response parsing.
+Auto-reconciliation of payments (paid/rejected).
+Multi-organisation claim number series.
+Claim validation (pre-submission rules).
+Notifications for claim status changes.
