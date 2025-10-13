@@ -1,5 +1,5 @@
 /** Status options for claims. */
-export type ClaimStatus = 'draft' | 'submitted' | 'paid' | 'rejected'
+export type ClaimStatus = 'draft' | 'in_progress' | 'submitted' | 'paid' | 'rejected'
 
 /**
  * Claim record for bulk transaction claiming
@@ -16,6 +16,9 @@ export interface Claim {
   submittedAt?: Date
   submittedBy?: string
   updatedAt: Date
+  filePath?: string  // Path to latest generated CSV file
+  fileGeneratedAt?: Date  // When file was last generated
+  fileGeneratedBy?: string  // User ID who generated the file
 }
 
 /**

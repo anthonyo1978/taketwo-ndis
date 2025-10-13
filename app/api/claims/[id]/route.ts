@@ -84,6 +84,9 @@ export async function GET(
       submittedAt: claim.submitted_at,
       submittedBy: claim.submitted_by,
       updatedAt: claim.updated_at,
+      filePath: claim.file_path,
+      fileGeneratedAt: claim.file_generated_at,
+      fileGeneratedBy: claim.file_generated_by,
       transactions: (transactions || []).map((tx: any) => ({
         id: tx.id,
         residentId: tx.resident_id,

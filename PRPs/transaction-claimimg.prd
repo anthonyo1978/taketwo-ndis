@@ -126,7 +126,7 @@ created_by	uuid	User who created claim
 created_at	timestamptz	Timestamp
 filters_json	jsonb	Stores selected parameters (date range, resident id etc.)
 transaction_count	integer	# transactions included
-status	enum (draft, submitted, paid, rejected)	Phase 1 → draft only
+status	enum (draft, in_progress, submitted, paid, rejected)	Phase 1 → draft, Uplift A → in_progress
 
 Update Existing Table: transactions
 Add fields:
@@ -170,3 +170,81 @@ Auto-reconciliation of payments (paid/rejected).
 Multi-organisation claim number series.
 Claim validation (pre-submission rules).
 Notifications for claim status changes.
+
+
+
+** Uplift A ****
+
+Extend the Claiming Module to support the first export pathway for submitting claims externally.
+While the current implementation creates and stores claims (as containers of transactions), Uplift A introduces the ability to generate a downloadable claim file (CSV) for submission to third-party or government payment systems.
+
+This establishes the foundation for two future outbound pathways:
+
+ - Downloadable file (CSV) — Phase 1.5 (this uplift)
+ - API integration — Phase 2 (future)
+
+ Overview
+
+When a claim is created, it already:
+
+has its own unique claim ID (e.g. CLM-0000001),
+is tied to an organisation (although we will deeper into muti tennancy later)
+contains metadata (creator, date range, filters), and
+holds one or more linked transactions.
+
+This uplift adds a new action on each Claim Detail Page:
+
+Button: “Create Claim File”
+When triggered, the system compiles all transactions belonging to that claim and outputs a CSV file in a pre-defined schema.
+This csv is attached as a record against the claim itself.
+
+CSV File Structure (Draft)
+
+Each row represents a single transaction within the claim.
+
+Column	Description	Source
+
+Claim ID	The parent claim number (e.g., CLM-0000001)	claims.claim_number
+Transaction ID	Unique transaction identifier	transactions.id
+Resident Name	Full name of the resident	Joined via resident_id
+Contract ID	Related funding contract	transactions.contract_id
+Service Date	The date the service was delivered	transactions.occurred_at
+Amount	The transaction value (AUD)	transactions.amount
+Description	Description of service or item	transactions.note
+Status	Transaction status at export	transactions.status
+Organisation ID	Org that owns the claim (placeholder for now)	claims.organisation_id (NULL)
+Exported At	Timestamp of when file was generated	System timestamp
+
+File name convention:
+HAVEN-CLAIM-[claim_number]-[YYYYMMDD-HHmm].csv
+Example: HAVEN-CLAIM-CLM-0000001-20251014-1030.csv
+
+Workflow
+
+1️⃣ User opens a claim record (status = draft).
+2️⃣ Clicks "Create Claim File" button (in header next to status badge).
+3️⃣ System validates:
+   - Claim contains transactions
+   - ALL transactions have status = picked_up (if any are submitted/paid/rejected, show error)
+4️⃣ System compiles all transactions into CSV format.
+5️⃣ System writes file to Supabase Storage under:
+   /exports/claims/[claim_number]/HAVEN-CLAIM-[claim_number]-[YYYYMMDD-HHmm].csv
+6️⃣ Claim status updated from draft → in_progress
+7️⃣ Toast: "Claim file created successfully."
+8️⃣ File is downloadable immediately via signed URL.
+9️⃣ Claim record is updated with:
+   - file_path (string) - path to latest generated file
+   - file_generated_at (timestamp) - when file was last generated
+   - file_generated_by (user_id) - who generated the file
+
+Note: Re-generating creates a new timestamped file version. Previous versions remain in storage.
+
+Functional Requirements
+ID	Function	Description	Acceptance Criteria
+U-1	Generate claim file	Export all transactions in a claim to CSV	CSV stored in Supabase + downloadable
+U-2	File metadata	Store file path and timestamp on claim record	Data persists for audit
+U-3	Validate claim	Prevent export if no transactions or invalid state	Error toast shown
+U-4	Download file	Generate signed URL for 15-minute access	User can open/download file
+U-5	Naming standard	File name uses claim number + timestamp	Matches pattern
+U-6	Audit logging	Record user ID and event (“claim_file_generated”)
+
