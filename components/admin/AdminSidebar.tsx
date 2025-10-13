@@ -9,10 +9,10 @@ import {
   Home, 
   LayoutDashboard, 
   Settings, 
-  User,
   Users
 } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { useEffect, useState } from "react"
 
 import { Button } from "components/Button/Button"
@@ -120,11 +120,17 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
               href="/dashboard"
               className="flex items-center gap-3 font-semibold text-gray-900 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
             >
-              <div className="size-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">A</span>
+              <div className="size-8 rounded-lg flex items-center justify-center overflow-hidden">
+                <Image
+                  src="/assets/house.png"
+                  alt="Haven"
+                  width={32}
+                  height={32}
+                  className="object-contain"
+                />
               </div>
               {!isCollapsed && (
-                <span className="text-xl">Admin Panel</span>
+                <span className="text-xl">Haven</span>
               )}
             </Link>
           </div>
@@ -146,9 +152,8 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
             ))}
           </nav>
 
-          {/* Footer with collapse button and user menu */}
-          <div className="p-4 border-t border-gray-200 space-y-2">
-            {/* Collapse toggle button */}
+          {/* Footer with collapse button */}
+          <div className="p-4 border-t border-gray-200">
             <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'}`}>
               <Button
                 type="button"
@@ -165,25 +170,6 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                   aria-hidden="true"
                 />
               </Button>
-            </div>
-
-            {/* User menu placeholder */}
-            <div className={`flex items-center gap-3 p-2 rounded-lg hover:bg-gray-100 transition-colors ${
-              isCollapsed ? 'justify-center' : ''
-            }`}>
-              <div className="size-8 bg-gray-300 rounded-full flex items-center justify-center">
-                <User className="size-4 text-gray-600" aria-hidden="true" />
-              </div>
-              {!isCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    Admin User
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    admin@example.com
-                  </p>
-                </div>
-              )}
             </div>
           </div>
         </div>
