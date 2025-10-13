@@ -92,8 +92,10 @@ export function TransactionFilters({ filters, onFiltersChange }: TransactionFilt
           >
             <option value="">All</option>
             <option value="draft">Draft</option>
-            <option value="posted">Posted</option>
-            <option value="voided">Voided</option>
+            <option value="picked_up">Picked Up</option>
+            <option value="submitted">Submitted</option>
+            <option value="paid">Paid</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
 
