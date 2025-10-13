@@ -336,15 +336,15 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         const isOrphaned = info.row.original.isOrphaned || false
         const colorMap: Record<string, string> = {
           draft: 'bg-gray-100 text-gray-800',
-          picked_up: 'bg-blue-100 text-blue-800',
+          picked_up: 'bg-yellow-100 text-yellow-800',
           submitted: 'bg-indigo-100 text-indigo-800',
           paid: 'bg-green-100 text-green-800',
           rejected: 'bg-red-100 text-red-800',
         }
         return (
           <div className="flex flex-col gap-1">
-            <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${colorMap[status] || colorMap.draft}`}>
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-medium ${colorMap[status] || colorMap.draft}`}>
+            {status.replace(/_/g, ' ').charAt(0).toUpperCase() + status.replace(/_/g, ' ').slice(1)}
           </span>
             {isOrphaned && (
               <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
@@ -840,14 +840,14 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                   <div>
                     <label className="text-sm font-medium text-gray-500">Status</label>
                     <div className="flex flex-col gap-2">
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
+                      <span className={`inline-flex items-center justify-center px-2 py-1 rounded-full text-xs font-medium ${
                         selectedTransaction.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                        selectedTransaction.status === 'picked_up' ? 'bg-blue-100 text-blue-800' :
+                        selectedTransaction.status === 'picked_up' ? 'bg-yellow-100 text-yellow-800' :
                         selectedTransaction.status === 'submitted' ? 'bg-indigo-100 text-indigo-800' :
                         selectedTransaction.status === 'paid' ? 'bg-green-100 text-green-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                        {selectedTransaction.status.charAt(0).toUpperCase() + selectedTransaction.status.slice(1)}
+                        {selectedTransaction.status.replace(/_/g, ' ').charAt(0).toUpperCase() + selectedTransaction.status.replace(/_/g, ' ').slice(1)}
                       </span>
                       {(selectedTransaction.isOrphaned || false) && (
                         <span className="inline-flex px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
