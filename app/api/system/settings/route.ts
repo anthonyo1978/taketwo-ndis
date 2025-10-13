@@ -65,21 +65,36 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const userId = await getCurrentUserId()
 
-    // Update or insert the setting
+    // Check if setting exists
     const { data: existingSetting } = await supabase
       .from('system_settings')
       .select('setting_value')
       .eq('setting_key', key)
       .single()
 
-    const { error } = await supabase
-      .from('system_settings')
-      .upsert({
-        setting_key: key,
-        setting_value: value,
-        updated_by: userId,
-        updated_at: new Date().toISOString()
-      })
+    let error
+    if (existingSetting) {
+      // Update existing setting
+      const result = await supabase
+        .from('system_settings')
+        .update({
+          setting_value: value,
+          updated_by: userId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('setting_key', key)
+      error = result.error
+    } else {
+      // Insert new setting
+      const result = await supabase
+        .from('system_settings')
+        .insert({
+          setting_key: key,
+          setting_value: value,
+          updated_by: userId
+        })
+      error = result.error
+    }
 
     if (error) {
       console.error('Error updating setting:', error)
