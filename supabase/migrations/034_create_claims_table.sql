@@ -2,7 +2,35 @@
 -- CREATE CLAIMS TABLE AND UPDATE TRANSACTIONS FOR CLAIMING MODULE
 -- ============================================================================
 
--- STEP 1: Create claims table first (so we can reference it)
+-- STEP 1: Update transactions table first (migrate status values)
+-- Drop old status check constraint
+ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_status_check;
+
+-- Update transaction status enum to support claiming workflow
+-- Old: draft, posted, voided
+-- New: draft, picked_up, submitted, paid, rejected
+ALTER TABLE transactions 
+  ALTER COLUMN status TYPE TEXT;
+
+-- Update existing transactions to use new status values FIRST
+-- Map old values to new values:
+-- 'posted' → 'paid' (already processed and paid)
+-- 'voided' → 'rejected' (cancelled/rejected)
+-- 'draft' → 'draft' (unchanged)
+UPDATE transactions
+SET status = CASE
+  WHEN status = 'posted' THEN 'paid'
+  WHEN status = 'voided' THEN 'rejected'
+  ELSE status
+END
+WHERE status IN ('posted', 'voided');
+
+-- NOW add new check constraint (after data is migrated)
+ALTER TABLE transactions
+  ADD CONSTRAINT transactions_status_check 
+  CHECK (status IN ('draft', 'picked_up', 'submitted', 'paid', 'rejected'));
+
+-- STEP 2: Create claims table (so we can reference it in foreign key)
 CREATE TABLE IF NOT EXISTS claims (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   claim_number TEXT NOT NULL UNIQUE,  -- Human-readable ID (CLM-0000001)
@@ -99,12 +127,6 @@ BEGIN
 END;
 $$;
 
--- Trigger to auto-update claim totals
-CREATE TRIGGER update_claim_totals_trigger
-  AFTER INSERT OR UPDATE OF claim_id, amount ON transactions
-  FOR EACH ROW
-  EXECUTE FUNCTION update_claim_totals();
-
 -- Enable RLS
 ALTER TABLE claims ENABLE ROW LEVEL SECURITY;
 
@@ -128,22 +150,8 @@ COMMENT ON COLUMN claims.total_amount IS 'Auto-calculated sum of all transaction
 COMMENT ON COLUMN claims.status IS 'Claim status: draft (created), submitted (sent to funder), paid (received), rejected (denied)';
 
 -- ============================================================================
--- STEP 2: Update transactions table for claiming
+-- STEP 3: Add claim_id to transactions (now that claims table exists)
 -- ============================================================================
-
--- Drop old status check constraint
-ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_status_check;
-
--- Update transaction status enum to support claiming workflow
--- Old: draft, posted, voided
--- New: draft, picked_up, submitted, paid, rejected
-ALTER TABLE transactions 
-  ALTER COLUMN status TYPE TEXT;
-
--- Add new check constraint with updated values
-ALTER TABLE transactions
-  ADD CONSTRAINT transactions_status_check 
-  CHECK (status IN ('draft', 'picked_up', 'submitted', 'paid', 'rejected'));
 
 -- Add claim_id field to link transactions to claims
 ALTER TABLE transactions
@@ -153,20 +161,16 @@ ALTER TABLE transactions
 CREATE INDEX IF NOT EXISTS idx_transactions_claim_id ON transactions(claim_id);
 CREATE INDEX IF NOT EXISTS idx_transactions_status ON transactions(status);
 
--- Update existing transactions to use new status values
--- Map old values to new values:
--- 'posted' → 'paid' (already processed and paid)
--- 'voided' → 'rejected' (cancelled/rejected)
--- 'draft' → 'draft' (unchanged)
-UPDATE transactions
-SET status = CASE
-  WHEN status = 'posted' THEN 'paid'
-  WHEN status = 'voided' THEN 'rejected'
-  ELSE status
-END
-WHERE status IN ('posted', 'voided');
-
 -- Add comments
 COMMENT ON COLUMN transactions.status IS 'Transaction claiming status: draft (eligible for claiming), picked_up (included in claim), submitted (claim sent), paid (payment received), rejected (claim denied)';
 COMMENT ON COLUMN transactions.claim_id IS 'Links transaction to a claim record if part of a bulk claim';
 
+-- ============================================================================
+-- STEP 4: Create trigger (now that claim_id exists)
+-- ============================================================================
+
+-- Trigger to auto-update claim totals when transactions change
+CREATE TRIGGER update_claim_totals_trigger
+  AFTER INSERT OR UPDATE OF claim_id, amount ON transactions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_claim_totals();

@@ -71,10 +71,11 @@ export async function GET(
     }
 
     // Format response
+    const user = (claim as any).users
     const formattedClaim = {
       id: claim.id,
       claimNumber: claim.claim_number,
-      createdBy: claim.users ? `${claim.users.first_name} ${claim.users.last_name}` : 'System',
+      createdBy: user ? `${user.first_name} ${user.last_name}` : 'System',
       createdAt: claim.created_at,
       filtersJson: claim.filters_json,
       transactionCount: claim.transaction_count,
