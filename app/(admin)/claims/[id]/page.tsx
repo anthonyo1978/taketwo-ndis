@@ -42,6 +42,9 @@ export default function ClaimDetailPage() {
   const [activeTab, setActiveTab] = useState<'transactions' | 'history'>('transactions')
   const [history, setHistory] = useState<{ logs: any[]; files: any[] } | null>(null)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [filesPage, setFilesPage] = useState(1)
+  const [logsPage, setLogsPage] = useState(1)
+  const pageSize = 10
 
   useEffect(() => {
     const fetchClaim = async () => {
@@ -118,6 +121,8 @@ export default function ClaimDetailPage() {
         // Refresh history if it's loaded
         if (history) {
           setHistory(null) // Clear to force reload
+          setFilesPage(1) // Reset pagination
+          setLogsPage(1)
           await fetchHistory()
         }
       } else {
@@ -366,36 +371,64 @@ export default function ClaimDetailPage() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Files</h3>
                     {history.files.length > 0 ? (
-                      <div className="space-y-2">
-                        {history.files.map((file: any, index: number) => (
-                          <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                            <div className="flex items-center space-x-3">
-                              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                              </svg>
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                                <p className="text-xs text-gray-500">
-                                  {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy h:mm a') : 'Unknown date'}
-                                </p>
-                              </div>
-                            </div>
-                            {file.downloadUrl && (
-                              <a
-                                href={file.downloadUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-                              >
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      <>
+                        <div className="space-y-2">
+                          {history.files
+                            .slice((filesPage - 1) * pageSize, filesPage * pageSize)
+                            .map((file: any, index: number) => (
+                            <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
+                              <div className="flex items-center space-x-3">
+                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                                 </svg>
-                                Download
-                              </a>
-                            )}
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy h:mm a') : 'Unknown date'}
+                                  </p>
+                                </div>
+                              </div>
+                              {file.downloadUrl && (
+                                <a
+                                  href={file.downloadUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+                                >
+                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                  </svg>
+                                  Download
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        {/* Files Pagination */}
+                        {history.files.length > pageSize && (
+                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                            <p className="text-sm text-gray-600">
+                              Showing {((filesPage - 1) * pageSize) + 1} to {Math.min(filesPage * pageSize, history.files.length)} of {history.files.length} files
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setFilesPage(p => Math.max(1, p - 1))}
+                                disabled={filesPage === 1}
+                                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                              >
+                                Previous
+                              </button>
+                              <button
+                                onClick={() => setFilesPage(p => Math.min(Math.ceil(history.files.length / pageSize), p + 1))}
+                                disabled={filesPage >= Math.ceil(history.files.length / pageSize)}
+                                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                              >
+                                Next
+                              </button>
+                            </div>
                           </div>
-                        ))}
-                      </div>
+                        )}
+                      </>
                     ) : (
                       <p className="text-sm text-gray-500">No files exported yet</p>
                     )}
@@ -405,30 +438,58 @@ export default function ClaimDetailPage() {
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Logs</h3>
                     {history.logs.length > 0 ? (
-                      <div className="space-y-2">
-                        {history.logs.map((log: any) => (
-                          <div key={log.id} className="p-4 border border-gray-200 rounded-lg">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">
-                                  {log.action === 'create' && 'Claim Created'}
-                                  {log.action === 'update' && log.details?.action === 'claim_file_generated' ? 'File Generated' : 'Claim Updated'}
-                                  {log.action === 'delete' && 'Claim Deleted'}
-                                </p>
-                                {log.details && (
-                                  <p className="text-xs text-gray-600 mt-1">
-                                    {log.details.action === 'claim_file_generated' && `${log.details.filename} - ${log.details.transactionCount} transactions`}
-                                    {log.details.claimNumber && !log.details.filename && `Claim: ${log.details.claimNumber}`}
+                      <>
+                        <div className="space-y-2">
+                          {history.logs
+                            .slice((logsPage - 1) * pageSize, logsPage * pageSize)
+                            .map((log: any) => (
+                            <div key={log.id} className="p-4 border border-gray-200 rounded-lg">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <p className="text-sm font-medium text-gray-900">
+                                    {log.action === 'create' && 'Claim Created'}
+                                    {log.action === 'update' && log.details?.action === 'claim_file_generated' ? 'File Generated' : 'Claim Updated'}
+                                    {log.action === 'delete' && 'Claim Deleted'}
                                   </p>
-                                )}
+                                  {log.details && (
+                                    <p className="text-xs text-gray-600 mt-1">
+                                      {log.details.action === 'claim_file_generated' && `${log.details.filename} - ${log.details.transactionCount} transactions`}
+                                      {log.details.claimNumber && !log.details.filename && `Claim: ${log.details.claimNumber}`}
+                                    </p>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                  {format(new Date(log.createdAt), 'MMM d, yyyy h:mm a')}
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-500">
-                                {format(new Date(log.createdAt), 'MMM d, yyyy h:mm a')}
-                              </p>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Logs Pagination */}
+                        {history.logs.length > pageSize && (
+                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                            <p className="text-sm text-gray-600">
+                              Showing {((logsPage - 1) * pageSize) + 1} to {Math.min(logsPage * pageSize, history.logs.length)} of {history.logs.length} logs
+                            </p>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => setLogsPage(p => Math.max(1, p - 1))}
+                                disabled={logsPage === 1}
+                                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                              >
+                                Previous
+                              </button>
+                              <button
+                                onClick={() => setLogsPage(p => Math.min(Math.ceil(history.logs.length / pageSize), p + 1))}
+                                disabled={logsPage >= Math.ceil(history.logs.length / pageSize)}
+                                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                              >
+                                Next
+                              </button>
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        )}
+                      </>
                     ) : (
                       <p className="text-sm text-gray-500">No activity recorded</p>
                     )}
