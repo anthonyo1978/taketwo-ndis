@@ -40,12 +40,18 @@ export default function ClaimDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [activeTab, setActiveTab] = useState<'transactions' | 'history'>('transactions')
-  const [history, setHistory] = useState<{ logs: any[]; files: any[] } | null>(null)
+  const [history, setHistory] = useState<{ logs: any[]; files: any[]; reconciliations: any[] } | null>(null)
   const [isLoadingHistory, setIsLoadingHistory] = useState(false)
   const [filesPage, setFilesPage] = useState(1)
   const [logsPage, setLogsPage] = useState(1)
   const pageSize = 10
   const [showApiWarningModal, setShowApiWarningModal] = useState(false)
+  const [showUploadModal, setShowUploadModal] = useState(false)
+  const [showSummaryModal, setShowSummaryModal] = useState(false)
+  const [uploadResults, setUploadResults] = useState<any>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     const fetchClaim = async () => {
@@ -73,8 +79,10 @@ export default function ClaimDetailPage() {
     const styles: Record<string, string> = {
       draft: 'bg-gray-100 text-gray-800 border-gray-200',
       in_progress: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+      processed: 'bg-purple-100 text-purple-800 border-purple-200',
       submitted: 'bg-blue-100 text-blue-800 border-blue-200',
       paid: 'bg-green-100 text-green-800 border-green-200',
+      partially_paid: 'bg-orange-100 text-orange-800 border-orange-200',
       rejected: 'bg-red-100 text-red-800 border-red-200'
     }
     return styles[status] || styles.draft
@@ -98,6 +106,79 @@ export default function ClaimDetailPage() {
       toast.error('Failed to load claim history')
     } finally {
       setIsLoadingHistory(false)
+    }
+  }
+
+  const handleFileSelect = (file: File) => {
+    if (file.name.endsWith('.csv')) {
+      setSelectedFile(file)
+    } else {
+      toast.error('Only CSV files are supported')
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const file = e.dataTransfer.files[0]
+    if (file) {
+      handleFileSelect(file)
+    }
+  }
+
+  const handleUploadResponse = async () => {
+    if (!selectedFile) {
+      toast.error('Please select a file')
+      return
+    }
+
+    try {
+      setIsUploading(true)
+      const formData = new FormData()
+      formData.append('file', selectedFile)
+
+      const response = await fetch(`/api/claims/${claimId}/upload-response`, {
+        method: 'POST',
+        body: formData
+      })
+      const result = await response.json() as { success: boolean; data?: any; message?: string; error?: string }
+
+      if (result.success && result.data) {
+        setUploadResults(result.data)
+        setShowUploadModal(false)
+        setShowSummaryModal(true)
+        setSelectedFile(null)
+        
+        // Refresh claim data
+        const refreshResponse = await fetch(`/api/claims/${claimId}`)
+        const refreshResult = await refreshResponse.json() as { success: boolean; data?: ClaimDetail }
+        if (refreshResult.success && refreshResult.data) {
+          setClaim(refreshResult.data)
+        }
+        
+        // Refresh history if loaded
+        if (history) {
+          setHistory(null)
+          await fetchHistory()
+        }
+      } else {
+        toast.error(result.error || 'Failed to process response file')
+      }
+    } catch (error) {
+      console.error('Error uploading response:', error)
+      toast.error('Failed to upload response file')
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -223,6 +304,15 @@ export default function ClaimDetailPage() {
                     Create Claim File
                   </>
                 )}
+              </button>
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="inline-flex items-center px-3 py-1 border border-green-600 text-sm text-green-600 rounded-full hover:bg-green-50 transition-colors font-medium"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+                Upload Response
               </button>
               <button
                 onClick={() => setShowApiWarningModal(true)}
@@ -355,7 +445,8 @@ export default function ClaimDetailPage() {
                         tx.status === 'picked_up' ? 'bg-yellow-100 text-yellow-800' :
                         tx.status === 'submitted' ? 'bg-indigo-100 text-indigo-800' :
                         tx.status === 'paid' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
+                        tx.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-orange-100 text-orange-800'
                       } capitalize`}>
                         {tx.status.replace(/_/g, ' ')}
                       </span>
@@ -504,11 +595,213 @@ export default function ClaimDetailPage() {
                       <p className="text-sm text-gray-500">No activity recorded</p>
                     )}
                   </div>
+
+                  {/* Reconciliations Section */}
+                  {history.reconciliations && history.reconciliations.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Response Uploads</h3>
+                      <div className="space-y-3">
+                        {history.reconciliations.map((recon: any) => (
+                          <div key={recon.id} className="border border-gray-200 rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <p className="text-sm font-medium text-gray-900">{recon.fileName}</p>
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Uploaded by {recon.uploadedBy} • {format(new Date(recon.createdAt), 'MMM d, yyyy h:mm a')}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-4 gap-3">
+                              <div className="text-center">
+                                <p className="text-lg font-semibold text-gray-900">{recon.totalProcessed}</p>
+                                <p className="text-xs text-gray-600">Processed</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-lg font-semibold text-green-700">{recon.totalPaid}</p>
+                                <p className="text-xs text-green-600">Paid</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-lg font-semibold text-red-700">{recon.totalRejected}</p>
+                                <p className="text-xs text-red-600">Rejected</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-lg font-semibold text-orange-700">{recon.totalErrors}</p>
+                                <p className="text-xs text-orange-600">Errors</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : null}
             </div>
           )}
         </div>
+
+        {/* Upload Response Modal */}
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+              <div className="p-6">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
+                  Upload Claim Response
+                </h3>
+                
+                {/* Drag and Drop Area */}
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                    isDragging 
+                      ? 'border-blue-500 bg-blue-50' 
+                      : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {selectedFile ? (
+                    <div className="space-y-3">
+                      <svg className="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+                      <p className="text-xs text-gray-500">{(selectedFile.size / 1024).toFixed(2)} KB</p>
+                      <button
+                        onClick={() => setSelectedFile(null)}
+                        className="text-sm text-red-600 hover:text-red-800"
+                      >
+                        Remove file
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                        <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      <div className="mt-4">
+                        <label htmlFor="file-upload" className="cursor-pointer">
+                          <span className="text-blue-600 hover:text-blue-700 font-medium">
+                            Click to upload
+                          </span>
+                          <span className="text-gray-600"> or drag and drop</span>
+                          <input
+                            id="file-upload"
+                            type="file"
+                            accept=".csv"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0]
+                              if (file) handleFileSelect(file)
+                            }}
+                            className="sr-only"
+                          />
+                        </label>
+                        <p className="text-xs text-gray-500 mt-1">CSV files only</p>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    onClick={() => {
+                      setShowUploadModal(false)
+                      setSelectedFile(null)
+                    }}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUploadResponse}
+                    disabled={!selectedFile || isUploading}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isUploading ? (
+                      <>
+                        <svg className="animate-spin inline-block -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processing...
+                      </>
+                    ) : (
+                      'Upload & Process'
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Processing Summary Modal */}
+        {showSummaryModal && uploadResults && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+              <div className="p-6">
+                <div className="flex items-start mb-4">
+                  <div className="flex-shrink-0">
+                    <svg className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Response File Processed
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Claim status updated to: <span className="font-medium capitalize">{uploadResults.claimStatus?.replace(/_/g, ' ')}</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Summary Stats */}
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-green-700">{uploadResults.results?.totalPaid || 0}</p>
+                    <p className="text-xs text-green-600 mt-1">Paid</p>
+                  </div>
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-red-700">{uploadResults.results?.totalRejected || 0}</p>
+                    <p className="text-xs text-red-600 mt-1">Rejected</p>
+                  </div>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold text-yellow-700">{uploadResults.results?.totalErrors || 0}</p>
+                    <p className="text-xs text-yellow-600 mt-1">Errors</p>
+                  </div>
+                </div>
+
+                {/* Warnings */}
+                {(uploadResults.results?.amountMismatches?.length > 0 || uploadResults.results?.totalUnmatched > 0) && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                    <h4 className="text-sm font-medium text-yellow-800 mb-2">Warnings</h4>
+                    <ul className="text-xs text-yellow-700 space-y-1">
+                      {uploadResults.results.totalUnmatched > 0 && (
+                        <li>• {uploadResults.results.totalUnmatched} transaction(s) in response file could not be matched</li>
+                      )}
+                      {uploadResults.results.amountMismatches?.length > 0 && (
+                        <li>• {uploadResults.results.amountMismatches.length} transaction(s) have amount mismatches (check transaction notes)</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => {
+                      setShowSummaryModal(false)
+                      setUploadResults(null)
+                    }}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* API Warning Modal */}
         {showApiWarningModal && (

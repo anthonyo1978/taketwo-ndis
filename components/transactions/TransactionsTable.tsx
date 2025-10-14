@@ -341,6 +341,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
           submitted: 'bg-indigo-100 text-indigo-800',
           paid: 'bg-green-100 text-green-800',
           rejected: 'bg-red-100 text-red-800',
+          error: 'bg-orange-100 text-orange-800',
         }
         return (
           <div className="flex flex-col gap-1">
@@ -846,7 +847,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
                         selectedTransaction.status === 'picked_up' ? 'bg-yellow-100 text-yellow-800' :
                         selectedTransaction.status === 'submitted' ? 'bg-indigo-100 text-indigo-800' :
                         selectedTransaction.status === 'paid' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
+                        selectedTransaction.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                        'bg-orange-100 text-orange-800'
                       }`}>
                         {selectedTransaction.status.replace(/_/g, ' ').charAt(0).toUpperCase() + selectedTransaction.status.replace(/_/g, ' ').slice(1)}
                       </span>

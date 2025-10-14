@@ -1,5 +1,5 @@
 /** Status options for transactions. */
-export type TransactionStatus = 'draft' | 'picked_up' | 'submitted' | 'paid' | 'rejected'
+export type TransactionStatus = 'draft' | 'picked_up' | 'submitted' | 'paid' | 'rejected' | 'error'
 
 /** Drawing Down specific status for NDIS compliance. */
 export type DrawdownStatus = 'pending' | 'validated' | 'posted' | 'rejected' | 'voided'

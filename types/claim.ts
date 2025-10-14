@@ -1,5 +1,5 @@
 /** Status options for claims. */
-export type ClaimStatus = 'draft' | 'in_progress' | 'submitted' | 'paid' | 'rejected'
+export type ClaimStatus = 'draft' | 'in_progress' | 'processed' | 'submitted' | 'paid' | 'rejected' | 'partially_paid'
 
 /**
  * Claim record for bulk transaction claiming
@@ -43,5 +43,40 @@ export interface ClaimWithTransactions extends Claim {
     serviceCode?: string
     note?: string
   }>
+}
+
+/**
+ * Claim reconciliation record for response file uploads
+ */
+export interface ClaimReconciliation {
+  id: string
+  claimId: string
+  uploadedBy: string
+  fileName: string
+  filePath?: string
+  resultsJson: {
+    totalProcessed: number
+    totalPaid: number
+    totalRejected: number
+    totalErrors: number
+    totalUnmatched: number
+    amountMismatches?: Array<{
+      transactionId: string
+      expectedAmount: number
+      responseAmount: number
+    }>
+    unmatchedIds?: string[]
+    errors?: Array<{
+      transactionId: string
+      error: string
+    }>
+  }
+  totalProcessed: number
+  totalPaid: number
+  totalRejected: number
+  totalErrors: number
+  totalUnmatched: number
+  createdAt: Date
+  updatedAt: Date
 }
 

@@ -47,6 +47,23 @@ export async function GET(
       console.error('Error fetching logs:', logsError)
     }
 
+    // Fetch reconciliations (response uploads) for this claim
+    const { data: reconciliations, error: reconError } = await supabase
+      .from('claim_reconciliations')
+      .select(`
+        *,
+        users!claim_reconciliations_uploaded_by_fkey (
+          first_name,
+          last_name
+        )
+      `)
+      .eq('claim_id', claimId)
+      .order('created_at', { ascending: false })
+
+    if (reconError) {
+      console.error('Error fetching reconciliations:', reconError)
+    }
+
     // Fetch all files from storage for this claim
     const folderPath = `exports/claims/${claim.claim_number}/`
     const { data: files, error: filesError } = await supabaseService
@@ -90,11 +107,27 @@ export async function GET(
       userAgent: log.user_agent
     }))
 
+    // Format reconciliations
+    const formattedReconciliations = (reconciliations || []).map((recon: any) => ({
+      id: recon.id,
+      fileName: recon.file_name,
+      filePath: recon.file_path,
+      uploadedBy: recon.users ? `${recon.users.first_name} ${recon.users.last_name}` : 'Unknown',
+      totalProcessed: recon.total_processed,
+      totalPaid: recon.total_paid,
+      totalRejected: recon.total_rejected,
+      totalErrors: recon.total_errors,
+      totalUnmatched: recon.total_unmatched,
+      resultsJson: recon.results_json,
+      createdAt: recon.created_at
+    }))
+
     return NextResponse.json({
       success: true,
       data: {
         logs: formattedLogs,
-        files: filesWithUrls
+        files: filesWithUrls,
+        reconciliations: formattedReconciliations
       }
     })
 

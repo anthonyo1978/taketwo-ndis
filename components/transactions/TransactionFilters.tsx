@@ -96,6 +96,7 @@ export function TransactionFilters({ filters, onFiltersChange }: TransactionFilt
             <option value="submitted">Submitted</option>
             <option value="paid">Paid</option>
             <option value="rejected">Rejected</option>
+            <option value="error">Error</option>
           </select>
         </div>
 
