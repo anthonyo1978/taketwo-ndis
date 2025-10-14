@@ -540,31 +540,45 @@ export default function ClaimDetailPage() {
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Logs</h3>
                     {history.logs.length > 0 ? (
                       <>
-                        <div className="space-y-2">
+                        <div className="bg-gray-50 rounded-lg p-4 font-mono text-xs space-y-1">
                           {history.logs
                             .slice((logsPage - 1) * pageSize, logsPage * pageSize)
-                            .map((log: any) => (
-                            <div key={log.id} className="p-4 border border-gray-200 rounded-lg">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">
-                                    {log.action === 'create' && 'Claim Created'}
-                                    {log.action === 'update' && log.details?.action === 'claim_file_generated' ? 'File Generated' : 'Claim Updated'}
-                                    {log.action === 'delete' && 'Claim Deleted'}
-                                  </p>
-                                  {log.details && (
-                                    <p className="text-xs text-gray-600 mt-1">
-                                      {log.details.action === 'claim_file_generated' && `${log.details.filename} - ${log.details.transactionCount} transactions`}
-                                      {log.details.claimNumber && !log.details.filename && `Claim: ${log.details.claimNumber}`}
-                                    </p>
-                                  )}
+                            .map((log: any) => {
+                              let logMessage = ''
+                              if (log.action === 'create') {
+                                logMessage = `Claim Created`
+                                if (log.details?.claimNumber) {
+                                  logMessage += ` (${log.details.claimNumber})`
+                                }
+                              } else if (log.action === 'update') {
+                                if (log.details?.action === 'claim_file_generated') {
+                                  logMessage = `File Generated: ${log.details.filename || 'claim file'}`
+                                  if (log.details.transactionCount) {
+                                    logMessage += ` (${log.details.transactionCount} transactions)`
+                                  }
+                                } else if (log.details?.action === 'claim_response_uploaded') {
+                                  const r = log.details.results
+                                  logMessage = `Response Uploaded: ${log.details.fileName || 'response file'}`
+                                  if (r) {
+                                    logMessage += ` (${r.totalPaid || 0} paid, ${r.totalRejected || 0} rejected, ${r.totalErrors || 0} errors)`
+                                  }
+                                } else {
+                                  logMessage = 'Claim Updated'
+                                }
+                              } else if (log.action === 'delete') {
+                                logMessage = 'Claim Deleted'
+                              } else {
+                                logMessage = log.action
+                              }
+
+                              return (
+                                <div key={log.id} className="text-gray-700">
+                                  <span className="text-gray-500">{format(new Date(log.createdAt), 'MMM d, yyyy h:mm a')}</span>
+                                  <span className="text-gray-400 mx-2">-</span>
+                                  <span>{logMessage}</span>
                                 </div>
-                                <p className="text-xs text-gray-500">
-                                  {format(new Date(log.createdAt), 'MMM d, yyyy h:mm a')}
-                                </p>
-                              </div>
-                            </div>
-                          ))}
+                              )
+                            })}
                         </div>
                         {/* Logs Pagination */}
                         {history.logs.length > pageSize && (
