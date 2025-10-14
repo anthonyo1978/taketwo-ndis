@@ -16,6 +16,13 @@ export async function POST(
     const supabase = await createClient()
     const userId = await getCurrentUserId()
     const metadata = getRequestMetadata(request)
+    
+    // Create service role client for storage operations (bypasses RLS)
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js')
+    const supabaseService = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
     if (!userId) {
       return NextResponse.json(
@@ -116,8 +123,8 @@ export async function POST(
     const filename = `HAVEN-CLAIM-${claim.claim_number}-${timestamp}.csv`
     const filePath = `exports/claims/${claim.claim_number}/${filename}`
 
-    // Upload to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabase
+    // Upload to Supabase Storage using service role (bypasses RLS)
+    const { data: uploadData, error: uploadError } = await supabaseService
       .storage
       .from('claim-exports')
       .upload(filePath, csvContent, {
@@ -157,8 +164,8 @@ export async function POST(
       )
     }
 
-    // Generate signed URL for download (valid for 15 minutes)
-    const { data: signedUrlData, error: signedUrlError } = await supabase
+    // Generate signed URL for download (valid for 15 minutes) using service role
+    const { data: signedUrlData, error: signedUrlError } = await supabaseService
       .storage
       .from('claim-exports')
       .createSignedUrl(uploadedPath, 900) // 900 seconds = 15 minutes
