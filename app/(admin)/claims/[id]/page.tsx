@@ -45,6 +45,7 @@ export default function ClaimDetailPage() {
   const [filesPage, setFilesPage] = useState(1)
   const [logsPage, setLogsPage] = useState(1)
   const pageSize = 10
+  const [showApiWarningModal, setShowApiWarningModal] = useState(false)
 
   useEffect(() => {
     const fetchClaim = async () => {
@@ -222,6 +223,15 @@ export default function ClaimDetailPage() {
                     Create Claim File
                   </>
                 )}
+              </button>
+              <button
+                onClick={() => setShowApiWarningModal(true)}
+                className="inline-flex items-center px-3 py-1 border border-purple-600 text-sm text-purple-600 rounded-full hover:bg-purple-50 transition-colors font-medium"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Auto Claim
               </button>
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadge(claim.status)} capitalize`}>
                 {claim.status.replace(/_/g, ' ')}
@@ -499,6 +509,39 @@ export default function ClaimDetailPage() {
             </div>
           )}
         </div>
+
+        {/* API Warning Modal */}
+        {showApiWarningModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+              <div className="p-6">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      API Integration Not Enabled
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-600">
+                      NDIA API settings not enabled, please contact your Administrator to enable this automation.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={() => setShowApiWarningModal(false)}
+                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
