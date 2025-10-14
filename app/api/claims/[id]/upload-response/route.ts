@@ -117,7 +117,7 @@ export async function POST(
     const transactionUpdates: Array<{ id: string; status: string; note?: string }> = []
 
     for (let i = 1; i < lines.length; i++) {
-      const row = lines[i].split(',').map(cell => cell.trim().replace(/^"|"$/g, ''))
+      const row = lines[i]!.split(',').map(cell => cell.trim().replace(/^"|"$/g, ''))
       const transactionId = row[txIdIndex]
       const responseStatus = row[statusIndex]?.toLowerCase()
       const responseAmount = amountIndex !== -1 ? parseFloat(row[amountIndex]) : null
