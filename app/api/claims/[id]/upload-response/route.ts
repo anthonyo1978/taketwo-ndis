@@ -120,7 +120,7 @@ export async function POST(
       const row = lines[i]!.split(',').map(cell => cell.trim().replace(/^"|"$/g, ''))
       const transactionId = row[txIdIndex]
       const responseStatus = row[statusIndex]?.toLowerCase()
-      const responseAmount = amountIndex !== -1 ? parseFloat(row[amountIndex]) : null
+      const responseAmount = amountIndex !== -1 && row[amountIndex] ? parseFloat(row[amountIndex]) : null
 
       if (!transactionId) continue
 
