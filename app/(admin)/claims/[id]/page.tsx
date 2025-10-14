@@ -498,70 +498,124 @@ export default function ClaimDetailPage() {
                 </div>
               ) : history ? (
                 <>
-                  {/* Files Section */}
+                  {/* Files Section - Grouped by Type */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">Files</h3>
                     {history.files.length > 0 ? (
-                      <>
-                        <div className="space-y-2">
-                          {history.files
-                            .slice((filesPage - 1) * pageSize, filesPage * pageSize)
-                            .map((file: any, index: number) => (
-                            <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50">
-                              <div className="flex items-center space-x-3">
-                                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                                <div>
-                                  <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy h:mm a') : 'Unknown date'}
-                                  </p>
-                                </div>
+                      <div className="space-y-6">
+                        {/* Claim Exports */}
+                        {(() => {
+                          const claimExports = history.files.filter((f: any) => f.name.startsWith('HAVEN-CLAIM-'))
+                          return claimExports.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-medium text-blue-700 mb-2">Claim Exports ({claimExports.length})</h4>
+                              <div className="space-y-1 pl-4 border-l-2 border-blue-200">
+                                {claimExports.map((file: any, index: number) => (
+                                  <div key={index} className="flex items-center justify-between py-2">
+                                    <div className="flex items-center space-x-3">
+                                      <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                      </svg>
+                                      <div>
+                                        <p className="text-sm text-gray-900">{file.name}</p>
+                                        <p className="text-xs text-gray-500">
+                                          {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy h:mm a') : 'Unknown date'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {file.downloadUrl && (
+                                      <a
+                                        href={file.downloadUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-blue-600 hover:text-blue-800"
+                                      >
+                                        Download →
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
-                              {file.downloadUrl && (
-                                <a
-                                  href={file.downloadUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center px-3 py-1 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                  </svg>
-                                  Download
-                                </a>
-                              )}
                             </div>
-                          ))}
-                        </div>
-                        {/* Files Pagination */}
-                        {history.files.length > pageSize && (
-                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                            <p className="text-sm text-gray-600">
-                              Showing {((filesPage - 1) * pageSize) + 1} to {Math.min(filesPage * pageSize, history.files.length)} of {history.files.length} files
-                            </p>
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => setFilesPage(p => Math.max(1, p - 1))}
-                                disabled={filesPage === 1}
-                                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                              >
-                                Previous
-                              </button>
-                              <button
-                                onClick={() => setFilesPage(p => Math.min(Math.ceil(history.files.length / pageSize), p + 1))}
-                                disabled={filesPage >= Math.ceil(history.files.length / pageSize)}
-                                className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                              >
-                                Next
-                              </button>
+                          )
+                        })()}
+
+                        {/* Response Files */}
+                        {(() => {
+                          const responseFiles = history.files.filter((f: any) => f.name.startsWith('RESPONSE-') && !f.name.startsWith('ERRORS-'))
+                          return responseFiles.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-medium text-green-700 mb-2">Response Files ({responseFiles.length})</h4>
+                              <div className="space-y-1 pl-4 border-l-2 border-green-200">
+                                {responseFiles.map((file: any, index: number) => (
+                                  <div key={index} className="flex items-center justify-between py-2">
+                                    <div className="flex items-center space-x-3">
+                                      <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                      </svg>
+                                      <div>
+                                        <p className="text-sm text-gray-900">{file.name}</p>
+                                        <p className="text-xs text-gray-500">
+                                          {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy h:mm a') : 'Unknown date'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {file.downloadUrl && (
+                                      <a
+                                        href={file.downloadUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-green-600 hover:text-green-800"
+                                      >
+                                        Download →
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                      </>
+                          )
+                        })()}
+
+                        {/* Error Reports */}
+                        {(() => {
+                          const errorFiles = history.files.filter((f: any) => f.name.startsWith('ERRORS-'))
+                          return errorFiles.length > 0 && (
+                            <div>
+                              <h4 className="text-sm font-medium text-orange-700 mb-2">Error Reports ({errorFiles.length})</h4>
+                              <div className="space-y-1 pl-4 border-l-2 border-orange-200">
+                                {errorFiles.map((file: any, index: number) => (
+                                  <div key={index} className="flex items-center justify-between py-2">
+                                    <div className="flex items-center space-x-3">
+                                      <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                      </svg>
+                                      <div>
+                                        <p className="text-sm text-gray-900">{file.name}</p>
+                                        <p className="text-xs text-gray-500">
+                                          {file.createdAt ? format(new Date(file.createdAt), 'MMM d, yyyy h:mm a') : 'Unknown date'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {file.downloadUrl && (
+                                      <a
+                                        href={file.downloadUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-orange-600 hover:text-orange-800"
+                                      >
+                                        Download →
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </div>
                     ) : (
-                      <p className="text-sm text-gray-500">No files exported yet</p>
+                      <p className="text-sm text-gray-500">No files yet</p>
                     )}
                   </div>
 
@@ -639,45 +693,6 @@ export default function ClaimDetailPage() {
                       <p className="text-sm text-gray-500">No activity recorded</p>
                     )}
                   </div>
-
-                  {/* Reconciliations Section */}
-                  {history.reconciliations && history.reconciliations.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-4">Response Uploads</h3>
-                      <div className="space-y-3">
-                        {history.reconciliations.map((recon: any) => (
-                          <div key={recon.id} className="border border-gray-200 rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-3">
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{recon.fileName}</p>
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Uploaded by {recon.uploadedBy} • {format(new Date(recon.createdAt), 'MMM d, yyyy h:mm a')}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-4 gap-3">
-                              <div className="text-center">
-                                <p className="text-lg font-semibold text-gray-900">{recon.totalProcessed}</p>
-                                <p className="text-xs text-gray-600">Processed</p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-lg font-semibold text-green-700">{recon.totalPaid}</p>
-                                <p className="text-xs text-green-600">Paid</p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-lg font-semibold text-red-700">{recon.totalRejected}</p>
-                                <p className="text-xs text-red-600">Rejected</p>
-                              </div>
-                              <div className="text-center">
-                                <p className="text-lg font-semibold text-orange-700">{recon.totalErrors}</p>
-                                <p className="text-xs text-orange-600">Errors</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </>
               ) : null}
             </div>
