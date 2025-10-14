@@ -146,7 +146,15 @@ export async function POST(
 
       // Map response status to our status
       let newStatus: string
-      if (['success', 'approved', 'paid'].includes(responseStatus)) {
+      if (!responseStatus) {
+        // Missing status - mark as error
+        newStatus = 'error'
+        results.totalErrors++
+        results.errors.push({
+          transactionId,
+          error: 'Missing status in response file'
+        })
+      } else if (['success', 'approved', 'paid'].includes(responseStatus)) {
         newStatus = 'paid'
         results.totalPaid++
       } else if (['rejected', 'denied'].includes(responseStatus)) {
