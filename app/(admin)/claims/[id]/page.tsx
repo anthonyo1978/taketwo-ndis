@@ -94,7 +94,7 @@ export default function ClaimDetailPage() {
     try {
       setIsLoadingHistory(true)
       const response = await fetch(`/api/claims/${claimId}/history`)
-      const result = await response.json() as { success: boolean; data?: { logs: any[]; files: any[] }; error?: string }
+      const result = await response.json() as { success: boolean; data?: { logs: any[]; files: any[]; reconciliations: any[] }; error?: string }
 
       if (result.success && result.data) {
         setHistory(result.data)
