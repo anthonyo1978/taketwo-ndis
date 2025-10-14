@@ -279,7 +279,7 @@ export default function ClaimDetailPage() {
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                 }`}
               >
-                Claim History
+                Claim Logs and Files
               </button>
             </nav>
           </div>
@@ -362,9 +362,9 @@ export default function ClaimDetailPage() {
                 </div>
               ) : history ? (
                 <>
-                  {/* Exported Files Section */}
+                  {/* Files Section */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Exported Files</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Files</h3>
                     {history.files.length > 0 ? (
                       <div className="space-y-2">
                         {history.files.map((file: any, index: number) => (
@@ -401,9 +401,9 @@ export default function ClaimDetailPage() {
                     )}
                   </div>
 
-                  {/* Activity Log Section */}
+                  {/* Logs Section */}
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Activity Log</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Logs</h3>
                     {history.logs.length > 0 ? (
                       <div className="space-y-2">
                         {history.logs.map((log: any) => (
