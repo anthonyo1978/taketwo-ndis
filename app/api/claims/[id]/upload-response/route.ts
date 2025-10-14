@@ -82,7 +82,7 @@ export async function POST(
     const fileContent = await file.text()
     const lines = fileContent.split('\n').filter(line => line.trim())
     
-    if (lines.length < 2) {
+    if (lines.length < 2 || !lines[0]) {
       return NextResponse.json(
         { success: false, error: 'CSV file is empty or invalid' },
         { status: 400 }
@@ -90,7 +90,7 @@ export async function POST(
     }
 
     // Parse header and rows
-    const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
+    const headers = lines[0]!.split(',').map(h => h.trim().toLowerCase())
     const txIdIndex = headers.findIndex(h => h.includes('transaction') && h.includes('id'))
     const statusIndex = headers.findIndex(h => h === 'status')
     const amountIndex = headers.findIndex(h => h === 'amount')
