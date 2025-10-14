@@ -9,6 +9,11 @@ ON CONFLICT (id) DO NOTHING;
 -- Enable RLS on the bucket
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (to allow re-running migration)
+DROP POLICY IF EXISTS "Allow authenticated users to upload claim exports" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated users to read claim exports" ON storage.objects;
+DROP POLICY IF EXISTS "Allow service role full access to claim exports" ON storage.objects;
+
 -- Policy: Allow authenticated users to upload files
 CREATE POLICY "Allow authenticated users to upload claim exports"
 ON storage.objects
