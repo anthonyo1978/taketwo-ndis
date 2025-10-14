@@ -176,9 +176,10 @@ export async function POST(
       // Add note if amount mismatch
       let updatedNote = matchedTx.note || ''
       if (responseAmount !== null && Math.abs(parseFloat(matchedTx.amount as any) - responseAmount) > 0.01) {
+        const warningMessage = `[Warning: Amount mismatch detected - Expected $${matchedTx.amount} but response file shows $${responseAmount}]`
         updatedNote = updatedNote 
-          ? `${updatedNote}\n[Warning: Amount mismatch - Expected: $${matchedTx.amount}, Response: $${responseAmount}]`
-          : `[Warning: Amount mismatch - Expected: $${matchedTx.amount}, Response: $${responseAmount}]`
+          ? `${updatedNote}\n${warningMessage}`
+          : warningMessage
       }
 
       transactionUpdates.push({
@@ -192,9 +193,10 @@ export async function POST(
     for (const tx of claimTransactions) {
       if (!transactionUpdates.find(update => update.id === tx.id)) {
         // This transaction wasn't in the response file
+        const errorMessage = `[Error: Transaction could not be matched between files - System could not match records]`
         const updatedNote = tx.note 
-          ? `${tx.note}\n[Error: Unmatched during upload - not found in response file]`
-          : '[Error: Unmatched during upload - not found in response file]'
+          ? `${tx.note}\n${errorMessage}`
+          : errorMessage
         
         transactionUpdates.push({
           id: tx.id,
@@ -202,6 +204,10 @@ export async function POST(
           note: updatedNote
         })
         results.totalErrors++
+        results.errors.push({
+          transactionId: tx.id,
+          error: 'Transaction not found in response file'
+        })
       }
     }
 
@@ -293,6 +299,71 @@ export async function POST(
 
     if (reconError) {
       console.error('Error creating reconciliation record:', reconError)
+    }
+
+    // Generate error CSV if there are any errors
+    if (results.totalErrors > 0 || results.totalUnmatched > 0 || results.amountMismatches.length > 0) {
+      const errorCsvHeader = 'Transaction ID,Error Type,Error Message,Expected Amount,Response Amount\n'
+      const errorRows: string[] = []
+
+      // Add unmatched transactions from response file
+      for (const unmatchedId of results.unmatchedIds) {
+        errorRows.push([
+          unmatchedId,
+          'Unmatched',
+          'Transaction ID in response file does not match any transaction in this claim',
+          '-',
+          '-'
+        ].join(','))
+      }
+
+      // Add amount mismatches
+      for (const mismatch of results.amountMismatches) {
+        errorRows.push([
+          mismatch.transactionId,
+          'Amount Mismatch',
+          'Transaction amount in response file does not match expected amount in Haven',
+          mismatch.expectedAmount.toString(),
+          mismatch.responseAmount.toString()
+        ].join(','))
+      }
+
+      // Add other errors
+      for (const error of results.errors) {
+        errorRows.push([
+          error.transactionId,
+          'Processing Error',
+          `"${error.error.replace(/"/g, '""')}"`,
+          '-',
+          '-'
+        ].join(','))
+      }
+
+      // Add transactions not found in response file
+      for (const tx of claimTransactions) {
+        if (!transactionUpdates.find(update => update.id === tx.id)) {
+          errorRows.push([
+            tx.id,
+            'Missing from Response',
+            'Transaction exists in claim but was not found in the response file',
+            parseFloat(tx.amount as any).toString(),
+            '-'
+          ].join(','))
+        }
+      }
+
+      const errorCsvContent = errorCsvHeader + errorRows.join('\n')
+      const errorFileName = `ERRORS-${storedFileName}`
+      const errorPath = `exports/claims/${claim.claim_number}/responses/${errorFileName}`
+
+      // Upload error file to storage
+      await supabaseService
+        .storage
+        .from('claim-exports')
+        .upload(errorPath, errorCsvContent, {
+          contentType: 'text/csv',
+          upsert: false
+        })
     }
 
     // Log the action
