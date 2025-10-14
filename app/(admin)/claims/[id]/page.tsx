@@ -306,7 +306,7 @@ export default function ClaimDetailPage() {
                     Amount
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Note
+                    Status
                   </th>
                 </tr>
               </thead>
@@ -334,8 +334,16 @@ export default function ClaimDetailPage() {
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
                       ${parseFloat(String(tx.amount)).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                      {tx.note || '-'}
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        tx.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                        tx.status === 'picked_up' ? 'bg-yellow-100 text-yellow-800' :
+                        tx.status === 'submitted' ? 'bg-indigo-100 text-indigo-800' :
+                        tx.status === 'paid' ? 'bg-green-100 text-green-800' :
+                        'bg-red-100 text-red-800'
+                      } capitalize`}>
+                        {tx.status.replace(/_/g, ' ')}
+                      </span>
                     </td>
                   </tr>
                 ))}
