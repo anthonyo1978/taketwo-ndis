@@ -133,11 +133,15 @@ export async function POST(
       )
     }
 
+    // Use the path returned from upload (it should match our filePath)
+    const uploadedPath = uploadData?.path || filePath
+    console.log('File uploaded to:', uploadedPath)
+
     // Update claim record with file metadata and status
     const { error: updateError } = await supabase
       .from('claims')
       .update({
-        file_path: filePath,
+        file_path: uploadedPath,
         file_generated_at: new Date().toISOString(),
         file_generated_by: userId,
         status: 'in_progress',
@@ -157,10 +161,10 @@ export async function POST(
     const { data: signedUrlData, error: signedUrlError } = await supabase
       .storage
       .from('claim-exports')
-      .createSignedUrl(filePath, 900) // 900 seconds = 15 minutes
+      .createSignedUrl(uploadedPath, 900) // 900 seconds = 15 minutes
 
     if (signedUrlError) {
-      console.error('Error generating signed URL:', signedUrlError)
+      console.error('Error generating signed URL for path:', uploadedPath, signedUrlError)
       return NextResponse.json(
         { success: false, error: 'Failed to generate download link' },
         { status: 500 }
