@@ -232,17 +232,8 @@ export async function POST(
       }
     }
 
-    // Determine claim status based on results
-    let claimStatus: string
-    if (results.totalPaid === claimTransactions.length) {
-      claimStatus = 'paid' // All paid
-    } else if (results.totalRejected === claimTransactions.length) {
-      claimStatus = 'rejected' // All rejected
-    } else if (results.totalPaid > 0 && (results.totalRejected > 0 || results.totalErrors > 0)) {
-      claimStatus = 'partially_paid' // Mix of paid and rejected/errors
-    } else {
-      claimStatus = 'processed' // Processed but unclear outcome
-    }
+    // Always set claim status to 'processed' after response upload
+    const claimStatus = 'processed'
 
     // Update claim status
     const { error: claimUpdateError } = await supabase

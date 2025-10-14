@@ -52,6 +52,9 @@ export default function ClaimDetailPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+  const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
+  const [transactionDetail, setTransactionDetail] = useState<any>(null)
+  const [isLoadingTransaction, setIsLoadingTransaction] = useState(false)
 
   useEffect(() => {
     const fetchClaim = async () => {
@@ -107,6 +110,34 @@ export default function ClaimDetailPage() {
     } finally {
       setIsLoadingHistory(false)
     }
+  }
+
+  const handleViewTransaction = async (transactionId: string) => {
+    try {
+      setSelectedTransactionId(transactionId)
+      setIsLoadingTransaction(true)
+      
+      const response = await fetch(`/api/transactions/${transactionId}`)
+      const result = await response.json() as { success: boolean; data?: any; error?: string }
+      
+      if (result.success && result.data) {
+        setTransactionDetail(result.data)
+      } else {
+        toast.error('Failed to load transaction details')
+        setSelectedTransactionId(null)
+      }
+    } catch (error) {
+      console.error('Error fetching transaction:', error)
+      toast.error('Failed to load transaction details')
+      setSelectedTransactionId(null)
+    } finally {
+      setIsLoadingTransaction(false)
+    }
+  }
+
+  const handleCloseTransactionModal = () => {
+    setSelectedTransactionId(null)
+    setTransactionDetail(null)
   }
 
   const handleFileSelect = (file: File) => {
@@ -419,13 +450,12 @@ export default function ClaimDetailPage() {
                 {claim.transactions.map((tx) => (
                   <tr key={tx.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Link 
-                        href={`/transactions?search=${tx.id}`}
+                      <button
+                        onClick={() => handleViewTransaction(tx.id)}
                         className="text-sm font-mono text-blue-600 hover:text-blue-900 hover:underline"
-                        onClick={(e) => e.stopPropagation()}
                       >
                         {tx.id}
-                      </Link>
+                      </button>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-900">
                       {tx.residentName}
@@ -812,6 +842,109 @@ export default function ClaimDetailPage() {
                     Done
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Transaction Detail Modal */}
+        {selectedTransactionId && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900">Transaction Details</h3>
+                <button
+                  onClick={handleCloseTransactionModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="p-6">
+                {isLoadingTransaction ? (
+                  <div className="text-center py-12">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p className="text-sm text-gray-500 mt-2">Loading transaction...</p>
+                  </div>
+                ) : transactionDetail ? (
+                  <div className="space-y-4">
+                    {/* Transaction Info Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Transaction ID</label>
+                        <p className="text-sm font-mono text-gray-900">{transactionDetail.id}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Status</label>
+                        <div>
+                          <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            transactionDetail.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                            transactionDetail.status === 'picked_up' ? 'bg-yellow-100 text-yellow-800' :
+                            transactionDetail.status === 'submitted' ? 'bg-indigo-100 text-indigo-800' :
+                            transactionDetail.status === 'paid' ? 'bg-green-100 text-green-800' :
+                            transactionDetail.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-orange-100 text-orange-800'
+                          } capitalize`}>
+                            {transactionDetail.status.replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Claim ID</label>
+                        {transactionDetail.claimNumber ? (
+                          <p className="text-sm font-mono text-blue-600">{transactionDetail.claimNumber}</p>
+                        ) : (
+                          <p className="text-sm text-gray-400 italic">Not claimed</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Amount</label>
+                        <p className="text-sm font-medium text-gray-900">
+                          ${parseFloat(String(transactionDetail.amount)).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Service Date</label>
+                        <p className="text-sm text-gray-900">
+                          {format(new Date(transactionDetail.occurredAt), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Service Code</label>
+                        <p className="text-sm text-gray-900">{transactionDetail.serviceCode || '-'}</p>
+                      </div>
+                    </div>
+
+                    {/* Note */}
+                    {transactionDetail.note && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Note</label>
+                        <p className="text-sm text-gray-900 whitespace-pre-wrap bg-gray-50 p-3 rounded border border-gray-200">
+                          {transactionDetail.note}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+                      <button
+                        onClick={handleCloseTransactionModal}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                      >
+                        Close
+                      </button>
+                      <Link
+                        href={`/transactions?search=${transactionDetail.id}`}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                      >
+                        View Full Details →
+                      </Link>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
