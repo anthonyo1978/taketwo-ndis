@@ -931,6 +931,14 @@ export default function ClaimDetailPage() {
                         <label className="text-sm font-medium text-gray-500">Service Code</label>
                         <p className="text-sm text-gray-900">{transactionDetail.serviceCode || '-'}</p>
                       </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">Resident</label>
+                        <p className="text-sm text-gray-900">{transactionDetail.residentName || 'Unknown'}</p>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-500">House</label>
+                        <p className="text-sm text-gray-900">{transactionDetail.houseName || 'Unknown'}</p>
+                      </div>
                     </div>
 
                     {/* Note */}

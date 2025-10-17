@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { createClient } from 'lib/supabase/server'
 import { transactionService } from 'lib/supabase/services/transactions'
 import type { TransactionCreateInput } from 'types/transaction'
 
@@ -41,14 +42,44 @@ export async function GET(
     
     if (!transaction) {
       return NextResponse.json(
-        { success: false, error: 'Transac tion not found' },
+        { success: false, error: 'Transaction not found' },
         { status: 404 }
       )
     }
+
+    // Fetch resident and house information
+    const supabase = await createClient()
+    
+    const { data: resident } = await supabase
+      .from('residents')
+      .select('first_name, last_name, house_id')
+      .eq('id', transaction.residentId)
+      .single()
+
+    let houseName = 'Unknown'
+    if (resident?.house_id) {
+      const { data: house } = await supabase
+        .from('houses')
+        .select('descriptor')
+        .eq('id', resident.house_id)
+        .single()
+      
+      if (house) {
+        houseName = house.descriptor || 'Unknown'
+      }
+    }
+
+    const residentName = resident 
+      ? `${resident.first_name} ${resident.last_name}`
+      : 'Unknown'
     
     const response: any = {
       success: true,
-      data: transaction
+      data: {
+        ...transaction,
+        residentName,
+        houseName
+      }
     }
     
     // Include audit trail if requested
