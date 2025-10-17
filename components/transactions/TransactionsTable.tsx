@@ -485,8 +485,20 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       const result = await response.json() as { success: boolean; data?: any; error?: string; details?: any[] }
 
       if (result.success) {
-        setSelectedTransaction(result.data)
-        setEditFormData(result.data)
+        // Re-enhance the updated transaction with resident/house names
+        const resident = residentLookup.get(result.data.residentId)
+        const contract = contractLookup.get(result.data.contractId)
+        const house = resident?.house || (resident ? houseLookup.get(resident.houseId) : null)
+        
+        const enhancedUpdatedTransaction = {
+          ...result.data,
+          residentName: resident ? `${resident.firstName} ${resident.lastName}` : 'Unknown',
+          houseName: house?.descriptor || 'Unknown',
+          contractType: contract?.type || 'Unknown'
+        }
+        
+        setSelectedTransaction(enhancedUpdatedTransaction)
+        setEditFormData(enhancedUpdatedTransaction)
         setIsEditing(false)
         // Clear edit state
         setEditContractInfo(null)
