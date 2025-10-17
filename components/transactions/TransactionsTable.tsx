@@ -477,7 +477,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
 
       if (result.success) {
         // Fetch the updated transaction with resident/house names from API
-        const updatedResponse = await fetch(`/api/transactions/${id}`)
+        const updatedResponse = await fetch(`/api/transactions/${selectedTransaction.id}`)
         const updatedResult = await updatedResponse.json() as { success: boolean; data?: any; error?: string }
         
         if (updatedResult.success) {
