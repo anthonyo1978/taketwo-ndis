@@ -44,7 +44,10 @@ export async function GET(request: NextRequest) {
     }
 
     if (dateTo) {
-      query = query.lte('occurred_at', dateTo)
+      // Add end of day to make the date range inclusive
+      const endOfDay = new Date(dateTo)
+      endOfDay.setHours(23, 59, 59, 999)
+      query = query.lte('occurred_at', endOfDay.toISOString())
     }
 
     const { data, error } = await query

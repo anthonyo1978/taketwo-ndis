@@ -35,7 +35,10 @@ export class TransactionService {
         query = query.gte('occurred_at', filters.dateRange.from.toISOString())
       }
       if (filters.dateRange?.to) {
-        query = query.lte('occurred_at', filters.dateRange.to.toISOString())
+        // Add end of day to make the date range inclusive
+        const endOfDay = new Date(filters.dateRange.to)
+        endOfDay.setHours(23, 59, 59, 999)
+        query = query.lte('occurred_at', endOfDay.toISOString())
       }
       if (filters.residentIds && filters.residentIds.length > 0) {
         query = query.in('resident_id', filters.residentIds)
