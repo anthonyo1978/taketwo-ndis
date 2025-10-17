@@ -386,21 +386,12 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       const result = await response.json() as { success: boolean; data?: any; error?: string }
 
       if (result.success) {
+        // The API already returns residentName and houseName, so use it directly
         const transaction = result.data
         
-        // Enhance transaction with resident and house names
-        const resident = residents.find(r => r.id === transaction.residentId)
-        const house = resident ? houses.find(h => h.id === resident.houseId) : null
-        
-        const enhancedTransaction = {
-          ...transaction,
-          residentName: resident ? `${resident.firstName || ''} ${resident.lastName || ''}`.trim() || 'Unknown' : 'Unknown',
-          houseName: house ? (house.descriptor || `${house.address1}, ${house.suburb}`) : 'Unknown'
-        }
-        
-        setSelectedTransaction(enhancedTransaction)
+        setSelectedTransaction(transaction)
         // Set edit form data but exclude the note field (it's read-only)
-        const { note, ...editData } = enhancedTransaction
+        const { note, ...editData } = transaction
         setEditFormData(editData)
         setIsEditing(false)
         setShowTransactionModal(true)
@@ -485,20 +476,19 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       const result = await response.json() as { success: boolean; data?: any; error?: string; details?: any[] }
 
       if (result.success) {
-        // Re-enhance the updated transaction with resident/house names
-        const resident = residentLookup.get(result.data.residentId)
-        const contract = contractLookup.get(result.data.contractId)
-        const house = resident?.house || (resident ? houseLookup.get(resident.houseId) : null)
+        // Fetch the updated transaction with resident/house names from API
+        const updatedResponse = await fetch(`/api/transactions/${id}`)
+        const updatedResult = await updatedResponse.json() as { success: boolean; data?: any; error?: string }
         
-        const enhancedUpdatedTransaction = {
-          ...result.data,
-          residentName: resident ? `${resident.firstName} ${resident.lastName}` : 'Unknown',
-          houseName: house?.descriptor || 'Unknown',
-          contractType: contract?.type || 'Unknown'
+        if (updatedResult.success) {
+          setSelectedTransaction(updatedResult.data)
+          setEditFormData(updatedResult.data)
+        } else {
+          // Fallback to result.data if API fetch fails
+          setSelectedTransaction(result.data)
+          setEditFormData(result.data)
         }
         
-        setSelectedTransaction(enhancedUpdatedTransaction)
-        setEditFormData(enhancedUpdatedTransaction)
         setIsEditing(false)
         // Clear edit state
         setEditContractInfo(null)
