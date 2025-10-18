@@ -3,6 +3,7 @@ import { createClient } from 'lib/supabase/server'
 import { renderContractPdf } from 'lib/contracts/renderer'
 import { ndisServiceAgreementV1Schema } from 'lib/contracts/schemas/ndis-service-agreement-v1'
 import { organizationService } from 'lib/supabase/services/organization'
+import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 import { createHash } from 'crypto'
 
 /**
@@ -272,7 +273,7 @@ export async function POST(
     const { data: document, error: documentError } = await supabase
       .from('rendered_documents')
       .insert({
-        organization_id: '00000000-0000-0000-0000-000000000000',
+        organization_id: organizationId,
         contract_id: contractId,
         resident_id: contract.resident.id,
         template_id: 'ndis_service_agreement',

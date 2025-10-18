@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
 import { getCurrentUserId, logAction, getRequestMetadata } from 'lib/services/audit-logger'
 import { format } from 'date-fns'
+import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 
 /**
  * POST /api/claims/[id]/upload-response
@@ -16,6 +17,15 @@ export async function POST(
     const supabase = await createClient()
     const userId = await getCurrentUserId()
     const metadata = getRequestMetadata(request)
+
+    // Get organization context
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found' },
+        { status: 401 }
+      )
+    }
 
     if (!userId) {
       return NextResponse.json(
@@ -278,6 +288,7 @@ export async function POST(
       .insert({
         claim_id: claimId,
         uploaded_by: userId,
+        organization_id: organizationId,
         file_name: file.name,
         file_path: uploadError ? null : responsePath,
         results_json: results,

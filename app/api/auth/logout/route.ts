@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
+import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 
 /**
  * POST /api/auth/logout
@@ -22,10 +23,12 @@ export async function POST() {
 
       // Log the logout action
       if (userProfile) {
+        const orgId = userProfile.organization_id || '00000000-0000-0000-0000-000000000000'
         await supabase
           .from('system_logs')
           .insert({
             user_id: userProfile.id,
+            organization_id: orgId,
             entity_type: 'auth',
             action: 'logout',
             details: {

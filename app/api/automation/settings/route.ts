@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { createClient } from "lib/supabase/server"
+import { getCurrentUserOrganizationId } from "lib/utils/organization"
 
 // Automation settings schema for API validation
 const automationSettingsSchema = z.object({
@@ -36,10 +37,20 @@ const DEFAULT_ORGANIZATION_ID = "00000000-0000-0000-0000-000000000000"
 export async function GET() {
   try {
     const supabase = await createClient()
+    
+    // Get user's organization
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found' },
+        { status: 401 }
+      )
+    }
+    
     const { data, error } = await supabase
       .from('automation_settings')
       .select('*')
-      .eq('organization_id', DEFAULT_ORGANIZATION_ID)
+      .eq('organization_id', organizationId)
       .single()
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
@@ -231,7 +242,7 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase
         .from('automation_settings')
         .insert({
-          organization_id: DEFAULT_ORGANIZATION_ID,
+          organization_id: organizationId,
           enabled: settingsData.enabled,
           run_time: settingsData.runTime,
           timezone: settingsData.timezone,

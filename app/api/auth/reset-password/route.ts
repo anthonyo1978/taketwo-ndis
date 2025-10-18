@@ -45,12 +45,22 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date()
     expiresAt.setHours(expiresAt.getHours() + 1) // 1 hour expiry
 
+    // Get user's organization from users table (they're not authenticated yet)
+    const { data: userData } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('auth_user_id', user.id)
+      .single()
+
+    const userOrgId = userData?.organization_id || '00000000-0000-0000-0000-000000000000'
+
     // Store the reset token in the database
     const { error: tokenError } = await supabase
       .from('password_reset_tokens')
       .insert({
         user_id: user.id,
         token: token,
+        organization_id: userOrgId,
         expires_at: expiresAt.toISOString(),
         used: false
       })
