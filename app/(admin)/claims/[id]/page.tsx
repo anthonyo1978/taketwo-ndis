@@ -55,6 +55,7 @@ export default function ClaimDetailPage() {
   const [selectedTransactionId, setSelectedTransactionId] = useState<string | null>(null)
   const [transactionDetail, setTransactionDetail] = useState<any>(null)
   const [isLoadingTransaction, setIsLoadingTransaction] = useState(false)
+  const [isSimulatingPayment, setIsSimulatingPayment] = useState(false)
 
   useEffect(() => {
     const fetchClaim = async () => {
@@ -256,6 +257,9 @@ export default function ClaimDetailPage() {
       // Close the modal first
       setShowApiWarningModal(false)
       
+      // Start simulation loading state
+      setIsSimulatingPayment(true)
+      
       // Update claim status to automation_in_progress
       const response = await fetch(`/api/claims/${claimId}`, {
         method: 'PUT',
@@ -271,30 +275,51 @@ export default function ClaimDetailPage() {
           setClaim(refreshResult.data)
         }
         
-        // After 10 seconds, update to auto_processed
+        // Wait 7 seconds (random between 5-10) then complete the simulation
         setTimeout(async () => {
-          const autoProcessResponse = await fetch(`/api/claims/${claimId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: 'auto_processed' })
-          })
-          
-          if (autoProcessResponse.ok) {
-            // Refresh claim data again
-            const finalRefreshResponse = await fetch(`/api/claims/${claimId}`)
-            const finalRefreshResult = await finalRefreshResponse.json() as { success: boolean; data?: ClaimDetail }
-            if (finalRefreshResult.success && finalRefreshResult.data) {
-              setClaim(finalRefreshResult.data)
+          try {
+            // Update all transaction statuses from picked_up to paid
+            const updateTransactionsResponse = await fetch(`/api/claims/${claimId}/simulate-completion`, {
+              method: 'POST'
+            })
+            
+            if (updateTransactionsResponse.ok) {
+              // Update claim status to auto_processed
+              const autoProcessResponse = await fetch(`/api/claims/${claimId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'auto_processed' })
+              })
+              
+              if (autoProcessResponse.ok) {
+                // Refresh claim data with updated transaction statuses
+                const finalRefreshResponse = await fetch(`/api/claims/${claimId}`)
+                const finalRefreshResult = await finalRefreshResponse.json() as { success: boolean; data?: ClaimDetail }
+                if (finalRefreshResult.success && finalRefreshResult.data) {
+                  setClaim(finalRefreshResult.data)
+                }
+                
+                // Stop simulation loading state
+                setIsSimulatingPayment(false)
+                
+                toast.success('Payment simulation completed successfully!')
+              }
             }
+          } catch (error) {
+            console.error('Error completing payment simulation:', error)
+            setIsSimulatingPayment(false)
+            toast.error('Failed to complete payment simulation')
           }
-        }, 10000) // 10 seconds delay
+        }, 7000) // 7 seconds delay
         
-        toast.success('Payment simulation started - claim status will update automatically')
+        toast.success('Payment simulation started - processing...')
       } else {
+        setIsSimulatingPayment(false)
         toast.error('Failed to start payment simulation')
       }
     } catch (error) {
       console.error('Error simulating payment:', error)
+      setIsSimulatingPayment(false)
       toast.error('Failed to simulate payment')
     }
   }
@@ -472,70 +497,89 @@ export default function ClaimDetailPage() {
 
           {/* Transactions Tab */}
           {activeTab === 'transactions' && (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Transaction ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Resident
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Service Code
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {claim.transactions.map((tx) => (
-                  <tr key={tx.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <button
-                        onClick={() => handleViewTransaction(tx.id)}
-                        className="text-sm font-mono text-blue-600 hover:text-blue-900 hover:underline"
-                      >
-                        {tx.id}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {tx.residentName}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {format(new Date(tx.occurredAt), 'MMM d, yyyy')}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      {tx.serviceCode || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      ${parseFloat(String(tx.amount)).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        tx.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                        tx.status === 'picked_up' ? 'bg-yellow-100 text-yellow-800' :
-                        tx.status === 'submitted' ? 'bg-indigo-100 text-indigo-800' :
-                        tx.status === 'paid' ? 'bg-green-100 text-green-800' :
-                        tx.status === 'rejected' ? 'bg-red-100 text-red-800' :
-                        'bg-orange-100 text-orange-800'
-                      } capitalize`}>
-                        {tx.status.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            <>
+              {isSimulatingPayment ? (
+                <div className="flex flex-col items-center justify-center py-16 bg-gray-50">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-6"></div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      Processing Payment with NDIA
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Please wait while we process your claim...
+                    </p>
+                    <div className="w-64 bg-gray-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Transaction ID
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Resident
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Service Code
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Amount
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {claim.transactions.map((tx) => (
+                        <tr key={tx.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              onClick={() => handleViewTransaction(tx.id)}
+                              className="text-sm font-mono text-blue-600 hover:text-blue-900 hover:underline"
+                            >
+                              {tx.id}
+                            </button>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {tx.residentName}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {format(new Date(tx.occurredAt), 'MMM d, yyyy')}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-900">
+                            {tx.serviceCode || '-'}
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            ${parseFloat(String(tx.amount)).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              tx.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                              tx.status === 'picked_up' ? 'bg-yellow-100 text-yellow-800' :
+                              tx.status === 'submitted' ? 'bg-indigo-100 text-indigo-800' :
+                              tx.status === 'paid' ? 'bg-green-100 text-green-800' :
+                              tx.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-orange-100 text-orange-800'
+                            } capitalize`}>
+                              {tx.status.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
           )}
 
           {/* History Tab */}
