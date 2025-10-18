@@ -186,12 +186,21 @@ export async function POST(request: NextRequest) {
     }
 
     const settingsData = validation.data
+    
+    // Get user's organization
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found' },
+        { status: 401 }
+      )
+    }
 
     // Check if settings already exist
     const { data: existingSettings } = await supabase
       .from('automation_settings')
       .select('id')
-      .eq('organization_id', DEFAULT_ORGANIZATION_ID)
+      .eq('organization_id', organizationId)
       .single()
 
     let result
@@ -208,7 +217,7 @@ export async function POST(request: NextRequest) {
           error_handling: settingsData.errorHandling,
           updated_at: new Date().toISOString()
         })
-        .eq('organization_id', DEFAULT_ORGANIZATION_ID)
+        .eq('organization_id', organizationId)
         .select()
         .single()
 
