@@ -8,6 +8,10 @@ export interface DashboardStats {
     totalContracts: number
     totalBalance: number
   }
+  claims: {
+    totalPaidAmount: number
+    totalPaidTransactions: number
+  }
   transactions: {
     period7d: { count: number; amount: number; trend: number }
     period30d: { count: number; amount: number; trend: number }
@@ -64,7 +68,23 @@ export async function GET(request: NextRequest) {
     
     console.log('[Dashboard API] Fetching transaction metrics...')
     
-    // 2. Get transaction metrics for different periods
+    // 2. Get claims metrics (total paid amount and count)
+    const { data: claimsData, error: claimsError } = await supabase
+      .from('transactions')
+      .select('amount')
+      .eq('status', 'paid')
+    
+    if (claimsError) {
+      console.error('[Dashboard API] Claims metrics error:', claimsError)
+      throw new Error('Failed to fetch claims metrics')
+    }
+    
+    const totalPaidAmount = (claimsData || []).reduce((sum, tx) => sum + Number(tx.amount), 0)
+    const totalPaidTransactions = claimsData?.length || 0
+    
+    console.log('[Dashboard API] Fetching transaction metrics...')
+    
+    // 3. Get transaction metrics for different periods
     const [metrics7d, metrics30d, metrics12m] = await Promise.all([
       supabase.rpc('get_transaction_metrics', { days_back: 7 }),
       supabase.rpc('get_transaction_metrics', { days_back: 30 }),
@@ -84,7 +104,7 @@ export async function GET(request: NextRequest) {
     
     console.log('[Dashboard API] Fetching monthly trends...')
     
-    // 3. Get monthly trends
+    // 4. Get monthly trends
     const { data: monthlyTrends, error: trendsError } = await supabase
       .rpc('get_monthly_transaction_trends', { months_back: 6 })
     
@@ -95,7 +115,7 @@ export async function GET(request: NextRequest) {
     
     console.log('[Dashboard API] Fetching recent activity...')
     
-    // 4. Get recent activity
+    // 5. Get recent activity
     const { data: recentActivity, error: activityError } = await supabase
       .rpc('get_recent_activity', { limit_count: 10 })
     
@@ -106,7 +126,7 @@ export async function GET(request: NextRequest) {
     
     console.log('[Dashboard API] Fetching house performance...')
     
-    // 5. Get house performance
+    // 6. Get house performance
     const { data: housePerformance, error: houseError } = await supabase
       .rpc('get_house_performance')
     
@@ -117,9 +137,13 @@ export async function GET(request: NextRequest) {
     
     console.log('[Dashboard API] All data fetched successfully')
     
-    // 6. Build response
+    // 7. Build response
     const stats: DashboardStats = {
       portfolio: portfolioData || { totalHouses: 0, totalResidents: 0, totalContracts: 0, totalBalance: 0 },
+      claims: {
+        totalPaidAmount,
+        totalPaidTransactions
+      },
       transactions: {
         period7d: {
           count: metrics7d.data?.currentPeriod?.count || 0,

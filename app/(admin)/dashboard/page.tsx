@@ -85,7 +85,7 @@ export default function DashboardPage() {
         </div>
         
         {/* Portfolio Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <MetricCard
             title="Total Houses"
             value={stats?.portfolio.totalHouses || 0}
@@ -116,6 +116,14 @@ export default function DashboardPage() {
             icon="💰"
             subtitle="Remaining funds (active contracts)"
             color="orange"
+            isLoading={isLoading}
+          />
+          <MetricCard
+            title="Claims Paid"
+            value={stats ? formatCurrency(stats.claims.totalPaidAmount) : '$0'}
+            icon="✅"
+            subtitle={`representing ${stats?.claims.totalPaidTransactions || 0} transactions`}
+            color="emerald"
             isLoading={isLoading}
           />
         </div>
