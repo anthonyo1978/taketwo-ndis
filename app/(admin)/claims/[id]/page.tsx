@@ -388,77 +388,6 @@ export default function ClaimDetailPage() {
                 )}
               </div>
             </div>
-            
-            {/* Transaction Status Summary */}
-            <div className="flex items-center gap-4">
-              {(() => {
-                const statusCounts = claim.transactions.reduce((acc, tx) => {
-                  acc[tx.status] = (acc[tx.status] || 0) + 1
-                  return acc
-                }, {} as Record<string, number>)
-                
-                const paidCount = statusCounts.paid || 0
-                const errorCount = statusCounts.error || 0
-                const rejectedCount = statusCounts.rejected || 0
-                const draftCount = statusCounts.draft || 0
-                const pickedUpCount = statusCounts.picked_up || 0
-                const submittedCount = statusCounts.submitted || 0
-                
-                return (
-                  <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
-                    {paidCount > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {paidCount} Paid
-                        </span>
-                      </div>
-                    )}
-                    {errorCount > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {errorCount} Error
-                        </span>
-                      </div>
-                    )}
-                    {rejectedCount > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {rejectedCount} Rejected
-                        </span>
-                      </div>
-                    )}
-                    {pickedUpCount > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {pickedUpCount} Picked Up
-                        </span>
-                      </div>
-                    )}
-                    {submittedCount > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {submittedCount} Submitted
-                        </span>
-                      </div>
-                    )}
-                    {draftCount > 0 && (
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-gray-700">
-                          {draftCount} Draft
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )
-              })()}
-            </div>
-            
             <div className="flex items-center gap-3">
               <button
                 onClick={handleExportClaim}
@@ -507,33 +436,111 @@ export default function ClaimDetailPage() {
           </div>
 
           {/* Filters Used */}
-          {claim.filtersJson && Object.keys(claim.filtersJson).length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <p className="text-xs font-medium text-gray-500 uppercase mb-2">Filters Applied:</p>
-              <div className="flex flex-wrap gap-2">
-                {claim.filtersJson.residentId && (
-                  <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">
-                    Resident ID: {claim.filtersJson.residentId}
-                  </span>
-                )}
-                {claim.filtersJson.dateFrom && (
-                  <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">
-                    From: {format(new Date(claim.filtersJson.dateFrom), 'MMM d, yyyy')}
-                  </span>
-                )}
-                {claim.filtersJson.dateTo && (
-                  <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">
-                    To: {format(new Date(claim.filtersJson.dateTo), 'MMM d, yyyy')}
-                  </span>
-                )}
-                {claim.filtersJson.includeAll && (
-                  <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">
-                    All Eligible Transactions
-                  </span>
-                )}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <div className="flex items-start justify-between gap-6">
+              {/* Filters Applied */}
+              {claim.filtersJson && Object.keys(claim.filtersJson).length > 0 && (
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-gray-500 uppercase mb-2">Filters Applied:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {claim.filtersJson.residentId && (
+                      <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">
+                        Resident ID: {claim.filtersJson.residentId}
+                      </span>
+                    )}
+                    {claim.filtersJson.dateFrom && (
+                      <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">
+                        From: {format(new Date(claim.filtersJson.dateFrom), 'MMM d, yyyy')}
+                      </span>
+                    )}
+                    {claim.filtersJson.dateTo && (
+                      <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">
+                        To: {format(new Date(claim.filtersJson.dateTo), 'MMM d, yyyy')}
+                      </span>
+                    )}
+                    {claim.filtersJson.includeAll && (
+                      <span className="inline-flex items-center px-2 py-1 rounded bg-blue-50 text-blue-700 text-xs">
+                        All Eligible Transactions
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Transaction Status Summary */}
+              <div className="flex-shrink-0">
+                <p className="text-xs font-medium text-gray-500 uppercase mb-2">Transaction Status:</p>
+                <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
+                  {(() => {
+                    const statusCounts = claim.transactions.reduce((acc, tx) => {
+                      acc[tx.status] = (acc[tx.status] || 0) + 1
+                      return acc
+                    }, {} as Record<string, number>)
+                    
+                    const paidCount = statusCounts.paid || 0
+                    const errorCount = statusCounts.error || 0
+                    const rejectedCount = statusCounts.rejected || 0
+                    const draftCount = statusCounts.draft || 0
+                    const pickedUpCount = statusCounts.picked_up || 0
+                    const submittedCount = statusCounts.submitted || 0
+                    
+                    return (
+                      <>
+                        {paidCount > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-700">
+                              {paidCount} Paid
+                            </span>
+                          </div>
+                        )}
+                        {errorCount > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-700">
+                              {errorCount} Error
+                            </span>
+                          </div>
+                        )}
+                        {rejectedCount > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-700">
+                              {rejectedCount} Rejected
+                            </span>
+                          </div>
+                        )}
+                        {pickedUpCount > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-700">
+                              {pickedUpCount} Picked Up
+                            </span>
+                          </div>
+                        )}
+                        {submittedCount > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-indigo-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-700">
+                              {submittedCount} Submitted
+                            </span>
+                          </div>
+                        )}
+                        {draftCount > 0 && (
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 bg-gray-500 rounded-full"></div>
+                            <span className="text-sm font-medium text-gray-700">
+                              {draftCount} Draft
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
+                </div>
               </div>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Tabs */}
