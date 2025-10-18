@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
+import { z } from 'zod'
+
+// Validation schema for claim updates
+const updateClaimSchema = z.object({
+  status: z.enum([
+    'draft', 'in_progress', 'processed', 'submitted', 'paid', 
+    'rejected', 'partially_paid', 'automation_submitted', 'auto_processed'
+  ])
+})
 
 /**
  * GET /api/claims/[id]
@@ -129,31 +138,26 @@ export async function PUT(
     const body = await request.json()
     const supabase = await createClient()
 
-    // Validate that status is provided and is valid
-    if (!body.status) {
+    // Validate request body using Zod
+    const result = updateClaimSchema.safeParse(body)
+    if (!result.success) {
       return NextResponse.json(
-        { success: false, error: 'Status is required' },
+        { 
+          success: false, 
+          error: 'Invalid request data',
+          details: result.error.errors
+        },
         { status: 400 }
       )
     }
 
-    const validStatuses = [
-      'draft', 'in_progress', 'processed', 'submitted', 'paid', 
-      'rejected', 'partially_paid', 'automation_submitted', 'auto_processed'
-    ]
-    
-    if (!validStatuses.includes(body.status)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid status value' },
-        { status: 400 }
-      )
-    }
+    const { status } = result.data
 
     // Update the claim status
     const { data: updatedClaim, error: updateError } = await supabase
       .from('claims')
       .update({ 
-        status: body.status,
+        status: status,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)
