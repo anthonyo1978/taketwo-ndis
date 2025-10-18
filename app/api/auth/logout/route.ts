@@ -17,7 +17,7 @@ export async function POST() {
       // Get user profile
       const { data: userProfile } = await supabase
         .from('users')
-        .select('id')
+        .select('id, organization_id')
         .eq('auth_user_id', authUser.id)
         .single()
 
