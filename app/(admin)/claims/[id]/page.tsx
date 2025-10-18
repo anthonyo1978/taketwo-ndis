@@ -87,7 +87,7 @@ export default function ClaimDetailPage() {
       paid: 'bg-green-100 text-green-800 border-green-200',
       partially_paid: 'bg-orange-100 text-orange-800 border-orange-200',
       rejected: 'bg-red-100 text-red-800 border-red-200',
-      automation_submitted: 'bg-blue-100 text-blue-800 border-blue-200',
+      automation_in_progress: 'bg-blue-100 text-blue-800 border-blue-200',
       auto_processed: 'bg-indigo-100 text-indigo-800 border-indigo-200'
     }
     return styles[status] || styles.draft
@@ -256,11 +256,11 @@ export default function ClaimDetailPage() {
       // Close the modal first
       setShowApiWarningModal(false)
       
-      // Update claim status to automation_submitted
+      // Update claim status to automation_in_progress
       const response = await fetch(`/api/claims/${claimId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'automation_submitted' })
+        body: JSON.stringify({ status: 'automation_in_progress' })
       })
       
       if (response.ok) {

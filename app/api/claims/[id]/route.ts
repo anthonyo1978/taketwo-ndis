@@ -6,7 +6,7 @@ import { z } from 'zod'
 const updateClaimSchema = z.object({
   status: z.enum([
     'draft', 'in_progress', 'processed', 'submitted', 'paid', 
-    'rejected', 'partially_paid', 'automation_submitted', 'auto_processed'
+    'rejected', 'partially_paid', 'automation_in_progress', 'auto_processed'
   ])
 })
 
