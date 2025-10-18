@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   CreditCard, 
   FileCheck,
-  FileText, 
   Home, 
   LayoutDashboard, 
   Settings, 
@@ -44,11 +43,6 @@ const NAVIGATION_ITEMS = [
     label: "Claims",
     href: "/claims",
     icon: FileCheck,
-  },
-  {
-    label: "Reports",
-    href: "/reports",
-    icon: FileText,
   },
   {
     label: "Settings",
