@@ -125,43 +125,53 @@ CREATE POLICY "Service role full access to transactions" ON transactions
   WITH CHECK (true);
 
 -- ============================================================================
--- TRANSACTION AUDIT TRAIL
+-- TRANSACTION AUDIT TRAIL (only if table exists)
 -- ============================================================================
-DROP POLICY IF EXISTS "Allow authenticated users to read audit trail" ON transaction_audit_trail;
-DROP POLICY IF EXISTS "Allow authenticated users to insert audit trail" ON transaction_audit_trail;
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'transaction_audit_trail') THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Allow authenticated users to read audit trail" ON transaction_audit_trail';
+    EXECUTE 'DROP POLICY IF EXISTS "Allow authenticated users to insert audit trail" ON transaction_audit_trail';
 
-CREATE POLICY "Users can view audit trail in own org" ON transaction_audit_trail
-  FOR SELECT
-  USING (organization_id = public.current_user_organization_id());
+    EXECUTE 'CREATE POLICY "Users can view audit trail in own org" ON transaction_audit_trail
+      FOR SELECT
+      USING (organization_id = public.current_user_organization_id())';
 
-CREATE POLICY "Users can create audit entries in own org" ON transaction_audit_trail
-  FOR INSERT
-  WITH CHECK (organization_id = public.current_user_organization_id());
+    EXECUTE 'CREATE POLICY "Users can create audit entries in own org" ON transaction_audit_trail
+      FOR INSERT
+      WITH CHECK (organization_id = public.current_user_organization_id())';
 
-CREATE POLICY "Service role full access to transaction audit" ON transaction_audit_trail
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+    EXECUTE 'CREATE POLICY "Service role full access to transaction audit" ON transaction_audit_trail
+      FOR ALL
+      TO service_role
+      USING (true)
+      WITH CHECK (true)';
+  END IF;
+END $$;
 
 -- ============================================================================
--- RESIDENT AUDIT TRAIL
+-- RESIDENT AUDIT TRAIL (only if table exists)
 -- ============================================================================
-DROP POLICY IF EXISTS "Allow all operations on resident_audit_trail" ON resident_audit_trail;
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'resident_audit_trail') THEN
+    EXECUTE 'DROP POLICY IF EXISTS "Allow all operations on resident_audit_trail" ON resident_audit_trail';
 
-CREATE POLICY "Users can view resident audit in own org" ON resident_audit_trail
-  FOR SELECT
-  USING (organization_id = public.current_user_organization_id());
+    EXECUTE 'CREATE POLICY "Users can view resident audit in own org" ON resident_audit_trail
+      FOR SELECT
+      USING (organization_id = public.current_user_organization_id())';
 
-CREATE POLICY "Users can create resident audit in own org" ON resident_audit_trail
-  FOR INSERT
-  WITH CHECK (organization_id = public.current_user_organization_id());
+    EXECUTE 'CREATE POLICY "Users can create resident audit in own org" ON resident_audit_trail
+      FOR INSERT
+      WITH CHECK (organization_id = public.current_user_organization_id())';
 
-CREATE POLICY "Service role full access to resident audit" ON resident_audit_trail
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
+    EXECUTE 'CREATE POLICY "Service role full access to resident audit" ON resident_audit_trail
+      FOR ALL
+      TO service_role
+      USING (true)
+      WITH CHECK (true)';
+  END IF;
+END $$;
 
 -- ============================================================================
 -- CONTACTS TABLE
