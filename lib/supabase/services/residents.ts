@@ -1,5 +1,6 @@
 import { createClient } from '../server'
 import type { Resident, ResidentCreateInput, ResidentUpdateInput, FundingInformation, EmergencyContact, ResidentPreferences } from 'types/resident'
+import { getCurrentUserOrganizationId } from '../../utils/organization'
 
 /**
  * Service class for managing resident data operations with Supabase.
@@ -158,6 +159,13 @@ export class ResidentService {
    */
   async create(resident: ResidentCreateInput & { houseId: string | null }): Promise<Resident> {
     try {
+      // Get current user's organization ID
+      const organizationId = await getCurrentUserOrganizationId()
+      
+      if (!organizationId) {
+        throw new Error('User organization not found. Please log in again.')
+      }
+      
       const dbResident = this.convertFrontendResidentToDb({
         ...resident,
         createdBy: 'system',
@@ -167,7 +175,7 @@ export class ResidentService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('residents')
-        .insert([dbResident])
+        .insert([{ ...dbResident, organization_id: organizationId }])
         .select()
         .single()
 

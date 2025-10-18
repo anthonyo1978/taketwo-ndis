@@ -8,6 +8,7 @@ import type {
   TransactionSortConfig,
   TransactionAuditEntry
 } from 'types/transaction'
+import { getCurrentUserOrganizationId } from '../../utils/organization'
 
 export class TransactionService {
   /**
@@ -199,6 +200,13 @@ export class TransactionService {
    */
   async create(input: TransactionCreateInput, createdBy: string): Promise<Transaction> {
     try {
+      // Get current user's organization ID
+      const organizationId = await getCurrentUserOrganizationId()
+      
+      if (!organizationId) {
+        throw new Error('User organization not found. Please log in again.')
+      }
+      
       const supabase = await createClient()
       
       // Generate sequential TXN ID
@@ -216,6 +224,8 @@ export class TransactionService {
       const dbTransaction = convertFrontendTransactionToDb(inputWithOrphaned, createdBy)
       // Override the ID with our custom TXN prefixed ID
       dbTransaction.id = customId
+      // Add organization context
+      dbTransaction.organization_id = organizationId
 
       const { data, error } = await supabase
         .from('transactions')

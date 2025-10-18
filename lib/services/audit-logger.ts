@@ -4,6 +4,7 @@
  */
 
 import { createClient } from 'lib/supabase/server'
+import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 
 export type EntityType = 
   | 'house' 
@@ -82,12 +83,16 @@ export async function logAction({
       }
     }
 
+    // Get organization context (use default if not available, e.g., for system actions)
+    const organizationId = await getCurrentUserOrganizationId()
+
     const supabase = await createClient()
 
     const { error } = await supabase
       .from('system_logs')
       .insert({
         user_id: userId,
+        organization_id: organizationId || '00000000-0000-0000-0000-000000000000',
         entity_type: entityType,
         entity_id: entityId,
         action: action,
