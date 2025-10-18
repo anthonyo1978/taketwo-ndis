@@ -123,7 +123,7 @@ export default function DashboardPage() {
             value={stats ? formatCurrency(stats.claims.totalPaidAmount) : '$0'}
             icon="✅"
             subtitle={`representing ${stats?.claims.totalPaidTransactions || 0} transactions`}
-            color="emerald"
+            color="green"
             isLoading={isLoading}
           />
         </div>
