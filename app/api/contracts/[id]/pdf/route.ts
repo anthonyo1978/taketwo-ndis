@@ -30,6 +30,15 @@ export async function POST(
     const { id: contractId } = await params
     const supabase = await createClient()
     
+    // Get organization context
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found' },
+        { status: 401 }
+      )
+    }
+    
     console.log(`[PDF API] Starting PDF generation for contract: ${contractId}`)
     
     // 1. Load contract with resident and house data
