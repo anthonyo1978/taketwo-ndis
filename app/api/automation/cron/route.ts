@@ -47,30 +47,40 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if it's time to run based on settings
-    // For hourly runs, we skip the time check (runs every hour)
-    // For daily runs, we check if it's the configured time
+    // Convert current UTC time to configured timezone for accurate comparison
+    const configuredTimezone = settings.timezone || 'Australia/Sydney'
     const now = new Date()
-    const currentHour = now.getHours()
-    const currentMinute = now.getMinutes()
     
-    // Parse the run time from settings (format: "HH:MM:SS")
+    // Get current time in the configured timezone
+    const currentTimeInTimezone = new Intl.DateTimeFormat('en-AU', {
+      timeZone: configuredTimezone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    }).format(now)
+    
+    const [currentHour, currentMinute] = currentTimeInTimezone.split(':').map(Number)
+    
+    // Parse the run time from settings (format: "HH:MM:SS" or "HH:MM")
     const [runHour, runMinute] = settings.run_time.split(':').map(Number)
     
-    // Check if this is an hourly schedule (Pro plan) or daily (Hobby plan)
-    // For hourly runs: always proceed
-    // For daily runs: only run if time matches
-    const isHourlySchedule = true // Set to true when using hourly Vercel cron (0 * * * *)
+    console.log(`[AUTOMATION CRON] Timezone: ${configuredTimezone}`)
+    console.log(`[AUTOMATION CRON] Current time in ${configuredTimezone}: ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`)
+    console.log(`[AUTOMATION CRON] Configured run time: ${runHour.toString().padStart(2, '0')}:${runMinute.toString().padStart(2, '0')}`)
     
-    if (!isHourlySchedule && (currentHour !== runHour || currentMinute !== runMinute)) {
-      console.log(`Not time to run yet. Configured: ${settings.run_time}, Current: ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`)
+    // Only run if the current time matches the configured time (within the same hour and minute)
+    if (currentHour !== runHour || currentMinute !== runMinute) {
+      console.log(`[AUTOMATION CRON] Not time to run yet. Skipping...`)
       return NextResponse.json({
         success: true,
-        message: `Not time to run yet. Configured time: ${settings.run_time}, Current time: ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`,
+        message: `Not time to run yet. Configured time: ${runHour.toString().padStart(2, '0')}:${runMinute.toString().padStart(2, '0')} ${configuredTimezone}, Current time: ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')} ${configuredTimezone}`,
         skipped: true,
-        configuredTime: settings.run_time,
-        currentTime: `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`
+        configuredTime: `${runHour.toString().padStart(2, '0')}:${runMinute.toString().padStart(2, '0')} ${configuredTimezone}`,
+        currentTime: `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')} ${configuredTimezone}`
       })
     }
+    
+    console.log(`[AUTOMATION CRON] ✅ Time matches! Proceeding with automation run...`)
     
     // Generate transactions for all eligible contracts
     console.log(`[AUTOMATION CRON] Starting automated billing run at ${executionDate}`)
