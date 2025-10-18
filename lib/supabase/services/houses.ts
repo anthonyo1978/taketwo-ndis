@@ -1,5 +1,6 @@
 import { createClient } from '../server'
 import type { House } from '../../../types/house'
+import { getCurrentUserOrganizationId } from '../../utils/organization'
 
 /**
  * Service class for managing house data operations with Supabase.
@@ -177,8 +178,16 @@ export class HouseService {
    */
   async create(house: Omit<House, 'id' | 'createdAt' | 'updatedAt'>): Promise<House> {
     try {
+      // Get current user's organization ID
+      const organizationId = await getCurrentUserOrganizationId()
+      
+      if (!organizationId) {
+        throw new Error('User organization not found. Please log in again.')
+      }
+      
       // Convert camelCase to snake_case for database
       const dbHouse = {
+        organization_id: organizationId, // Multi-tenancy: Add organization context
         descriptor: house.descriptor, // Now uncommented - database migration applied
         address1: house.address1,
         unit: house.unit,
