@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
 import { getCurrentUserId, logAction, getRequestMetadata } from 'lib/services/audit-logger'
+import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 
 /**
  * GET /api/system/settings
@@ -65,11 +66,21 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     const userId = await getCurrentUserId()
 
-    // Check if setting exists
+    // Get organization context
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found' },
+        { status: 401 }
+      )
+    }
+
+    // Check if setting exists (for this organization)
     const { data: existingSetting } = await supabase
       .from('system_settings')
       .select('setting_value')
       .eq('setting_key', key)
+      .eq('organization_id', organizationId)
       .single()
 
     let error
@@ -83,6 +94,7 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString()
         })
         .eq('setting_key', key)
+        .eq('organization_id', organizationId)
       error = result.error
     } else {
       // Insert new setting
@@ -91,7 +103,8 @@ export async function POST(request: NextRequest) {
         .insert({
           setting_key: key,
           setting_value: value,
-          updated_by: userId
+          updated_by: userId,
+          organization_id: organizationId
         })
       error = result.error
     }

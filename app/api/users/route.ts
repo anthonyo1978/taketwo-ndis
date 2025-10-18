@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createClient } from 'lib/supabase/server'
 import { sendWelcomeEmail } from 'lib/services/user-email-service'
+import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 
 // Validation schemas
 const createUserSchema = z.object({
@@ -85,6 +86,16 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
     console.log('[USERS API] Supabase client created')
 
+    // Get inviter's organization (new user joins same org as inviter)
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found. Please log in again.' },
+        { status: 401 }
+      )
+    }
+    console.log('[USERS API] Organization context:', organizationId)
+
     // Check if user with this email already exists
     const { data: existingUser } = await supabase
       .from('users')
@@ -113,7 +124,8 @@ export async function POST(request: NextRequest) {
         job_title: jobTitle || null,
         role: role,
         status: 'invited',
-        invited_at: new Date().toISOString()
+        invited_at: new Date().toISOString(),
+        organization_id: organizationId // New user joins inviter's organization
       })
       .select()
       .single()

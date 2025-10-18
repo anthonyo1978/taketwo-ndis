@@ -92,6 +92,7 @@ export async function GET(request: NextRequest) {
     // Create automation log entry
     const logEntry = {
       run_date: executionDate,
+      organization_id: '00000000-0000-0000-0000-000000000000', // TODO: Multi-org support
       status: result.success && result.failedTransactions === 0 ? 'success' 
         : result.failedTransactions > 0 && result.successfulTransactions > 0 ? 'partial'
         : 'failed',

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
 import { getCurrentUserId, logAction, getRequestMetadata } from 'lib/services/audit-logger'
+import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 import { z } from 'zod'
 
 const createClaimSchema = z.object({
@@ -104,6 +105,15 @@ export async function POST(request: NextRequest) {
     const userId = await getCurrentUserId()
     const metadata = getRequestMetadata(request)
 
+    // Get organization context
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found' },
+        { status: 401 }
+      )
+    }
+
     // Generate claim number
     const { data: claimNumberData, error: claimNumberError } = await supabase
       .rpc('generate_claim_number')
@@ -124,6 +134,7 @@ export async function POST(request: NextRequest) {
       .insert({
         claim_number: claimNumber,
         created_by: userId,
+        organization_id: organizationId,
         filters_json: {
           residentId,
           dateFrom,

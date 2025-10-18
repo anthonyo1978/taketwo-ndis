@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
 import { getCurrentUserId, logAction, getRequestMetadata } from 'lib/services/audit-logger'
+import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 import { z } from 'zod'
 
 const contactSchema = z.object({
@@ -105,6 +106,15 @@ export async function POST(
     const userId = await getCurrentUserId()
     const metadata = getRequestMetadata(request)
 
+    // Get organization context
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found' },
+        { status: 401 }
+      )
+    }
+
     let contactId = body.contactId
 
     // If no contactId provided, create new contact
@@ -126,7 +136,8 @@ export async function POST(
           phone: validation.data.phone || null,
           email: validation.data.email || null,
           description: validation.data.description || null,
-          note: validation.data.note || null
+          note: validation.data.note || null,
+          organization_id: organizationId
         })
         .select()
         .single()
@@ -159,7 +170,8 @@ export async function POST(
       .from('resident_contacts')
       .insert({
         resident_id: residentId,
-        contact_id: contactId
+        contact_id: contactId,
+        organization_id: organizationId
       })
 
     if (linkError) {
