@@ -48,38 +48,7 @@ CREATE INDEX idx_organizations_slug ON organizations(slug);
 CREATE INDEX idx_organizations_subscription_status ON organizations(subscription_status);
 CREATE INDEX idx_organizations_created_at ON organizations(created_at);
 
--- Enable RLS
-ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for organizations
--- Users can only see their own organization
-CREATE POLICY "Users can view own organization" ON organizations
-  FOR SELECT
-  USING (
-    id IN (
-      SELECT organization_id 
-      FROM users 
-      WHERE auth_user_id = auth.uid()
-    )
-  );
-
--- Only service role can create organizations (via signup API)
-CREATE POLICY "Service role can manage organizations" ON organizations
-  FOR ALL
-  TO service_role
-  USING (true)
-  WITH CHECK (true);
-
--- Comments
-COMMENT ON TABLE organizations IS 'Multi-tenant organizations/companies using the platform';
-COMMENT ON COLUMN organizations.slug IS 'URL-safe identifier (e.g., acme-corp for acme-corp.haven.app)';
-COMMENT ON COLUMN organizations.subscription_status IS 'Current subscription state';
-COMMENT ON COLUMN organizations.subscription_plan IS 'Pricing tier (free, starter, pro, enterprise)';
-COMMENT ON COLUMN organizations.max_houses IS 'Maximum houses allowed on this plan';
-COMMENT ON COLUMN organizations.max_residents IS 'Maximum residents allowed on this plan';
-COMMENT ON COLUMN organizations.max_users IS 'Maximum team members allowed on this plan';
-
--- Insert the default organization (for existing data)
+-- Insert the default organization (for existing data) BEFORE creating RLS policies
 INSERT INTO organizations (
   id,
   name,
@@ -108,7 +77,7 @@ INSERT INTO organizations (
   }'::jsonb
 ) ON CONFLICT (id) DO NOTHING;
 
--- Add organization_id to users table
+-- Add organization_id to users table BEFORE creating RLS policies that reference it
 ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_id UUID;
 
 -- Update existing users to belong to default org
@@ -125,6 +94,37 @@ ALTER TABLE users ADD CONSTRAINT fk_users_organization
 
 -- Create index
 CREATE INDEX IF NOT EXISTS idx_users_organization_id ON users(organization_id);
+
+-- Enable RLS on organizations table
+ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
+
+-- Comments
+COMMENT ON TABLE organizations IS 'Multi-tenant organizations/companies using the platform';
+COMMENT ON COLUMN organizations.slug IS 'URL-safe identifier (e.g., acme-corp for acme-corp.haven.app)';
+COMMENT ON COLUMN organizations.subscription_status IS 'Current subscription state';
+COMMENT ON COLUMN organizations.subscription_plan IS 'Pricing tier (free, starter, pro, enterprise)';
+COMMENT ON COLUMN organizations.max_houses IS 'Maximum houses allowed on this plan';
+COMMENT ON COLUMN organizations.max_residents IS 'Maximum residents allowed on this plan';
+COMMENT ON COLUMN organizations.max_users IS 'Maximum team members allowed on this plan';
+
+-- RLS Policies for organizations (NOW that users.organization_id exists)
+-- Users can only see their own organization
+CREATE POLICY "Users can view own organization" ON organizations
+  FOR SELECT
+  USING (
+    id IN (
+      SELECT organization_id 
+      FROM users 
+      WHERE auth_user_id = auth.uid()
+    )
+  );
+
+-- Only service role can create organizations (via signup API)
+CREATE POLICY "Service role can manage organizations" ON organizations
+  FOR ALL
+  TO service_role
+  USING (true)
+  WITH CHECK (true);
 
 -- Update users RLS policies to be organization-aware
 DROP POLICY IF EXISTS "Allow authenticated users to read users" ON users;
