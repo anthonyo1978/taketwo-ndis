@@ -38,21 +38,31 @@ REFERENCES organizations(id) ON DELETE CASCADE;
 
 CREATE INDEX IF NOT EXISTS idx_transactions_organization_id ON transactions(organization_id);
 
--- Transaction Audit Trail
-ALTER TABLE transaction_audit_trail 
-ADD COLUMN IF NOT EXISTS organization_id UUID 
-NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'
-REFERENCES organizations(id) ON DELETE CASCADE;
+-- Transaction Audit Trail (only if table exists)
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'transaction_audit_trail') THEN
+    ALTER TABLE transaction_audit_trail 
+    ADD COLUMN IF NOT EXISTS organization_id UUID 
+    NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'
+    REFERENCES organizations(id) ON DELETE CASCADE;
+    
+    CREATE INDEX IF NOT EXISTS idx_transaction_audit_trail_organization_id ON transaction_audit_trail(organization_id);
+  END IF;
+END $$;
 
-CREATE INDEX IF NOT EXISTS idx_transaction_audit_trail_organization_id ON transaction_audit_trail(organization_id);
-
--- Resident Audit Trail
-ALTER TABLE resident_audit_trail 
-ADD COLUMN IF NOT EXISTS organization_id UUID 
-NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'
-REFERENCES organizations(id) ON DELETE CASCADE;
-
-CREATE INDEX IF NOT EXISTS idx_resident_audit_trail_organization_id ON resident_audit_trail(organization_id);
+-- Resident Audit Trail (only if table exists)
+DO $$ 
+BEGIN
+  IF EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'resident_audit_trail') THEN
+    ALTER TABLE resident_audit_trail 
+    ADD COLUMN IF NOT EXISTS organization_id UUID 
+    NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000'
+    REFERENCES organizations(id) ON DELETE CASCADE;
+    
+    CREATE INDEX IF NOT EXISTS idx_resident_audit_trail_organization_id ON resident_audit_trail(organization_id);
+  END IF;
+END $$;
 
 -- Contacts
 ALTER TABLE contacts 
