@@ -118,3 +118,42 @@ export const PLAN_LIMITS = {
     }
   }
 } as const
+
+// Organization Settings (for PDFs and branding) - different from Organizations table
+export interface OrganizationSettings {
+  id: string
+  organizationId: string
+  organizationName: string
+  abn?: string
+  email?: string
+  phone?: string
+  website?: string
+  addressLine1?: string
+  addressLine2?: string
+  suburb?: string
+  state?: string
+  postcode?: string
+  country: string
+  logoUrl?: string
+  primaryColor: string
+  createdAt: Date
+  updatedAt: Date
+  createdBy: string
+  updatedBy: string
+}
+
+export interface OrganizationSettingsUpdateInput {
+  organizationName?: string
+  abn?: string
+  email?: string
+  phone?: string
+  website?: string
+  addressLine1?: string
+  addressLine2?: string
+  suburb?: string
+  state?: string
+  postcode?: string
+  country?: string
+  logoUrl?: string
+  primaryColor?: string
+}
