@@ -1,5 +1,5 @@
 /** Status options for claims. */
-export type ClaimStatus = 'draft' | 'in_progress' | 'processed' | 'submitted' | 'paid' | 'rejected' | 'partially_paid'
+export type ClaimStatus = 'draft' | 'in_progress' | 'processed' | 'submitted' | 'paid' | 'rejected' | 'partially_paid' | 'automation_submitted' | 'auto_processed'
 
 /**
  * Claim record for bulk transaction claiming

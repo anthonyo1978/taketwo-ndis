@@ -116,3 +116,70 @@ export async function GET(
   }
 }
 
+/**
+ * PUT /api/claims/[id]
+ * Update a specific claim (currently only supports status updates)
+ */
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const body = await request.json()
+    const supabase = await createClient()
+
+    // Validate that status is provided and is valid
+    if (!body.status) {
+      return NextResponse.json(
+        { success: false, error: 'Status is required' },
+        { status: 400 }
+      )
+    }
+
+    const validStatuses = [
+      'draft', 'in_progress', 'processed', 'submitted', 'paid', 
+      'rejected', 'partially_paid', 'automation_submitted', 'auto_processed'
+    ]
+    
+    if (!validStatuses.includes(body.status)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid status value' },
+        { status: 400 }
+      )
+    }
+
+    // Update the claim status
+    const { data: updatedClaim, error: updateError } = await supabase
+      .from('claims')
+      .update({ 
+        status: body.status,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('Error updating claim:', updateError)
+      return NextResponse.json(
+        { success: false, error: 'Failed to update claim' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: updatedClaim,
+      message: 'Claim status updated successfully'
+    })
+
+  } catch (error) {
+    console.error('Error updating claim:', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+

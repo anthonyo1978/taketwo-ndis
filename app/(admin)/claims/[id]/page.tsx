@@ -86,7 +86,9 @@ export default function ClaimDetailPage() {
       submitted: 'bg-blue-100 text-blue-800 border-blue-200',
       paid: 'bg-green-100 text-green-800 border-green-200',
       partially_paid: 'bg-orange-100 text-orange-800 border-orange-200',
-      rejected: 'bg-red-100 text-red-800 border-red-200'
+      rejected: 'bg-red-100 text-red-800 border-red-200',
+      automation_submitted: 'bg-blue-100 text-blue-800 border-blue-200',
+      auto_processed: 'bg-indigo-100 text-indigo-800 border-indigo-200'
     }
     return styles[status] || styles.draft
   }
@@ -246,6 +248,54 @@ export default function ClaimDetailPage() {
       toast.error('Failed to create claim file')
     } finally {
       setIsExporting(false)
+    }
+  }
+
+  const handleSimulatePayment = async () => {
+    try {
+      // Close the modal first
+      setShowApiWarningModal(false)
+      
+      // Update claim status to automation_submitted
+      const response = await fetch(`/api/claims/${claimId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'automation_submitted' })
+      })
+      
+      if (response.ok) {
+        // Refresh claim data to show updated status
+        const refreshResponse = await fetch(`/api/claims/${claimId}`)
+        const refreshResult = await refreshResponse.json() as { success: boolean; data?: ClaimDetail }
+        if (refreshResult.success && refreshResult.data) {
+          setClaim(refreshResult.data)
+        }
+        
+        // After 10 seconds, update to auto_processed
+        setTimeout(async () => {
+          const autoProcessResponse = await fetch(`/api/claims/${claimId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'auto_processed' })
+          })
+          
+          if (autoProcessResponse.ok) {
+            // Refresh claim data again
+            const finalRefreshResponse = await fetch(`/api/claims/${claimId}`)
+            const finalRefreshResult = await finalRefreshResponse.json() as { success: boolean; data?: ClaimDetail }
+            if (finalRefreshResult.success && finalRefreshResult.data) {
+              setClaim(finalRefreshResult.data)
+            }
+          }
+        }, 10000) // 10 seconds delay
+        
+        toast.success('Payment simulation started - claim status will update automatically')
+      } else {
+        toast.error('Failed to start payment simulation')
+      }
+    } catch (error) {
+      console.error('Error simulating payment:', error)
+      toast.error('Failed to simulate payment')
     }
   }
 
@@ -993,7 +1043,13 @@ export default function ClaimDetailPage() {
                     </p>
                   </div>
                 </div>
-                <div className="mt-6 flex justify-end">
+                <div className="mt-6 flex justify-between">
+                  <button
+                    onClick={handleSimulatePayment}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors font-medium"
+                  >
+                    Simulate Payment
+                  </button>
                   <button
                     onClick={() => setShowApiWarningModal(false)}
                     className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
