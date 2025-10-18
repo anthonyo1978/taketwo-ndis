@@ -149,7 +149,13 @@ CREATE POLICY "Users can modify organization settings in own org" ON organizatio
   USING (organization_id = public.current_user_organization_id())
   WITH CHECK (organization_id = public.current_user_organization_id());
 
--- USERS (Simple policies without recursion)
+-- USERS (Drop existing first, then recreate - these might still exist from migration 039)
+DROP POLICY IF EXISTS "Users can view users in own org" ON users;
+DROP POLICY IF EXISTS "Users can create users in own org" ON users;
+DROP POLICY IF EXISTS "Users can update users in own org" ON users;
+DROP POLICY IF EXISTS "Users can delete users in own org" ON users;
+
+-- Now create clean policies without recursion
 CREATE POLICY "Users can view users in own org" ON users
   FOR SELECT USING (organization_id = public.current_user_organization_id());
 CREATE POLICY "Users can create users in own org" ON users
