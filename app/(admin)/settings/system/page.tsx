@@ -112,10 +112,24 @@ export default function SystemSettingsPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">System Preferences</h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Configure application behavior and logging levels
-          </p>
+          <div className="flex items-center space-x-4 mb-4">
+            <button
+              onClick={() => window.history.back()}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="text-sm font-medium">Back to Settings</span>
+            </button>
+            <div className="h-6 w-px bg-gray-300"></div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">System Preferences</h1>
+              <p className="mt-1 text-sm text-gray-600">
+                Configure application behavior and logging levels
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-6">
