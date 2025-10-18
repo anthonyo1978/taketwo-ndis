@@ -59,10 +59,14 @@ export async function GET(request: NextRequest) {
       hour12: false
     }).format(now)
     
-    const [currentHour, currentMinute] = currentTimeInTimezone.split(':').map(Number)
+    const timeParts = currentTimeInTimezone.split(':').map(Number)
+    const currentHour = timeParts[0] ?? 0
+    const currentMinute = timeParts[1] ?? 0
     
     // Parse the run time from settings (format: "HH:MM:SS" or "HH:MM")
-    const [runHour, runMinute] = settings.run_time.split(':').map(Number)
+    const runTimeParts = settings.run_time.split(':').map(Number)
+    const runHour = runTimeParts[0] ?? 0
+    const runMinute = runTimeParts[1] ?? 0
     
     console.log(`[AUTOMATION CRON] Timezone: ${configuredTimezone}`)
     console.log(`[AUTOMATION CRON] Current time in ${configuredTimezone}: ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`)
