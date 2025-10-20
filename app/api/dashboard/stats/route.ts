@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
+import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 
 export interface DashboardStats {
   portfolio: {
@@ -53,13 +54,22 @@ export interface DashboardStats {
  */
 export async function GET(request: NextRequest) {
   try {
+    // Get organization context
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found' },
+        { status: 401 }
+      )
+    }
+    
     const supabase = await createClient()
     
     console.log('[Dashboard API] Fetching portfolio metrics...')
     
     // 1. Get portfolio overview
     const { data: portfolioData, error: portfolioError } = await supabase
-      .rpc('get_portfolio_metrics')
+      .rpc('get_portfolio_metrics', { org_id: organizationId })
     
     if (portfolioError) {
       console.error('[Dashboard API] Portfolio metrics error:', portfolioError)
@@ -86,9 +96,9 @@ export async function GET(request: NextRequest) {
     
     // 3. Get transaction metrics for different periods
     const [metrics7d, metrics30d, metrics12m] = await Promise.all([
-      supabase.rpc('get_transaction_metrics', { days_back: 7 }),
-      supabase.rpc('get_transaction_metrics', { days_back: 30 }),
-      supabase.rpc('get_transaction_metrics', { days_back: 365 })
+      supabase.rpc('get_transaction_metrics', { org_id: organizationId, days_back: 7 }),
+      supabase.rpc('get_transaction_metrics', { org_id: organizationId, days_back: 30 }),
+      supabase.rpc('get_transaction_metrics', { org_id: organizationId, days_back: 365 })
     ])
     
     if (metrics7d.error || metrics30d.error || metrics12m.error) {
@@ -106,7 +116,7 @@ export async function GET(request: NextRequest) {
     
     // 4. Get monthly trends
     const { data: monthlyTrends, error: trendsError } = await supabase
-      .rpc('get_monthly_transaction_trends', { months_back: 6 })
+      .rpc('get_monthly_transaction_trends', { org_id: organizationId, months_back: 6 })
     
     if (trendsError) {
       console.error('[Dashboard API] Monthly trends error:', trendsError)
@@ -117,7 +127,7 @@ export async function GET(request: NextRequest) {
     
     // 5. Get recent activity
     const { data: recentActivity, error: activityError } = await supabase
-      .rpc('get_recent_activity', { limit_count: 10 })
+      .rpc('get_recent_activity', { org_id: organizationId, limit_count: 10 })
     
     if (activityError) {
       console.error('[Dashboard API] Recent activity error:', activityError)
@@ -128,7 +138,7 @@ export async function GET(request: NextRequest) {
     
     // 6. Get house performance
     const { data: housePerformance, error: houseError } = await supabase
-      .rpc('get_house_performance')
+      .rpc('get_house_performance', { org_id: organizationId })
     
     if (houseError) {
       console.error('[Dashboard API] House performance error:', houseError)
