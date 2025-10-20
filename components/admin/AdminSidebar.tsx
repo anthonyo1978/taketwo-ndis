@@ -68,7 +68,7 @@ export interface AdminSidebarProps {
  * @returns JSX element for the admin sidebar
  */
 export function AdminSidebar({ className }: AdminSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(true) // Default to collapsed
   const [mounted, setMounted] = useState(false)
 
   // Load collapsed state from localStorage on client-side
@@ -77,6 +77,9 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored !== null) {
       setIsCollapsed(JSON.parse(stored) as boolean)
+    } else {
+      // If no stored preference, default to collapsed
+      setIsCollapsed(true)
     }
   }, [])
 
@@ -110,18 +113,18 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       <aside className={`bg-white border-r border-gray-200 ${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 ${className || ''}`}>
         <div className="h-full flex flex-col">
           {/* Header with logo/title - matches top bar height */}
-          <div className="px-4 py-4 flex items-center">
+          <div className={`py-4 flex items-center ${isCollapsed ? 'justify-center px-2' : 'px-4'}`}>
             <Link 
               href="/dashboard"
-              className="flex items-center gap-3 font-semibold text-gray-900 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
+              className="flex items-center gap-3 font-semibold text-gray-900 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded group"
             >
               <div className="size-12 rounded-lg flex items-center justify-center overflow-hidden">
                 <Image
-                  src="/assets/house.png"
+                  src="/assets/house-new.png"
                   alt="Haven"
                   width={48}
                   height={48}
-                  className="object-contain"
+                  className="object-contain transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
               {!isCollapsed && (
