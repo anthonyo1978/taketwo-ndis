@@ -27,8 +27,6 @@ interface AutomationSettings {
   id?: string
   organizationId: string
   enabled: boolean
-  runTime: string
-  timezone: string
   adminEmails: string[]
   notificationSettings: {
     frequency: "endOfRun" | "endOfWeek" | "off"
@@ -103,8 +101,6 @@ export function AutomationSettingsPage() {
           // Create a properly structured object for form reset
           const formData = {
             enabled: data.data.enabled,
-            runTime: data.data.runTime.substring(0, 5), // Convert "23:00:00" to "23:00" for HTML time input
-            timezone: data.data.timezone,
             adminEmails: data.data.adminEmails,
             notificationSettings: {
               frequency: data.data.notificationSettings.frequency,
@@ -150,10 +146,8 @@ export function AutomationSettingsPage() {
 
   const onSubmit = async (data: AutomationSettingsData) => {
     try {
-      // Convert time format for database storage
       const submitData = {
-        ...data,
-        runTime: data.runTime + ':00' // Convert "23:00" to "23:00:00" for database
+        ...data
       }
       
       console.log('Submitting form data:', submitData)
@@ -678,8 +672,6 @@ export function AutomationSettingsPage() {
                   // Reset form to default values
                   const defaultValues = {
                     enabled: false,
-                    runTime: "02:00",
-                    timezone: "Australia/Sydney",
                     adminEmails: [],
                     notificationSettings: {
                       frequency: "endOfRun" as const,
