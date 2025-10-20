@@ -109,7 +109,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
       <aside className={`bg-white border-r border-gray-200 ${isCollapsed ? 'w-16' : 'w-64'} transition-all duration-300 ${className || ''}`}>
         <div className="h-full flex flex-col">
           {/* Header with logo/title - matches top bar height */}
-          <div className="px-4 py-4 border-b border-gray-200 flex items-center">
+          <div className="px-4 py-4 flex items-center">
             <Link 
               href="/dashboard"
               className="flex items-center gap-3 font-semibold text-gray-900 hover:text-blue-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded"
