@@ -16,6 +16,7 @@ import { useEffect, useState } from "react"
 
 import { Button } from "components/Button/Button"
 import { NavItem } from "./NavItem"
+import { UserProfileIcon } from "components/layout/UserProfileIcon"
 
 const NAVIGATION_ITEMS = [
   {
@@ -146,8 +147,14 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
             ))}
           </nav>
 
-          {/* Footer with collapse button */}
-          <div className="p-4 border-t border-gray-200">
+          {/* Footer with user profile and collapse button */}
+          <div className="p-4 border-t border-gray-200 space-y-3">
+            {/* User Profile Icon */}
+            <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-start'}`}>
+              <UserProfileIcon />
+            </div>
+            
+            {/* Collapse Button */}
             <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'}`}>
               <Button
                 type="button"
