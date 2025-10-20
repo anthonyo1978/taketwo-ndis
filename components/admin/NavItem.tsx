@@ -78,11 +78,11 @@ export function NavItem({
   const content = (
     <Link
       href={href}
-      className={twMerge(navItem({ active: isActive, collapsed }), className)}
+      className={twMerge(navItem({ active: isActive, collapsed }), "group", className)}
       aria-current={isActive ? "page" : undefined}
     >
       <Icon 
-        className="size-5 shrink-0" 
+        className="size-5 shrink-0 transition-transform duration-200 group-hover:scale-110" 
         aria-hidden="true"
       />
       {!collapsed && (
