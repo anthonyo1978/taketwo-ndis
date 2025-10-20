@@ -4,21 +4,20 @@ import { createClient } from "lib/supabase/server"
 import { sendAutomationCompletionEmail, sendAutomationErrorEmail } from "lib/services/email-notifications"
 
 /**
- * Automated Billing Cron Job
+ * Automated Billing Cron Job - Multi-Tenant
  * 
- * This endpoint is called by Vercel Cron on a schedule (e.g., daily at 2:00 AM)
- * It processes all eligible contracts and generates transactions automatically.
+ * This endpoint is called by Vercel Cron daily at midnight UTC (0 0 * * *)
+ * It processes ALL organizations with automation enabled.
+ * Each org gets separate transaction generation and email notification.
  * 
- * Security: In production, this should be protected by a CRON_SECRET environment variable
- * 
- * TEST COMMENT: Testing local → GitHub → Vercel deployment pathway - $(date)
+ * Security: Protected by CRON_SECRET environment variable
  */
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
   const executionDate = new Date().toISOString()
   
   try {
-    // Verify cron secret (optional but recommended for production)
+    // Verify cron secret
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
     
@@ -29,209 +28,199 @@ export async function GET(request: NextRequest) {
       }, { status: 401 })
     }
     
-    // Check if automation is enabled and if it's time to run
+    console.log(`[AUTOMATION CRON] Starting multi-org automation run at ${executionDate}`)
+    
     const supabase = await createClient()
-    const { data: settings } = await supabase
+    
+    // Get ALL organizations with automation enabled
+    const { data: allOrgSettings, error: settingsError } = await supabase
       .from('automation_settings')
-      .select('enabled, run_time, timezone, admin_emails')
-      .eq('organization_id', '00000000-0000-0000-0000-000000000000')
-      .single()
+      .select('organization_id, enabled, admin_emails, organizations!inner(name, slug)')
+      .eq('enabled', true)
     
-    if (!settings || !settings.enabled) {
-      console.log('Automation is disabled. Skipping cron job.')
+    if (settingsError) {
+      console.error('[AUTOMATION CRON] Error fetching org settings:', settingsError)
       return NextResponse.json({
-        success: true,
-        message: 'Automation is disabled',
-        skipped: true
-      })
+        success: false,
+        error: 'Failed to fetch automation settings'
+      }, { status: 500 })
     }
-
-    // Check if it's time to run based on settings
-    // Convert current UTC time to configured timezone for accurate comparison
-    const configuredTimezone = settings.timezone || 'Australia/Sydney'
-    const now = new Date()
     
-    // Get current time in the configured timezone
-    const currentTimeInTimezone = new Intl.DateTimeFormat('en-AU', {
-      timeZone: configuredTimezone,
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    }).format(now)
-    
-    const timeParts = currentTimeInTimezone.split(':').map(Number)
-    const currentHour = timeParts[0] ?? 0
-    const currentMinute = timeParts[1] ?? 0
-    
-    // Parse the run time from settings (format: "HH:MM:SS" or "HH:MM")
-    const runTimeParts = settings.run_time.split(':').map(Number)
-    const runHour = runTimeParts[0] ?? 0
-    const runMinute = runTimeParts[1] ?? 0
-    
-    console.log(`[AUTOMATION CRON] Timezone: ${configuredTimezone}`)
-    console.log(`[AUTOMATION CRON] Current time in ${configuredTimezone}: ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`)
-    console.log(`[AUTOMATION CRON] Configured run time: ${runHour.toString().padStart(2, '0')}:${runMinute.toString().padStart(2, '0')}`)
-    
-    // Only run if the current time matches the configured time (within the same hour and minute)
-    if (currentHour !== runHour || currentMinute !== runMinute) {
-      console.log(`[AUTOMATION CRON] Not time to run yet. Skipping...`)
+    if (!allOrgSettings || allOrgSettings.length === 0) {
+      console.log('[AUTOMATION CRON] No organizations have automation enabled')
       return NextResponse.json({
         success: true,
-        message: `Not time to run yet. Configured time: ${runHour.toString().padStart(2, '0')}:${runMinute.toString().padStart(2, '0')} ${configuredTimezone}, Current time: ${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')} ${configuredTimezone}`,
+        message: 'No organizations have automation enabled',
         skipped: true,
-        configuredTime: `${runHour.toString().padStart(2, '0')}:${runMinute.toString().padStart(2, '0')} ${configuredTimezone}`,
-        currentTime: `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')} ${configuredTimezone}`
+        processedOrgs: 0
       })
     }
     
-    console.log(`[AUTOMATION CRON] ✅ Time matches! Proceeding with automation run...`)
+    console.log(`[AUTOMATION CRON] Found ${allOrgSettings.length} organization(s) with automation enabled`)
     
-    // Generate transactions for all eligible contracts
-    console.log(`[AUTOMATION CRON] Starting automated billing run at ${executionDate}`)
-    console.log(`[AUTOMATION CRON] Using timezone: ${settings.timezone || 'Australia/Sydney'}`)
-    const result = await generateTransactionsForEligibleContracts(settings.timezone)
+    // Process each organization
+    const orgResults = []
     
-    const executionTime = Date.now() - startTime
-    
-    // Create automation log entry
-    const logEntry = {
-      run_date: executionDate,
-      organization_id: '00000000-0000-0000-0000-000000000000', // TODO: Multi-org support
-      status: result.success && result.failedTransactions === 0 ? 'success' 
-        : result.failedTransactions > 0 && result.successfulTransactions > 0 ? 'partial'
-        : 'failed',
-      contracts_processed: result.successfulTransactions,
-      contracts_skipped: 0, // Could be enhanced to track skipped contracts
-      contracts_failed: result.failedTransactions,
-      execution_time_ms: executionTime,
-      errors: result.errors,
-      summary: generateHumanReadableSummary(result, executionDate, settings.timezone)
-    }
-    
-    // Save log to database
-    await supabase
-      .from('automation_logs')
-      .insert(logEntry)
-    
-    // Log results
-    console.log(`[AUTOMATION CRON] Completed in ${executionTime}ms`)
-    console.log(`[AUTOMATION CRON] Processed: ${result.processedContracts} contracts`)
-    console.log(`[AUTOMATION CRON] Successful: ${result.successfulTransactions} transactions`)
-    console.log(`[AUTOMATION CRON] Failed: ${result.failedTransactions} transactions`)
-    console.log(`[AUTOMATION CRON] Total Amount: $${result.summary.totalAmount.toFixed(2)}`)
-    
-    if (result.errors.length > 0) {
-      console.error(`[AUTOMATION CRON] Errors:`, result.errors)
-    }
-    
-    // Send email notifications to admin emails
-    if (settings.admin_emails && settings.admin_emails.length > 0) {
-      console.log('[AUTOMATION CRON] Preparing email with', result.transactions.length, 'transactions')
-      console.log('[AUTOMATION CRON] Transaction IDs:', result.transactions.map(t => t.id))
+    for (const orgSetting of allOrgSettings) {
+      const orgId = orgSetting.organization_id
+      const orgName = (orgSetting.organizations as any)?.name || 'Unknown Org'
+      const adminEmails = orgSetting.admin_emails || []
       
-      // Fetch resident names and updated contract balances for email
-      const transactionDetails = await Promise.all(
-        result.transactions.map(async (txn) => {
-          const { data: resident } = await supabase
-            .from('residents')
-            .select('first_name, last_name')
-            .eq('id', txn.residentId)
-            .single()
+      console.log(`[AUTOMATION CRON] Processing organization: ${orgName} (${orgId})`)
+      
+      try {
+        // Generate transactions for this org (uses Australia/Sydney timezone by default)
+        const result = await generateTransactionsForEligibleContracts('Australia/Sydney', orgId)
+        
+        const orgExecutionTime = Date.now() - startTime
+        
+        // Create automation log entry for this org
+        const logEntry = {
+          run_date: executionDate,
+          organization_id: orgId,
+          status: result.success && result.failedTransactions === 0 ? 'success' 
+            : result.failedTransactions > 0 && result.successfulTransactions > 0 ? 'partial'
+            : 'failed',
+          contracts_processed: result.successfulTransactions,
+          contracts_skipped: 0,
+          contracts_failed: result.failedTransactions,
+          execution_time_ms: orgExecutionTime,
+          errors: result.errors,
+          summary: generateHumanReadableSummary(result, executionDate, orgName)
+        }
+        
+        // Save log to database
+        await supabase
+          .from('automation_logs')
+          .insert(logEntry)
+        
+        // Log results for this org
+        console.log(`[AUTOMATION CRON] ${orgName} - Completed in ${orgExecutionTime}ms`)
+        console.log(`[AUTOMATION CRON] ${orgName} - Processed: ${result.processedContracts} contracts`)
+        console.log(`[AUTOMATION CRON] ${orgName} - Successful: ${result.successfulTransactions} transactions`)
+        console.log(`[AUTOMATION CRON] ${orgName} - Failed: ${result.failedTransactions} transactions`)
+        
+        // Send email notification to this org's admins
+        if (adminEmails && adminEmails.length > 0) {
+          console.log(`[AUTOMATION CRON] ${orgName} - Preparing email for ${adminEmails.length} recipient(s)`)
           
-          const { data: contract } = await supabase
-            .from('funding_contracts')
-            .select('current_balance, next_run_date')
-            .eq('id', txn.contractId)
-            .single()
+          // Fetch resident names and updated contract balances for email
+          const transactionDetails = await Promise.all(
+            result.transactions.map(async (txn) => {
+              const { data: resident } = await supabase
+                .from('residents')
+                .select('first_name, last_name')
+                .eq('id', txn.residentId)
+                .single()
+              
+              const { data: contract } = await supabase
+                .from('funding_contracts')
+                .select('current_balance, next_run_date')
+                .eq('id', txn.contractId)
+                .single()
+              
+              return {
+                residentName: resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown',
+                amount: txn.amount,
+                remainingBalance: contract?.current_balance || 0,
+                nextRunDate: contract?.next_run_date || new Date().toISOString()
+              }
+            })
+          )
           
-          const detail = {
-            residentName: resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown',
-            amount: txn.amount,
-            remainingBalance: contract?.current_balance || 0,
-            nextRunDate: contract?.next_run_date || new Date().toISOString()
+          // Add resident names to errors
+          const errorsWithNames = await Promise.all(
+            result.errors.map(async (error) => {
+              const { data: resident } = await supabase
+                .from('residents')
+                .select('first_name, last_name')
+                .eq('id', error.residentId)
+                .single()
+              
+              return {
+                ...error,
+                residentName: resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown'
+              }
+            })
+          )
+          
+          const emailResult = await sendAutomationCompletionEmail(
+            adminEmails,
+            {
+              executionDate,
+              executionTime: orgExecutionTime,
+              processedContracts: result.processedContracts,
+              successfulTransactions: result.successfulTransactions,
+              failedTransactions: result.failedTransactions,
+              totalAmount: result.summary.totalAmount,
+              transactions: transactionDetails,
+              errors: errorsWithNames,
+              summary: result.summary,
+              timezone: 'Australia/Sydney'
+            }
+          )
+          
+          if (!emailResult.success) {
+            console.error(`[AUTOMATION CRON] ${orgName} - Failed to send email:`, emailResult.error)
+          } else {
+            console.log(`[AUTOMATION CRON] ${orgName} - Email sent to: ${adminEmails.join(', ')}`)
           }
-          console.log('[AUTOMATION CRON] Transaction detail for email:', detail)
-          return detail
-        })
-      )
-      
-      console.log('[AUTOMATION CRON] Final transactionDetails for email:', transactionDetails)
-      
-      // Add resident names to errors
-      const errorsWithNames = await Promise.all(
-        result.errors.map(async (error) => {
-          const { data: resident } = await supabase
-            .from('residents')
-            .select('first_name, last_name')
-            .eq('id', error.residentId)
-            .single()
-          
-          return {
-            ...error,
-            residentName: resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown'
-          }
-        })
-      )
-      
-      const emailResult = await sendAutomationCompletionEmail(
-        settings.admin_emails,
-        {
-          executionDate,
-          executionTime,
+        }
+        
+        // Store result for summary
+        orgResults.push({
+          organizationId: orgId,
+          organizationName: orgName,
+          success: result.success,
           processedContracts: result.processedContracts,
           successfulTransactions: result.successfulTransactions,
           failedTransactions: result.failedTransactions,
-          totalAmount: result.summary.totalAmount,
-          transactions: transactionDetails,
-          errors: errorsWithNames,
-          summary: result.summary,
-          timezone: settings.timezone || 'Australia/Sydney'
+          totalAmount: result.summary.totalAmount
+        })
+        
+      } catch (orgError) {
+        console.error(`[AUTOMATION CRON] ${orgName} - Fatal error:`, orgError)
+        
+        // Try to send error email to this org's admins
+        if (adminEmails && adminEmails.length > 0) {
+          await sendAutomationErrorEmail(
+            adminEmails,
+            orgError instanceof Error ? orgError.message : 'Unknown error',
+            orgError
+          )
         }
-      )
-      
-      if (!emailResult.success) {
-        console.error('[AUTOMATION CRON] Failed to send email notification:', emailResult.error)
-      } else {
-        console.log('[AUTOMATION CRON] Email notification sent to:', settings.admin_emails.join(', '))
+        
+        orgResults.push({
+          organizationId: orgId,
+          organizationName: orgName,
+          success: false,
+          error: orgError instanceof Error ? orgError.message : 'Unknown error'
+        })
       }
     }
     
+    const totalExecutionTime = Date.now() - startTime
+    
+    console.log(`[AUTOMATION CRON] ========================================`)
+    console.log(`[AUTOMATION CRON] MULTI-ORG RUN COMPLETE`)
+    console.log(`[AUTOMATION CRON] Total execution time: ${totalExecutionTime}ms`)
+    console.log(`[AUTOMATION CRON] Organizations processed: ${orgResults.length}`)
+    console.log(`[AUTOMATION CRON] ========================================`)
+    
+    // Return summary of all orgs
     return NextResponse.json({
-      success: result.success,
+      success: true,
       data: {
         executionDate,
-        executionTime,
-        processedContracts: result.processedContracts,
-        successfulTransactions: result.successfulTransactions,
-        failedTransactions: result.failedTransactions,
-        totalAmount: result.summary.totalAmount,
-        summary: result.summary
+        totalExecutionTime,
+        processedOrganizations: orgResults.length,
+        organizationResults: orgResults
       }
     })
     
   } catch (error) {
     const executionTime = Date.now() - startTime
     console.error('[AUTOMATION CRON] Fatal error:', error)
-    
-    // Try to send error email notification
-    try {
-      const supabase = await createClient()
-      const { data: settings } = await supabase
-        .from('automation_settings')
-        .select('admin_emails')
-        .eq('organization_id', '00000000-0000-0000-0000-000000000000')
-        .single()
-      
-      if (settings?.admin_emails && settings.admin_emails.length > 0) {
-        await sendAutomationErrorEmail(
-          settings.admin_emails,
-          error instanceof Error ? error.message : 'Unknown error',
-          error
-        )
-      }
-    } catch (emailError) {
-      console.error('[AUTOMATION CRON] Failed to send error email:', emailError)
-    }
     
     return NextResponse.json({
       success: false,
@@ -245,14 +234,15 @@ export async function GET(request: NextRequest) {
 /**
  * Generate a human-readable summary of the automation run
  */
-function generateHumanReadableSummary(result: any, executionDate: string, timezone: string = 'Australia/Sydney'): string {
+function generateHumanReadableSummary(result: any, executionDate: string, orgName: string): string {
   const date = new Date(executionDate).toLocaleString('en-AU', {
     dateStyle: 'full',
     timeStyle: 'short',
-    timeZone: timezone
+    timeZone: 'Australia/Sydney'
   })
   
-  let summary = `Automated Billing Run - ${date}\n\n`
+  let summary = `Automated Billing Run - ${orgName}\n`
+  summary += `${date}\n\n`
   summary += `📊 SUMMARY\n`
   summary += `• Contracts Processed: ${result.processedContracts}\n`
   summary += `• Successful Transactions: ${result.successfulTransactions}\n`
@@ -283,4 +273,3 @@ function generateHumanReadableSummary(result: any, executionDate: string, timezo
 }
 
 // Force deployment trigger
-

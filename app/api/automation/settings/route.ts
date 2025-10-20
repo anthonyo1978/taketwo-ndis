@@ -6,12 +6,8 @@ import { getCurrentUserOrganizationId } from "lib/utils/organization"
 // Automation settings schema for API validation
 const automationSettingsSchema = z.object({
   enabled: z.boolean().default(false),
-  runTime: z.string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, "Run time must be in HH:MM or HH:MM:SS format")
-    .default("02:00"),
-  timezone: z.string()
-    .min(1, "Timezone is required")
-    .default("Australia/Sydney"),
+  runTime: z.string().optional().default("00:00:00"), // Hardcoded to midnight
+  timezone: z.string().optional().default("Australia/Sydney"), // Hardcoded
   adminEmails: z.array(z.string().email("Invalid email address"))
     .min(1, "At least one admin email is required")
     .default([]),
@@ -185,7 +181,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const settingsData = validation.data
+    const settingsData = {
+      ...validation.data,
+      runTime: "00:00:00",  // Hardcoded: midnight
+      timezone: "Australia/Sydney"  // Hardcoded for all orgs
+    }
     
     // Get user's organization
     const organizationId = await getCurrentUserOrganizationId()

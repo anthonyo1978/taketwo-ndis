@@ -121,17 +121,23 @@ export async function checkContractEligibility(contractId: string): Promise<Cont
  * 
  * @param timezone - IANA timezone string (e.g., "Australia/Sydney"). If not provided, fetches from database.
  */
-export async function getEligibleContracts(timezone?: string): Promise<ContractEligibilityResult[]> {
+export async function getEligibleContracts(timezone?: string, organizationId?: string): Promise<ContractEligibilityResult[]> {
   const supabase = await createClient()
   
   // If timezone not provided, fetch from automation settings
   if (!timezone) {
-    const { data: settings } = await supabase
+    const query = supabase
       .from('automation_settings')
       .select('timezone')
-      .eq('organization_id', '00000000-0000-0000-0000-000000000000')
-      .single()
     
+    // If org specified, use it; otherwise use default
+    if (organizationId) {
+      query.eq('organization_id', organizationId)
+    } else {
+      query.eq('organization_id', '00000000-0000-0000-0000-000000000000')
+    }
+    
+    const { data: settings } = await query.single()
     timezone = settings?.timezone || 'Australia/Sydney'
   }
   
@@ -155,7 +161,8 @@ export async function getEligibleContracts(timezone?: string): Promise<ContractE
 
   // Get all contracts with automation enabled that have next_run_date = TODAY
   // Simple equality check since next_run_date is now DATE type (no timezone component)
-  const { data: contracts, error } = await supabase
+  // Build query with optional organization filter
+  let query = supabase
     .from('funding_contracts')
     .select(`
       *,
@@ -177,6 +184,13 @@ export async function getEligibleContracts(timezone?: string): Promise<ContractE
     `)
     .eq('auto_billing_enabled', true)
     .eq('next_run_date', todayStr)
+  
+  // Filter by organization if specified
+  if (organizationId) {
+    query = query.eq('organization_id', organizationId)
+  }
+  
+  const { data: contracts, error } = await query
 
   if (error) {
     console.error('[ELIGIBILITY] Error fetching contracts:', error)

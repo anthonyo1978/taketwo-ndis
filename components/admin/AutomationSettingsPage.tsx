@@ -7,13 +7,9 @@ import { z } from "zod"
 import { Button } from "components/Button/Button"
 import { Input } from "components/ui/Input"
 
-// Automation settings schema
+// Automation settings schema (simplified for multi-tenant)
 const automationSettingsSchema = z.object({
   enabled: z.boolean(),
-  runTime: z.string()
-    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/, "Run time must be in HH:MM or HH:MM:SS format"),
-  timezone: z.string()
-    .min(1, "Timezone is required"),
   adminEmails: z.array(z.string().email("Invalid email address"))
     .min(1, "At least one admin email is required"),
   notificationSettings: z.object({
@@ -66,8 +62,6 @@ export function AutomationSettingsPage() {
     resolver: zodResolver(automationSettingsSchema),
     defaultValues: {
       enabled: false,
-      runTime: "02:00",
-      timezone: "Australia/Sydney",
       adminEmails: [],
       notificationSettings: {
         frequency: "endOfRun",
@@ -469,39 +463,21 @@ export function AutomationSettingsPage() {
                 </label>
               </div>
 
-              {/* Run Time */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Input
-                    label="Run Time"
-                    type="time"
-                    {...form.register("runTime")}
-                    error={form.formState.errors.runTime?.message}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">Time when automation runs daily (24-hour format)</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Timezone
-                  </label>
-                  <select
-                    value={formValues?.timezone || 'Australia/Sydney'}
-                    onChange={(e) => {
-                      form.setValue('timezone', e.target.value)
-                      setFormValues((prev: any) => ({ ...prev, timezone: e.target.value }))
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="Australia/Sydney">Australia/Sydney</option>
-                    <option value="Australia/Melbourne">Australia/Melbourne</option>
-                    <option value="Australia/Brisbane">Australia/Brisbane</option>
-                    <option value="Australia/Perth">Australia/Perth</option>
-                    <option value="Australia/Adelaide">Australia/Adelaide</option>
-                    <option value="Australia/Darwin">Australia/Darwin</option>
-                    <option value="UTC">UTC</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">Timezone for automation execution</p>
+              {/* Info about automated scheduling */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start">
+                  <svg className="w-5 h-5 text-blue-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      ⏰ Automated Schedule
+                    </p>
+                    <p className="text-sm text-blue-800">
+                      Automation runs daily at <strong>12:00 AM UTC (midnight)</strong> for all organizations. 
+                      Eligible contracts are processed automatically and notifications are sent to admin emails.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
