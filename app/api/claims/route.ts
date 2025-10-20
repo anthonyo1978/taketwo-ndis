@@ -114,9 +114,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate claim number
+    // Generate claim number (per organization)
     const { data: claimNumberData, error: claimNumberError } = await supabase
-      .rpc('generate_claim_number')
+      .rpc('generate_claim_number', { org_id: organizationId })
 
     if (claimNumberError || !claimNumberData) {
       console.error('Error generating claim number:', claimNumberError)
