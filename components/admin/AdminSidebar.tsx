@@ -120,7 +120,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
             >
               <div className="size-12 rounded-lg flex items-center justify-center overflow-hidden">
                 <Image
-                  src="/assets/house-new.png"
+                  src="/assets/Haven_House_App_Icon_Compressed.jpg"
                   alt="Haven"
                   width={48}
                   height={48}
