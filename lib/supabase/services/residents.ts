@@ -453,8 +453,16 @@ export class ResidentService {
    */
   async createFundingContract(residentId: string, contract: Omit<FundingInformation, 'id' | 'createdAt' | 'updatedAt'>): Promise<FundingInformation> {
     try {
+      // Get current user's organization ID
+      const organizationId = await getCurrentUserOrganizationId()
+      
+      if (!organizationId) {
+        throw new Error('User organization not found. Please log in again.')
+      }
+      
       const dbContract = {
         resident_id: residentId,
+        organization_id: organizationId, // Multi-tenancy: Add organization context
         type: contract.type,
         amount: contract.amount,
         start_date: contract.startDate,
