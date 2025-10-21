@@ -214,8 +214,12 @@ export class HouseService {
 
       if (error) {
         console.error('Error creating house:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
         throw new Error(`Failed to create house: ${error.message}`)
       }
+
+      // Debug: Log what Supabase returned
+      console.log('[HOUSE SERVICE] Supabase returned:', JSON.stringify(data, null, 2))
 
       return this.convertDbHouseToFrontend(data)
     } catch (error) {
