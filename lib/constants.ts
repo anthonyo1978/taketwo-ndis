@@ -15,7 +15,7 @@ export const AUSTRALIAN_STATES: AustralianState[] = [
 export const HOUSE_STATUSES: HouseStatus[] = [
   'Active',
   'Vacant', 
-  'Under maintenance'
+  'Maintenance'
 ] as const
 
 export const DEFAULT_COUNTRY = 'AU'

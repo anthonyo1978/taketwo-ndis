@@ -151,7 +151,7 @@ test.describe("Dynamic House Listing", () => {
     const houses = [
       { address: "Active House", status: "Active" },
       { address: "Vacant House", status: "Vacant" },
-      { address: "Maintenance House", status: "Under maintenance" }
+      { address: "Maintenance House", status: "Maintenance" }
     ]
     
     for (const house of houses) {
@@ -179,7 +179,7 @@ test.describe("Dynamic House Listing", () => {
     const vacantRow = page.locator("tr").filter({ hasText: "Vacant House" })
     await expect(vacantRow.locator(".bg-yellow-100")).toBeVisible()
     
-    // Under maintenance = red
+    // Maintenance = red
     const maintenanceRow = page.locator("tr").filter({ hasText: "Maintenance House" })
     await expect(maintenanceRow.locator(".bg-red-100")).toBeVisible()
   })

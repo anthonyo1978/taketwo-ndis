@@ -116,7 +116,7 @@ describe('HouseForm', () => {
     expect(options).toHaveLength(3)
     
     const statusValues = Array.from(options).map(option => option.textContent)
-    expect(statusValues).toEqual(['Active', 'Vacant', 'Under maintenance'])
+    expect(statusValues).toEqual(['Active', 'Vacant', 'Maintenance'])
   })
 
   it('should submit valid form data', async () => {

@@ -53,7 +53,7 @@ describe('houseCreateSchema', () => {
     })
 
     it('should accept all valid house statuses', () => {
-      const statuses = ['Active', 'Vacant', 'Under maintenance']
+      const statuses = ['Active', 'Vacant', 'Maintenance']
       
       statuses.forEach(status => {
         const data = { ...validHouseData, status }
