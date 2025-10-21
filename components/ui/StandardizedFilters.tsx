@@ -80,7 +80,7 @@ export function StandardizedFilters({
           </div>
           <input
             type="text"
-            placeholder="Search..."
+            placeholder="Search house names, addresses..."
             value={searchValue}
             onChange={(e) => onSearchChange(e.target.value)}
             onKeyDown={(e) => {

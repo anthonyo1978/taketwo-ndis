@@ -71,7 +71,7 @@ export class HouseService {
 
       // Add search filter
       if (search) {
-        query = query.or(`address1.ilike.%${search}%,suburb.ilike.%${search}%,postcode.ilike.%${search}%`)
+        query = query.or(`descriptor.ilike.%${search}%,address1.ilike.%${search}%,suburb.ilike.%${search}%,postcode.ilike.%${search}%`)
       }
 
       // Add status filter
