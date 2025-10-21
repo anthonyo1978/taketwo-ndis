@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { ResidentAvatars } from "components/residents/ResidentAvatars"
 import { Pagination } from "components/ui/Pagination"
 import { SearchAndFilter } from "components/ui/SearchAndFilter"
+import { StandardizedFilters } from "components/ui/StandardizedFilters"
 import { LoadingSpinner } from "components/ui/LoadingSpinner"
 import type { House } from "types/house"
 
@@ -44,6 +45,7 @@ function HousesPageContent() {
   // Initialize search and filter state from URL params
   const [search, setSearch] = useState(searchParams.get('search') || '')
   const [status, setStatus] = useState(searchParams.get('status') || '')
+  const [dateRange, setDateRange] = useState(searchParams.get('dateRange') || '')
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'created_at')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
     (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
@@ -62,6 +64,7 @@ function HousesPageContent() {
         limit: pagination.limit.toString(),
         search: debouncedSearch,
         status,
+        dateRange,
         sortBy,
         sortOrder
       })
@@ -83,7 +86,7 @@ function HousesPageContent() {
     } finally {
       setLoading(false)
     }
-  }, [pagination.page, pagination.limit, debouncedSearch, status, sortBy, sortOrder])
+  }, [pagination.page, pagination.limit, debouncedSearch, status, dateRange, sortBy, sortOrder])
 
   useEffect(() => {
     fetchHouses()
@@ -104,6 +107,7 @@ function HousesPageContent() {
     limit?: number
     search?: string
     status?: string
+    dateRange?: string
     sortBy?: string
     sortOrder?: string
   }) => {
@@ -118,6 +122,10 @@ function HousesPageContent() {
     if (newParams.status !== undefined) {
       if (newParams.status) params.set('status', newParams.status)
       else params.delete('status')
+    }
+    if (newParams.dateRange !== undefined) {
+      if (newParams.dateRange) params.set('dateRange', newParams.dateRange)
+      else params.delete('dateRange')
     }
     if (newParams.sortBy !== undefined) params.set('sortBy', newParams.sortBy)
     if (newParams.sortOrder !== undefined) params.set('sortOrder', newParams.sortOrder)
@@ -160,6 +168,12 @@ function HousesPageContent() {
     updateUrlParams({ status: value, page: 1 })
   }
 
+  const handleDateRangeChange = (value: string) => {
+    setDateRange(value)
+    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+    updateUrlParams({ dateRange: value, page: 1 })
+  }
+
   const handleSortByChange = (value: string) => {
     setSortBy(value)
     setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
@@ -174,6 +188,11 @@ function HousesPageContent() {
 
   const retryFetch = () => {
     fetchHouses()
+  }
+
+  const handleDownload = () => {
+    // TODO: Implement houses export functionality
+    console.log('Export houses functionality to be implemented')
   }
 
   // Loading state with skeleton table
@@ -295,15 +314,14 @@ function HousesPageContent() {
 
         {/* Search and Filter */}
         <div className="mb-6">
-          <SearchAndFilter
+          <StandardizedFilters
             searchValue={search}
             onSearchChange={handleSearchChange}
             statusValue={status}
             onStatusChange={handleStatusChange}
-            sortBy={sortBy}
-            onSortByChange={handleSortByChange}
-            sortOrder={sortOrder}
-            onSortOrderChange={handleSortOrderChange}
+            dateRangeValue={dateRange}
+            onDateRangeChange={handleDateRangeChange}
+            onDownload={handleDownload}
           />
         </div>
         
