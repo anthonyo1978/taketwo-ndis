@@ -405,7 +405,7 @@ function HousesPageContent() {
                             ? 'bg-green-100 text-green-800'
                             : house.status === 'Vacant'
                             ? 'bg-yellow-100 text-yellow-800'
-                            : house.status === 'Maintenance'
+                            : house.status === 'Under maintenance'
                             ? 'bg-red-100 text-red-800'
                             : 'bg-gray-100 text-gray-800'
                         }`}>

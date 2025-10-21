@@ -2,7 +2,7 @@
 export type AustralianState = 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC' | 'WA'
 
 /** Status options for houses. */
-export type HouseStatus = 'Active' | 'Vacant' | 'Maintenance'
+export type HouseStatus = 'Active' | 'Vacant' | 'Under maintenance'
 
 /**
  * Complete house information including address and status.
