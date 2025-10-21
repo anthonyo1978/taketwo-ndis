@@ -148,18 +148,13 @@ function HousesPageContent() {
 
   const handleSearchChange = (value: string) => {
     setSearch(value)
-    
-    // Clear existing timeout
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current)
-    }
-    
-    // Set new timeout for debounced search
-    searchTimeoutRef.current = setTimeout(() => {
-      setDebouncedSearch(value)
-      setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
-      updateUrlParams({ search: value, page: 1 })
-    }, 500) // 500ms debounce
+    // Don't trigger search immediately - wait for Enter key
+  }
+
+  const handleSearchSubmit = (value: string) => {
+    setDebouncedSearch(value)
+    setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
+    updateUrlParams({ search: value, page: 1 })
   }
 
   const handleStatusChange = (value: string) => {
@@ -317,6 +312,7 @@ function HousesPageContent() {
           <StandardizedFilters
             searchValue={search}
             onSearchChange={handleSearchChange}
+            onSearchSubmit={handleSearchSubmit}
             statusValue={status}
             onStatusChange={handleStatusChange}
             dateRangeValue={dateRange}
