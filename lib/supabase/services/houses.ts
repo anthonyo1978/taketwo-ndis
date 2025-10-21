@@ -201,6 +201,9 @@ export class HouseService {
         resident: house.resident,
         image_url: house.imageUrl // Add image URL support
       }
+      
+      // Debug: Log what we're about to insert
+      console.log('[HOUSE SERVICE] About to insert:', JSON.stringify(dbHouse, null, 2))
 
       const supabase = await this.getSupabase()
       const { data, error } = await supabase

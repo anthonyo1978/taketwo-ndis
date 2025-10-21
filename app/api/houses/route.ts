@@ -17,6 +17,13 @@ export async function POST(request: NextRequest) {
     // Validate request data
     const validation = houseCreateSchema.safeParse(body)
     
+    // Debug: Log validation result
+    if (validation.success) {
+      console.log('[HOUSE CREATE] Validation successful:', JSON.stringify(validation.data, null, 2))
+    } else {
+      console.log('[HOUSE CREATE] Validation failed:', validation.error)
+    }
+    
     if (!validation.success) {
       return NextResponse.json(
         { 
