@@ -151,7 +151,7 @@ test.describe("Dynamic House Listing", () => {
     const houses = [
       { address: "Active House", status: "Active" },
       { address: "Vacant House", status: "Vacant" },
-      { address: "Maintenance House", status: "Maintenance" }
+      { address: "Maintenance House", status: "Under maintenance" }
     ]
     
     for (const house of houses) {

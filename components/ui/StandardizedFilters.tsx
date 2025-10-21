@@ -19,7 +19,7 @@ const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
   { value: 'Active', label: 'Active' },
   { value: 'Vacant', label: 'Vacant' },
-  { value: 'Maintenance', label: 'Maintenance' }
+  { value: 'Under maintenance', label: 'Under maintenance' }
 ]
 
 const DATE_RANGE_OPTIONS = [
