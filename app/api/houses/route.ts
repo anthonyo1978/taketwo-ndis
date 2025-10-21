@@ -10,6 +10,9 @@ export async function POST(request: NextRequest) {
     await new Promise((resolve) => setTimeout(resolve, 800))
 
     const body = await request.json()
+    
+    // Debug: Log the incoming data
+    console.log('[HOUSE CREATE] Incoming data:', JSON.stringify(body, null, 2))
 
     // Validate request data
     const validation = houseCreateSchema.safeParse(body)
