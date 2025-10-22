@@ -27,7 +27,7 @@ export const houseCreateSchema = z.object({
     .default("AU")
     .optional(),
   
-  status: z.enum(['Active', 'Vacant', 'Under maintenance'] as const, {
+  status: z.enum(['Active', 'Vacant', 'Maintenance'] as const, {
     errorMap: () => ({ message: "Please select a valid status" })
   }),
   
