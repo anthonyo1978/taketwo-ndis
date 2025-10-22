@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '25')
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
+    const dateRange = searchParams.get('dateRange') || ''
     const sortBy = searchParams.get('sortBy') || 'created_at'
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
 
@@ -25,20 +26,33 @@ export async function GET(request: NextRequest) {
     // TODO: Move this to server-side for better performance
     let filteredResidents = residents
 
-    // Apply search filter
+    // Apply search filter (include NDIS ID in search)
     if (search) {
       const searchLower = search.toLowerCase()
       filteredResidents = filteredResidents.filter(resident =>
         resident.firstName?.toLowerCase().includes(searchLower) ||
         resident.lastName?.toLowerCase().includes(searchLower) ||
         resident.email?.toLowerCase().includes(searchLower) ||
-        resident.phone?.includes(search)
+        resident.phone?.includes(search) ||
+        resident.ndisId?.toLowerCase().includes(searchLower)
       )
     }
 
     // Apply status filter
     if (status) {
       filteredResidents = filteredResidents.filter(resident => resident.status === status)
+    }
+
+    // Apply date range filter (created date)
+    if (dateRange) {
+      const daysAgo = parseInt(dateRange)
+      const cutoffDate = new Date()
+      cutoffDate.setDate(cutoffDate.getDate() - daysAgo)
+      
+      filteredResidents = filteredResidents.filter(resident => {
+        const createdAt = new Date(resident.createdAt)
+        return createdAt >= cutoffDate
+      })
     }
 
     // Apply sorting
