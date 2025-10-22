@@ -210,9 +210,6 @@ function HousesPageContent() {
           
           {/* Loading State */}
           <div className="bg-white rounded-lg border border-gray-200">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-lg font-semibold text-gray-900">Property Listings</h2>
-            </div>
             <div className="p-12">
               <LoadingSpinner size="lg" message="Loading houses..." />
             </div>
@@ -290,16 +287,6 @@ function HousesPageContent() {
         
         {/* Dynamic Houses Table */}
         <div className="bg-white rounded-lg border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Property Listings ({pagination.total} total)
-              </h2>
-              <div className="text-sm text-gray-500">
-                Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} results
-              </div>
-            </div>
-          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
