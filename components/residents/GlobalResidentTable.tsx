@@ -47,6 +47,16 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'))
   const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '10'))
   
+  // Server-side pagination state
+  const [pagination, setPagination] = useState({
+    page: parseInt(searchParams.get('page') || '1'),
+    limit: parseInt(searchParams.get('pageSize') || '10'),
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  })
+  
   // Filtering state - initialize from URL params
   const [search, setSearch] = useState(searchParams.get('search') || '')
   const [status, setStatus] = useState(searchParams.get('status') || '')
@@ -65,8 +75,8 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
       
       // Build query parameters for residents API
       const params = new URLSearchParams({
-        page: currentPage.toString(),
-        limit: pageSize.toString(),
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
         search: debouncedSearch,
         status,
         dateRange,
@@ -87,8 +97,9 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
       
       if (residentsResult.success && residentsResult.data) {
         setResidents(residentsResult.data)
-        // Note: We're not using server-side pagination yet, so we still use client-side pagination
-        // The API returns all matching results, and we paginate them on the client
+        if (residentsResult.pagination) {
+          setPagination(residentsResult.pagination)
+        }
       } else {
         setError(residentsResult.error || 'Failed to load residents')
         return
@@ -108,7 +119,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
     } finally {
       setLoading(false)
     }
-  }, [currentPage, pageSize, debouncedSearch, status, dateRange, sortBy, sortOrder])
+  }, [pagination.page, pagination.limit, debouncedSearch, status, dateRange, sortBy, sortOrder])
 
   // Function to update URL params when pagination or filters change
   const updateUrlParams = (newParams: {
@@ -172,18 +183,21 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
   const handleSearchSubmit = (value: string) => {
     // Trigger search on Enter key
     setDebouncedSearch(value)
+    setPagination(prev => ({ ...prev, page: 1 }))
     setCurrentPage(1)
     updateUrlParams({ search: value, page: 1 })
   }
 
   const handleStatusChange = (value: string) => {
     setStatus(value)
+    setPagination(prev => ({ ...prev, page: 1 }))
     setCurrentPage(1) // Reset to first page
     updateUrlParams({ status: value, page: 1 })
   }
 
   const handleDateRangeChange = (value: string) => {
     setDateRange(value)
+    setPagination(prev => ({ ...prev, page: 1 }))
     setCurrentPage(1) // Reset to first page
     updateUrlParams({ dateRange: value, page: 1 })
   }
@@ -212,6 +226,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
+    setPagination(prev => ({ ...prev, page }))
     updateUrlParams({ page })
   }
 
@@ -228,12 +243,12 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
     return house.descriptor || `${house.address1}, ${house.suburb}`
   }
 
-  // Pagination calculations
-  const totalResidents = residents.length
-  const totalPages = Math.ceil(totalResidents / pageSize)
-  const startIndex = (currentPage - 1) * pageSize
-  const endIndex = startIndex + pageSize
-  const paginatedResidents = residents.slice(startIndex, endIndex)
+  // Use server-side pagination data
+  const totalResidents = pagination.total
+  const totalPages = pagination.totalPages
+  const startIndex = (pagination.page - 1) * pagination.limit
+  const endIndex = Math.min(startIndex + pagination.limit, totalResidents)
+  const paginatedResidents = residents // API already returns paginated data
 
   // Loading state
   if (loading) {
@@ -445,7 +460,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
       </div>
       
       {/* Pagination */}
-      {true && (
+      {totalResidents > 0 && (
         <div className="px-6 py-4 border-t bg-gray-50">
           <div className="flex items-center justify-between">
             {/* Results Info */}
@@ -463,6 +478,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
                   onChange={(e) => {
                     const newPageSize = Number(e.target.value)
                     setPageSize(newPageSize)
+                    setPagination(prev => ({ ...prev, limit: newPageSize, page: 1 }))
                     setCurrentPage(1) // Reset to first page when changing page size
                     updateUrlParams({ pageSize: newPageSize, page: 1 })
                   }}
@@ -479,7 +495,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
 
             {/* Pagination Controls */}
             <Pagination
-              currentPage={currentPage}
+              currentPage={pagination.page}
               totalPages={totalPages}
               onPageChange={handlePageChange}
               showFirstLast={true}
