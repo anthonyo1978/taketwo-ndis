@@ -49,8 +49,8 @@ export function StandardizedFiltersResidents({
     <div className={`space-y-4 ${className}`}>
       {/* Main Filter Bar */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search Bar - Wide on left */}
-        <div className="flex-1 relative">
+        {/* Search Bar - Aligned to House column end */}
+        <div className="relative w-[450px]">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
