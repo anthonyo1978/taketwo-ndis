@@ -335,20 +335,8 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                Funding
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                Age
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
-                Gender
-              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                 Contact
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px]">
-                NDIS ID
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
                 Created
@@ -361,7 +349,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
           <tbody className="bg-white divide-y divide-gray-200">
             {isEmpty ? (
               <tr>
-                <td colSpan={9} className="px-6 py-12 text-center">
+                <td colSpan={6} className="px-6 py-12 text-center">
                   <div className="text-gray-500">
                     <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -423,42 +411,12 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {resident.fundingInformation && resident.fundingInformation.length > 0 ? (
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">
-                        ${getContractSummary(resident.fundingInformation).totalCurrent.toLocaleString()}
-                      </div>
-                      <div className="text-xs text-gray-500 flex items-center space-x-2">
-                        <span>
-                          {getContractSummary(resident.fundingInformation).activeContracts} active
-                        </span>
-                        {getContractSummary(resident.fundingInformation).expiringSoon > 0 && (
-                          <span className="px-1 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-xs">
-                            {getContractSummary(resident.fundingInformation).expiringSoon} expiring
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-gray-500">No contracts</span>
-                  )}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {calculateAge(resident.dateOfBirth)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {resident.gender}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {resident.phone || '-'}
                   </div>
                   <div className="text-sm text-gray-500">
                     {resident.email || '-'}
                   </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {resident.ndisId || '-'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(resident.createdAt).toLocaleDateString()}

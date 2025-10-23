@@ -89,7 +89,7 @@ export function StandardizedFiltersResidents({
           </div>
 
           {/* Date Range Dropdown */}
-          <div className="w-full sm:w-[120px]">
+          <div className="w-full sm:w-[100px]">
             <select
               value={dateRangeValue}
               onChange={(e) => onDateRangeChange(e.target.value)}
