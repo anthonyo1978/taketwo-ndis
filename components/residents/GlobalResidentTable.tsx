@@ -405,9 +405,6 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
                     <div className="text-sm font-medium text-blue-600 hover:text-blue-800">
                       {resident.firstName} {resident.lastName}
                     </div>
-                    <div className="text-sm text-gray-500">
-                      ID: {resident.id}
-                    </div>
                   </Link>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -417,9 +414,6 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
                   >
                     <div className="text-sm font-medium text-blue-600 hover:text-blue-800">
                       {getHouseName(resident.houseId)}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {resident.houseId}
                     </div>
                   </Link>
                 </td>

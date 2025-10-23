@@ -22,7 +22,7 @@ function ResidentsPageContent() {
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">All Residents</h1>
+            <h1 className="text-3xl font-bold text-gray-900">Residents</h1>
             <p className="text-gray-600 mt-1">Manage residents across all houses</p>
           </div>
           <button
@@ -58,7 +58,7 @@ export default function ResidentsPage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">All Residents</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Residents</h1>
               <p className="text-gray-600 mt-1">Manage residents across all houses</p>
             </div>
           </div>
