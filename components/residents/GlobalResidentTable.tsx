@@ -445,7 +445,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
       </div>
       
       {/* Pagination */}
-      {totalResidents > 0 && totalPages > 1 && (
+      {true && (
         <div className="px-6 py-4 border-t bg-gray-50">
           <div className="flex items-center justify-between">
             {/* Results Info */}
