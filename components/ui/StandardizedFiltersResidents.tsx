@@ -49,8 +49,8 @@ export function StandardizedFiltersResidents({
     <div className={`space-y-4 ${className}`}>
       {/* Main Filter Bar */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search Bar - 50% of table width */}
-        <div className="flex-1 relative max-w-[50%]">
+        {/* Search Bar - 50% of available width */}
+        <div className="relative" style={{ width: '50%' }}>
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -71,9 +71,9 @@ export function StandardizedFiltersResidents({
           />
         </div>
 
-        {/* Filter Dropdowns - Aligned to table columns */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          {/* Status Dropdown - aligns with Status column */}
+        {/* Filter Dropdowns - Remaining 50% space */}
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
+          {/* Status Dropdown */}
           <div className="w-full sm:w-[100px]">
             <select
               value={statusValue}
@@ -88,7 +88,7 @@ export function StandardizedFiltersResidents({
             </select>
           </div>
 
-          {/* Date Range Dropdown - aligns with Funding column */}
+          {/* Date Range Dropdown */}
           <div className="w-full sm:w-[120px]">
             <select
               value={dateRangeValue}
@@ -103,8 +103,8 @@ export function StandardizedFiltersResidents({
             </select>
           </div>
 
-          {/* Action Buttons - aligns with Actions column */}
-          <div className="flex gap-2">
+          {/* Action Buttons */}
+          <div className="flex gap-2 ml-auto">
             {/* Import Button */}
             {onImport && (
               <button
