@@ -329,7 +329,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[200px]">
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-[120px]">
                 House
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">
@@ -407,7 +407,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
                     </div>
                   </Link>
                 </td>
-                <td className="px-6 py-4 w-[200px]">
+                <td className="px-6 py-4 w-[120px]">
                   <Link 
                     href={`/houses/${resident.houseId}`}
                     className="block hover:bg-blue-50 rounded p-1 -m-1 transition-colors"
