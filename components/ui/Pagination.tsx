@@ -26,7 +26,8 @@ export function Pagination({
   showFirstLast = true,
   maxVisiblePages = 5
 }: PaginationProps) {
-  if (totalPages <= 1) return null
+  // Always show pagination controls, even for single page
+  // if (totalPages <= 1) return null
 
   const getVisiblePages = () => {
     const delta = Math.floor(maxVisiblePages / 2)
@@ -91,7 +92,7 @@ export function Pagination({
       {/* Previous Button */}
       <button
         onClick={() => onPageChange(currentPage - 1)}
-        disabled={currentPage === 1}
+        disabled={currentPage === 1 || totalPages <= 1}
         className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
         title="Previous page"
       >
@@ -122,7 +123,7 @@ export function Pagination({
       {/* Next Button */}
       <button
         onClick={() => onPageChange(currentPage + 1)}
-        disabled={currentPage === totalPages}
+        disabled={currentPage === totalPages || totalPages <= 1}
         className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
         title="Next page"
       >
