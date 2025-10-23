@@ -443,7 +443,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
           </tbody>
         </table>
       </div>
-
+      
       {/* Pagination */}
       {totalResidents > 0 && (
         <div className="px-6 py-4 border-t bg-gray-50">
@@ -468,10 +468,10 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
                   }}
                   className="px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
+                  <option value={5}>5</option>
                   <option value={10}>10</option>
                   <option value={25}>25</option>
                   <option value={50}>50</option>
-                  <option value={100}>100</option>
                 </select>
                 <span className="text-sm text-gray-600">per page</span>
               </div>
@@ -488,7 +488,7 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
           </div>
         </div>
       )}
-      </div>
+    </div>
     </>
   )
 }
