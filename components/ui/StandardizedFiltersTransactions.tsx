@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react"
 import type { TransactionFilters as TxFilters } from "types/transaction"
-import { getResidentsFromStorage } from "lib/utils/resident-storage"
-import { getHousesFromStorage } from "lib/utils/house-storage"
 
 interface StandardizedFiltersTransactionsProps {
   filters: TxFilters
@@ -23,7 +21,7 @@ const STATUS_OPTIONS = [
 ]
 
 const DELIVERY_DATE_OPTIONS = [
-  { value: '', label: 'All Time' },
+  { value: '', label: 'Delivery Date' },
   { value: '7', label: 'Last 7 days' },
   { value: '15', label: 'Last 15 days' },
   { value: '30', label: 'Last 30 days' },
@@ -38,8 +36,6 @@ export function StandardizedFiltersTransactions({
 }: StandardizedFiltersTransactionsProps) {
   const [localFilters, setLocalFilters] = useState<TxFilters>(filters)
   const [searchValue, setSearchValue] = useState('')
-  const [residents] = useState(() => getResidentsFromStorage())
-  const [houses] = useState(() => getHousesFromStorage())
 
   // Update local filters when external filters change
   useEffect(() => {
@@ -90,7 +86,7 @@ export function StandardizedFiltersTransactions({
           </div>
           <input
             type="text"
-            placeholder="Search transaction ID, resident, house..."
+            placeholder="Search resident by first name or last"
             value={searchValue}
             onChange={(e) => handleSearchChange(e.target.value)}
             onKeyDown={(e) => {
@@ -103,10 +99,10 @@ export function StandardizedFiltersTransactions({
           />
         </div>
 
-        {/* Filter Dropdowns - Remaining space */}
+        {/* Filter Dropdowns - Remaining space, spread equally */}
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
           {/* Delivery Date Filter */}
-          <div className="w-full sm:w-[120px]">
+          <div className="w-full sm:flex-1">
             <select
               value={localFilters.dateRange ? 
                 Math.ceil((new Date().getTime() - localFilters.dateRange.from.getTime()) / (1000 * 60 * 60 * 24)).toString() : ''}
@@ -122,7 +118,7 @@ export function StandardizedFiltersTransactions({
           </div>
 
           {/* Status Filter */}
-          <div className="w-full sm:w-[120px]">
+          <div className="w-full sm:flex-1">
             <select
               value={localFilters.statuses?.[0] || ''}
               onChange={(e) => 
@@ -133,42 +129,6 @@ export function StandardizedFiltersTransactions({
               {STATUS_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Resident Filter */}
-          <div className="w-full sm:w-[150px]">
-            <select
-              value={localFilters.residentIds?.[0] || ''}
-              onChange={(e) => 
-                handleFilterChange('residentIds', e.target.value ? [e.target.value] : undefined)
-              }
-              className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            >
-              <option value="">All Residents</option>
-              {residents.map(resident => (
-                <option key={resident.id} value={resident.id}>
-                  {resident.firstName} {resident.lastName}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* House Filter */}
-          <div className="w-full sm:w-[150px]">
-            <select
-              value={localFilters.houseIds?.[0] || ''}
-              onChange={(e) => 
-                handleFilterChange('houseIds', e.target.value ? [e.target.value] : undefined)
-              }
-              className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            >
-              <option value="">All Houses</option>
-              {houses.map(house => (
-                <option key={house.id} value={house.id}>
-                  {house.descriptor || 'House'}
                 </option>
               ))}
             </select>
