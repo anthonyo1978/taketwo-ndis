@@ -21,14 +21,6 @@ const STATUS_OPTIONS = [
   { value: 'error', label: 'Error' }
 ]
 
-const DELIVERY_DATE_OPTIONS = [
-  { value: '', label: 'Delivery Date' },
-  { value: '7', label: 'Last 7 days' },
-  { value: '15', label: 'Last 15 days' },
-  { value: '30', label: 'Last 30 days' },
-  { value: '90', label: 'Last 90 days' }
-]
-
 export function StandardizedFiltersTransactions({
   filters,
   onFiltersChange,
@@ -68,11 +60,8 @@ export function StandardizedFiltersTransactions({
       return
     }
     
-    const daysAgo = parseInt(value)
-    const fromDate = new Date()
-    fromDate.setDate(fromDate.getDate() - daysAgo)
-    
-    handleFilterChange('dateRange', { from: fromDate, to: new Date() })
+    const selectedDate = new Date(value)
+    handleFilterChange('dateRange', { from: selectedDate, to: selectedDate })
   }
 
   return (
@@ -105,18 +94,14 @@ export function StandardizedFiltersTransactions({
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
           {/* Delivery Date Filter */}
           <div className="w-full sm:flex-1">
-            <select
-              value={localFilters.dateRange ? 
-                Math.ceil((new Date().getTime() - localFilters.dateRange.from.getTime()) / (1000 * 60 * 60 * 24)).toString() : ''}
+            <input
+              type="date"
+              value={localFilters.dateRange?.from ? 
+                localFilters.dateRange.from.toISOString().split('T')[0] : ''}
               onChange={(e) => handleDeliveryDateChange(e.target.value)}
+              max={new Date().toISOString().split('T')[0]} // Prevent future dates
               className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            >
-              {DELIVERY_DATE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           {/* Status Filter */}
