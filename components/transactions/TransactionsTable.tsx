@@ -277,26 +277,36 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
           {info.getValue()}
         </button>
       ),
-      size: 150,
+      size: 120,
+    }),
+    // Delivery Date column
+    columnHelper.accessor('occurredAt', {
+      id: 'occurredAt',
+      header: 'Delivery Date',
+      cell: (info) => {
+        const date = info.getValue()
+        return date ? format(new Date(date), 'dd/MM/yyyy') : 'N/A'
+      },
+      size: 110,
     }),
     // Resident column
     columnHelper.accessor('residentName', {
       id: 'residentName',
       header: 'Resident',
-      size: 150,
+      size: 120,
     }),
     // House column
     columnHelper.accessor('houseName', {
       id: 'houseName',
       header: 'House',
-      size: 120,
+      size: 100,
     }),
     // Service Code column
     columnHelper.accessor('serviceCode', {
       id: 'serviceCode',
       header: 'Service',
       cell: (info) => info.getValue() || 'N/A',
-      size: 120,
+      size: 100,
     }),
     // Quantity column
     columnHelper.accessor('quantity', {
@@ -306,7 +316,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         const value = info.getValue()
         return value ? value.toLocaleString() : '0'
       },
-      size: 80,
+      size: 70,
     }),
     // Unit Price column
     columnHelper.accessor('unitPrice', {
@@ -316,7 +326,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         const value = info.getValue()
         return value ? `$${value.toFixed(2)}` : '$0.00'
       },
-      size: 100,
+      size: 90,
     }),
     // Amount column
     columnHelper.accessor('amount', {
@@ -326,7 +336,7 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
         const value = info.getValue()
         return value ? `$${value.toFixed(2)}` : '$0.00'
       },
-      size: 100,
+      size: 90,
     }),
     // Status column
     columnHelper.accessor('status', {
