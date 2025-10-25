@@ -41,6 +41,23 @@ function TransactionsPageContent() {
               // Handle search submit if needed
               console.log('Search submitted:', searchValue)
             }}
+            onExport={() => {
+              // Handle export - open export URL with current filters
+              const params = new URLSearchParams()
+              if (filters.dateRange?.from) {
+                params.append('dateFrom', filters.dateRange.from.toISOString())
+              }
+              if (filters.dateRange?.to) {
+                params.append('dateTo', filters.dateRange.to.toISOString())
+              }
+              if (filters.statuses && filters.statuses.length > 0) {
+                params.append('statuses', filters.statuses.join(','))
+              }
+              if (filters.search) {
+                params.append('search', filters.search)
+              }
+              window.open(`/api/transactions/export?${params}`, '_blank')
+            }}
           />
         </div>
         

@@ -664,20 +664,6 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
 
   return (
     <div className="w-full">
-      {/* Table Header */}
-      <div className="flex items-center justify-between p-6 border-b">
-        <div className="flex items-center space-x-4">
-          <h2 className="text-lg font-semibold">
-            Transactions ({totalCount?.toLocaleString() || '0'})
-          </h2>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button intent="secondary" onClick={handleExport}>
-            Export CSV
-          </Button>
-        </div>
-      </div>
-
       {/* Error Display */}
       {error && (
         <div className="p-4 bg-red-50 border-l-4 border-red-500">

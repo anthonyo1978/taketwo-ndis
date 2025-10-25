@@ -7,6 +7,7 @@ interface StandardizedFiltersTransactionsProps {
   filters: TxFilters
   onFiltersChange: (filters: TxFilters) => void
   onSearchSubmit?: (searchValue: string) => void
+  onExport?: () => void
   className?: string
 }
 
@@ -32,6 +33,7 @@ export function StandardizedFiltersTransactions({
   filters,
   onFiltersChange,
   onSearchSubmit,
+  onExport,
   className = ""
 }: StandardizedFiltersTransactionsProps) {
   const [localFilters, setLocalFilters] = useState<TxFilters>(filters)
@@ -133,6 +135,19 @@ export function StandardizedFiltersTransactions({
               ))}
             </select>
           </div>
+
+          {/* Export Button */}
+          {onExport && (
+            <button
+              onClick={onExport}
+              className="flex items-center justify-center px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Export
+            </button>
+          )}
         </div>
       </div>
     </div>
