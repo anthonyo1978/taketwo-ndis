@@ -54,7 +54,24 @@ export class TransactionService {
         query = query.ilike('service_code', `%${filters.serviceCode}%`)
       }
       if (filters.search) {
-        query = query.or(`description.ilike.%${filters.search}%,note.ilike.%${filters.search}%`)
+        // For search, we need to use a different approach since we need to search resident names
+        // We'll use a text search that includes resident information
+        const searchTerm = `%${filters.search}%`
+        
+        // First, get resident IDs that match the search term
+        const { data: matchingResidents } = await supabase
+          .from('residents')
+          .select('id')
+          .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm}`)
+        
+        const residentIds = matchingResidents?.map(r => r.id) || []
+        
+        // Now search in transaction fields and include matching residents
+        if (residentIds.length > 0) {
+          query = query.or(`description.ilike.${searchTerm},note.ilike.${searchTerm},resident_id.in.(${residentIds.join(',')})`)
+        } else {
+          query = query.or(`description.ilike.${searchTerm},note.ilike.${searchTerm}`)
+        }
       }
 
       // Apply sorting - convert camelCase to snake_case for database columns
