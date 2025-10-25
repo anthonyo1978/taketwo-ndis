@@ -37,6 +37,10 @@ function TransactionsPageContent() {
           <StandardizedFiltersTransactions
             filters={filters}
             onFiltersChange={setFilters}
+            onSearchSubmit={(searchValue) => {
+              // Handle search submit if needed
+              console.log('Search submitted:', searchValue)
+            }}
           />
         </div>
         
