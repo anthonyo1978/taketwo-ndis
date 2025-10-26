@@ -11,7 +11,8 @@ interface StandardizedFiltersProps {
   onStatusChange: (value: string) => void
   dateRangeValue: string
   onDateRangeChange: (value: string) => void
-  onDownload?: () => void
+  onImport?: () => void
+  onExport?: () => void
   className?: string
 }
 
@@ -52,7 +53,8 @@ export function StandardizedFilters({
   onStatusChange,
   dateRangeValue,
   onDateRangeChange,
-  onDownload,
+  onImport,
+  onExport,
   className = ""
 }: StandardizedFiltersProps) {
   const [isStatusOpen, setIsStatusOpen] = useState(false)
@@ -168,15 +170,46 @@ export function StandardizedFilters({
             )}
           </div>
 
-          {/* Download Button */}
-          {onDownload && (
-            <button
-              onClick={onDownload}
-              className="flex items-center justify-center px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <Download className="h-4 w-4 mr-2" />
-              Export
-            </button>
+          {/* Import Button */}
+          {onImport && (
+            <div className="relative group">
+              <button
+                onClick={onImport}
+                className="flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </button>
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
+                <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                  Import
+                </div>
+                <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2"></div>
+              </div>
+            </div>
+          )}
+
+          {/* Export Button */}
+          {onExport && (
+            <div className="relative group">
+              <button
+                onClick={onExport}
+                className="flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </button>
+              {/* Tooltip */}
+              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
+                <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                  Export
+                </div>
+                <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2"></div>
+              </div>
+            </div>
           )}
         </div>
       </div>

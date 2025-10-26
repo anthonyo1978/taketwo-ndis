@@ -194,6 +194,14 @@ function HousesPageContent() {
     console.log('Export houses functionality to be implemented')
   }
 
+  const handleImport = () => {
+    // TODO: Implement houses import functionality
+    console.log('Import houses functionality to be implemented')
+    alert('Import functionality coming soon')
+  }
+
+  const handleExport = handleDownload
+
   // Loading state with skeleton table
   if (loading) {
     return (
@@ -294,7 +302,8 @@ function HousesPageContent() {
             onStatusChange={handleStatusChange}
             dateRangeValue={dateRange}
             onDateRangeChange={handleDateRangeChange}
-            onDownload={handleDownload}
+            onImport={handleImport}
+            onExport={handleExport}
           />
         </div>
         
