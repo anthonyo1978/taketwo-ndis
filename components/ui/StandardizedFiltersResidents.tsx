@@ -86,7 +86,7 @@ export function StandardizedFiltersResidents({
         {/* Filter Dropdowns - Remaining 50% space */}
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
           {/* Status Dropdown */}
-          <div className="w-full sm:w-[100px]">
+          <div className="w-full sm:flex-1">
             <select
               value={statusValue}
               onChange={(e) => onStatusChange(e.target.value)}
@@ -101,7 +101,7 @@ export function StandardizedFiltersResidents({
           </div>
 
           {/* Date Range Dropdown */}
-          <div className="w-full sm:w-[100px]">
+          <div className="w-full sm:flex-1">
             <select
               value={dateRangeValue}
               onChange={(e) => onDateRangeChange(e.target.value)}

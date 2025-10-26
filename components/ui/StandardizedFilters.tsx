@@ -111,17 +111,17 @@ export function StandardizedFilters({
         {/* Filter Dropdowns - Remaining 50% space */}
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
           {/* Status Dropdown */}
-          <div className="relative">
+          <div className="relative sm:flex-1">
             <button
               onClick={() => setIsStatusOpen(!isStatusOpen)}
-              className="flex items-center justify-between w-full sm:w-40 px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex items-center justify-between w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <span className="truncate">{selectedStatusLabel}</span>
               <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
             </button>
             
             {isStatusOpen && (
-              <div className="absolute z-10 mt-1 w-full sm:w-40 bg-white border border-gray-300 rounded-lg shadow-lg">
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
                 {STATUS_OPTIONS.map((option) => (
                   <button
                     key={option.value}
@@ -141,17 +141,17 @@ export function StandardizedFilters({
           </div>
 
           {/* Date Range Dropdown */}
-          <div className="relative">
+          <div className="relative sm:flex-1">
             <button
               onClick={() => setIsDateRangeOpen(!isDateRangeOpen)}
-              className="flex items-center justify-between w-full sm:w-40 px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex items-center justify-between w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <span className="truncate">{selectedDateRangeLabel}</span>
               <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
             </button>
             
             {isDateRangeOpen && (
-              <div className="absolute z-10 mt-1 w-full sm:w-40 bg-white border border-gray-300 rounded-lg shadow-lg">
+              <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-lg shadow-lg">
                 {DATE_RANGE_OPTIONS.map((option) => (
                   <button
                     key={option.value}
