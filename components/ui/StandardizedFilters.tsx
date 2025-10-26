@@ -75,8 +75,8 @@ export function StandardizedFilters({
     <div className={`space-y-4 ${className}`}>
       {/* Main Filter Bar */}
       <div className="flex flex-col lg:flex-row gap-4">
-        {/* Search Bar - Wide on left */}
-        <div className="flex-1 relative">
+        {/* Search Bar - 50% of available width */}
+        <div className="relative" style={{ width: '50%' }}>
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-5 w-5 text-gray-400" />
           </div>
@@ -108,8 +108,8 @@ export function StandardizedFilters({
           )}
         </div>
 
-        {/* Filter Dropdowns - Aligned to right */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        {/* Filter Dropdowns - Remaining 50% space */}
+        <div className="flex flex-col sm:flex-row gap-3 flex-1">
           {/* Status Dropdown */}
           <div className="relative">
             <button
@@ -170,47 +170,50 @@ export function StandardizedFilters({
             )}
           </div>
 
-          {/* Import Button */}
-          {onImport && (
-            <div className="relative group">
-              <button
-                onClick={onImport}
-                className="flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-              </button>
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
-                <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                  Import
+          {/* Action Buttons */}
+          <div className="flex gap-2 ml-auto">
+            {/* Import Button */}
+            {onImport && (
+              <div className="relative group">
+                <button
+                  onClick={onImport}
+                  className="flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </button>
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
+                  <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    Import
+                  </div>
+                  <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2"></div>
                 </div>
-                <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2"></div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Export Button */}
-          {onExport && (
-            <div className="relative group">
-              <button
-                onClick={onExport}
-                className="flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </button>
-              {/* Tooltip */}
-              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
-                <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                  Export
+            {/* Export Button */}
+            {onExport && (
+              <div className="relative group">
+                <button
+                  onClick={onExport}
+                  className="flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </button>
+                {/* Tooltip */}
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block">
+                  <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                    Export
+                  </div>
+                  <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2"></div>
                 </div>
-                <div className="w-2 h-2 bg-gray-900 transform rotate-45 absolute left-1/2 top-full -translate-x-1/2 -translate-y-1/2"></div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
