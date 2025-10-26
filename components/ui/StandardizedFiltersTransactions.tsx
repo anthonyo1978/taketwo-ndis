@@ -93,15 +93,27 @@ export function StandardizedFiltersTransactions({
         {/* Filter Dropdowns - Remaining space, spread equally */}
         <div className="flex flex-col sm:flex-row gap-3 flex-1">
           {/* Delivery Date Filter */}
-          <div className="w-full sm:flex-1">
+          <div className="w-full sm:flex-1 relative">
             <input
               type="date"
               value={localFilters.dateRange?.from ? 
                 localFilters.dateRange.from.toISOString().split('T')[0] : ''}
               onChange={(e) => handleDeliveryDateChange(e.target.value)}
               max={new Date().toISOString().split('T')[0]} // Prevent future dates
-              className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              className="block w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
             />
+            {/* Clear button - only show when date is selected */}
+            {localFilters.dateRange?.from && (
+              <button
+                onClick={() => handleDeliveryDateChange('')}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                title="Clear date filter"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
 
           {/* Status Filter */}
