@@ -141,11 +141,6 @@ function HousesPageContent() {
   // Debounce timer ref
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Sync debouncedSearch when search changes (for clear functionality)
-  useEffect(() => {
-    setDebouncedSearch(search)
-  }, [search])
-
   const handleSearchChange = (value: string) => {
     setSearch(value)
     // Don't trigger search immediately - wait for Enter key
@@ -156,6 +151,15 @@ function HousesPageContent() {
     setPagination(prev => ({ ...prev, page: 1 })) // Reset to first page
     updateUrlParams({ search: value, page: 1 })
   }
+
+  // Sync debouncedSearch when search changes (for clear functionality)
+  // But only when search is cleared (empty string), not when typing
+  useEffect(() => {
+    if (search === '') {
+      setDebouncedSearch('')
+      updateUrlParams({ search: '', page: 1 })
+    }
+  }, [search])
 
   const handleStatusChange = (value: string) => {
     setStatus(value)

@@ -169,11 +169,6 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
   // Debounce timer ref
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Sync debouncedSearch when search changes (for clear functionality)
-  useEffect(() => {
-    setDebouncedSearch(search)
-  }, [search])
-
   // Filter handler functions
   const handleSearchChange = (value: string) => {
     setSearch(value)
@@ -187,6 +182,15 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
     setCurrentPage(1)
     updateUrlParams({ search: value, page: 1 })
   }
+
+  // Sync debouncedSearch when search changes (for clear functionality)
+  // But only when search is cleared (empty string), not when typing
+  useEffect(() => {
+    if (search === '') {
+      setDebouncedSearch('')
+      updateUrlParams({ search: '', page: 1 })
+    }
+  }, [search])
 
   const handleStatusChange = (value: string) => {
     setStatus(value)
