@@ -169,10 +169,10 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
   // Debounce timer ref
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Sync debouncedSearch with initial search value
+  // Sync debouncedSearch when search changes (for clear functionality)
   useEffect(() => {
     setDebouncedSearch(search)
-  }, [])
+  }, [search])
 
   // Filter handler functions
   const handleSearchChange = (value: string) => {
