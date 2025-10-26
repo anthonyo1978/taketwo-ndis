@@ -41,6 +41,11 @@ function TransactionsPageContent() {
               // Handle search submit if needed
               console.log('Search submitted:', searchValue)
             }}
+            onImport={() => {
+              // Handle import - placeholder for now
+              console.log('Import transactions')
+              alert('Import functionality coming soon')
+            }}
             onExport={() => {
               // Handle export - open export URL with current filters
               const params = new URLSearchParams()

@@ -7,6 +7,7 @@ interface StandardizedFiltersTransactionsProps {
   filters: TxFilters
   onFiltersChange: (filters: TxFilters) => void
   onSearchSubmit?: (searchValue: string) => void
+  onImport?: () => void
   onExport?: () => void
   className?: string
 }
@@ -25,6 +26,7 @@ export function StandardizedFiltersTransactions({
   filters,
   onFiltersChange,
   onSearchSubmit,
+  onImport,
   onExport,
   className = ""
 }: StandardizedFiltersTransactionsProps) {
@@ -145,16 +147,29 @@ export function StandardizedFiltersTransactions({
             </select>
           </div>
 
+          {/* Import Button */}
+          {onImport && (
+            <button
+              onClick={onImport}
+              className="flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              title="Import transactions"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </button>
+          )}
+
           {/* Export Button */}
           {onExport && (
             <button
               onClick={onExport}
-              className="flex items-center justify-center px-3 py-2.5 border border-gray-300 rounded-lg bg-white text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              title="Export transactions"
             >
-              <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              Export
             </button>
           )}
         </div>
