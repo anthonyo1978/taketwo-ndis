@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 interface HousePerformance {
@@ -20,8 +20,21 @@ interface HousePerformanceListProps {
   isLoading?: boolean
 }
 
+const ITEMS_PER_PAGE = 15
+
 export function HousePerformanceList({ houses, isLoading = false }: HousePerformanceListProps) {
   const [expandedHouseId, setExpandedHouseId] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  
+  // Reset to page 1 when houses change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [houses.length])
+  
+  const totalPages = Math.ceil(houses.length / ITEMS_PER_PAGE)
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+  const endIndex = startIndex + ITEMS_PER_PAGE
+  const displayedHouses = houses.slice(startIndex, endIndex)
   
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-AU', {
@@ -59,8 +72,8 @@ export function HousePerformanceList({ houses, isLoading = false }: HousePerform
       </div>
       
       <div className="divide-y divide-gray-100">
-        {houses.length > 0 ? (
-          houses.map((house) => (
+        {displayedHouses.length > 0 ? (
+          displayedHouses.map((house) => (
             <div key={house.houseId} className="transition-colors">
               {/* House Summary Row */}
               <button
@@ -142,6 +155,33 @@ export function HousePerformanceList({ houses, isLoading = false }: HousePerform
           </div>
         )}
       </div>
+      
+      {/* Pagination */}
+      {houses.length > 0 && totalPages > 1 && (
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-end">
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Previous
+              </button>
+              <span className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
