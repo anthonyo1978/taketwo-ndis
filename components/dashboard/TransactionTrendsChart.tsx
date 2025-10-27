@@ -114,7 +114,7 @@ export function TransactionTrendsChart({ data, isLoading = false }: TransactionT
       
       {/* Chart */}
       {filteredData.length > 0 ? (
-        <ResponsiveContainer width="100%" height={350}>
+        <ResponsiveContainer width="100%" height={400}>
           <BarChart data={filteredData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
@@ -123,8 +123,9 @@ export function TransactionTrendsChart({ data, isLoading = false }: TransactionT
               tickLine={{ stroke: '#d1d5db' }}
               angle={-45}
               textAnchor="end"
-              height={60}
+              height={80}
               interval={period === '7d' ? 'preserveStartEnd' : 'preserveStartEnd'}
+              width={80}
             />
             <YAxis 
               tick={{ fill: '#6b7280', fontSize: 12 }}
