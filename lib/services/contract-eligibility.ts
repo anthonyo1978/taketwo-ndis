@@ -8,6 +8,7 @@ export interface ContractEligibilityResult {
   contract: any
   resident: any
   house?: any
+  organizationId?: string // Add organization context
   eligibilityChecks: EligibilityCheck
 }
 
@@ -221,6 +222,7 @@ export async function getEligibleContracts(timezone?: string, organizationId?: s
       contract,
       resident: contract.resident,
       house: contract.resident?.house,
+      organizationId: organizationId || contract.organization_id,
       eligibilityChecks
     })
   }
