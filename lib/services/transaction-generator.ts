@@ -258,13 +258,16 @@ export async function generateTransactionForContract(
     // Update contract balance and next run date
     console.log(`[TRANSACTION] Updating contract balance and next run date`)
     const newBalance = contract.current_balance - transactionAmount
+    const frequency = contract.automated_drawdown_frequency as 'daily' | 'weekly' | 'fortnightly'
     const nextRunDate = calculateNextRunDate(
       new Date(contract.next_run_date!),
-      contract.automated_drawdown_frequency as 'daily' | 'weekly' | 'fortnightly'
+      frequency
     )
     
+    console.log(`[TRANSACTION] Current run date:`, contract.next_run_date)
+    console.log(`[TRANSACTION] Frequency:`, frequency)
+    console.log(`[TRANSACTION] Calculated next run date:`, nextRunDate.toISOString().split('T')[0])
     console.log(`[TRANSACTION] New balance:`, newBalance)
-    console.log(`[TRANSACTION] Next run date:`, nextRunDate.toISOString().split('T')[0])
     
     const { error: contractError } = await supabase
       .from('funding_contracts')
