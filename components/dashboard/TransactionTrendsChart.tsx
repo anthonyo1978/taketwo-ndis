@@ -18,7 +18,7 @@ interface TransactionTrendsChartProps {
 type TimePeriod = '7d' | '30d' | '6m' | '12m'
 
 export function TransactionTrendsChart({ data, isLoading = false }: TransactionTrendsChartProps) {
-  const [period, setPeriod] = useState<TimePeriod>('30d')
+  const [period, setPeriod] = useState<TimePeriod>('7d')
   
   // Filter data based on selected period
   const getFilteredData = () => {
@@ -27,9 +27,11 @@ export function TransactionTrendsChart({ data, isLoading = false }: TransactionT
     
     switch (period) {
       case '7d':
+        // Show only the most recent month's data
         monthsBack = 1
         break
       case '30d':
+        // Show only the most recent month's data
         monthsBack = 1
         break
       case '6m':
@@ -40,8 +42,7 @@ export function TransactionTrendsChart({ data, isLoading = false }: TransactionT
         break
     }
     
-    // For 7d and 30d, we'll show the last month's data
-    // For 6m and 12m, we'll show the full range
+    // Return the last N months of data
     return data.slice(-monthsBack)
   }
   
