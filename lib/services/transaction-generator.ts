@@ -203,30 +203,51 @@ export async function generateTransactionForContract(
       }
     }
     
-    // Generate unique sequential TXN ID (same as manual transactions)
-    const transactionId = await transactionService.generateNextTxnId()
-    console.log(`[TRANSACTION] Generated transaction ID:`, transactionId)
     const automationLogId = generateId()
     const now = new Date()
     
-    // Check if this transaction ID already exists (could happen if automation runs twice)
-    const { data: existingTransaction } = await supabase
+    // Get organization ID from contract
+    const organizationId = contract.organization_id || eligibleContract.organizationId
+    
+    // Generate ID with random suffix (same logic as manual transactions to prevent collisions)
+    let baseId = await transactionService.generateNextTxnId()
+    const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+    let transactionId = `${baseId}-${randomSuffix}`
+    console.log(`[TRANSACTION] Generated transaction ID with suffix:`, transactionId)
+    
+    // Check if this ID already exists
+    let { data: existingTransaction } = await supabase
       .from('transactions')
       .select('id')
       .eq('id', transactionId)
       .single()
     
-    if (existingTransaction) {
-      console.error(`[TRANSACTION] Transaction ID ${transactionId} already exists! This should not happen.`)
+    // If exists, try a few more times with different suffixes
+    let attemptCount = 0
+    while (existingTransaction && attemptCount < 10) {
+      const newSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
+      transactionId = `${baseId}-${newSuffix}`
+      console.log(`[TRANSACTION] ID collision, trying new suffix:`, transactionId)
+      
+      const { data: checkTx } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('id', transactionId)
+        .single()
+      
+      existingTransaction = checkTx
+      if (!checkTx) break
+      attemptCount++
+    }
+    
+    if (existingTransaction && attemptCount >= 10) {
+      console.error(`[TRANSACTION] Unable to generate unique transaction ID after 10 attempts`)
       return {
         success: false,
         error: 'Transaction ID collision',
-        details: { transactionId, message: 'Generated ID already exists in database. This indicates a race condition or duplicate automation run.' }
+        details: { transactionId, message: 'Unable to generate unique ID' }
       }
     }
-    
-    // Get organization ID from contract
-    const organizationId = contract.organization_id || eligibleContract.organizationId
     
     // Create transaction record in DRAFT status (requires manual approval)
     const transactionData = {
