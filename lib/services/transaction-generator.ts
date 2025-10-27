@@ -204,6 +204,22 @@ export async function generateTransactionForContract(
     const automationLogId = generateId()
     const now = new Date()
     
+    // Check if this transaction ID already exists (could happen if automation runs twice)
+    const { data: existingTransaction } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('id', transactionId)
+      .single()
+    
+    if (existingTransaction) {
+      console.error(`[TRANSACTION] Transaction ID ${transactionId} already exists! This should not happen.`)
+      return {
+        success: false,
+        error: 'Transaction ID collision',
+        details: { transactionId, message: 'Generated ID already exists in database. This indicates a race condition or duplicate automation run.' }
+      }
+    }
+    
     // Create transaction record in DRAFT status (requires manual approval)
     const transactionData = {
       id: transactionId, // Uses TXN-A000001 format (same as manual transactions)
