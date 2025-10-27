@@ -178,9 +178,14 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
     }
     
     console.log('[SIGNUP EMAIL] Resend client ready')
+    console.log('[SIGNUP EMAIL] FROM_EMAIL env var:', process.env.FROM_EMAIL || 'NOT SET')
+    console.log('[SIGNUP EMAIL] RESEND_FROM_EMAIL env var:', process.env.RESEND_FROM_EMAIL || 'NOT SET')
+    
+    const fromAddress = process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>'
+    console.log('[SIGNUP EMAIL] Will send FROM:', fromAddress)
 
     const result = await resend.emails.send({
-      from: process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>',
+      from: fromAddress,
       to: email,
       subject: `Welcome to Haven - ${organizationName} is Ready!`,
       html: htmlContent,
