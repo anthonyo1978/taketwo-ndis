@@ -47,10 +47,12 @@ export default function SignupPage() {
         })
       })
 
-      const result = await response.json() as { success: boolean; error?: string }
+      const result = await response.json() as { success: boolean; error?: string; data?: { message?: string } }
 
       if (result.success) {
-        // Success! Redirect to login
+        // Show success message
+        alert('Account created! Check your email for instructions.')
+        // Redirect to login
         router.push('/login?signup=success')
       } else {
         setError(result.error || 'Signup failed')

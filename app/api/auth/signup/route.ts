@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from '@supabase/ssr'
 import { z } from 'zod'
+import { sendSignupWelcomeEmail } from 'lib/services/signup-email-service'
 
 /**
  * Public organization and user signup endpoint
@@ -198,13 +199,28 @@ export async function POST(request: NextRequest) {
     
     console.log('[SIGNUP] Signup completed successfully')
     
+    // Step 7: Send welcome email
+    console.log('[SIGNUP] Sending welcome email')
+    const emailResult = await sendSignupWelcomeEmail({
+      firstName,
+      lastName,
+      email,
+      organizationName: organizationName,
+      organizationSlug: slug
+    })
+    
+    if (!emailResult.success) {
+      console.error('[SIGNUP] Failed to send welcome email:', emailResult.error)
+      // Don't fail the signup if email fails - user can still log in
+    }
+    
     return NextResponse.json({
       success: true,
       data: {
         organizationId: organization.id,
         userId: user.id,
         email,
-        message: 'Organization created successfully. You can now log in.'
+        message: 'Organization created successfully. Check your email for login instructions.'
       }
     }, { status: 201 })
     
