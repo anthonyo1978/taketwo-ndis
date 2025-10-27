@@ -78,10 +78,14 @@ export async function generateTransactionsForEligibleContracts(timezone?: string
     
     // Process each eligible contract
     for (const eligibleContract of eligibleContracts) {
+      const residentName = `${eligibleContract.resident.first_name} ${eligibleContract.resident.last_name}`
+      
       try {
+        console.log(`[TRANSACTION GEN] Processing ${residentName} (contract: ${eligibleContract.contractId})`)
         const transactionResult = await generateTransactionForContract(eligibleContract)
         
         if (transactionResult.success) {
+          console.log(`[TRANSACTION GEN] ✅ Success for ${residentName}`)
           results.successfulTransactions++
           results.transactions.push(transactionResult.transaction!)
           results.summary.totalAmount += transactionResult.transaction!.amount
@@ -90,6 +94,8 @@ export async function generateTransactionsForEligibleContracts(timezone?: string
           const freq = transactionResult.transaction!.frequency
           results.summary.frequencyBreakdown[freq] = (results.summary.frequencyBreakdown[freq] || 0) + 1
         } else {
+          console.error(`[TRANSACTION GEN] ❌ Failed for ${residentName}:`, transactionResult.error)
+          console.error(`[TRANSACTION GEN] Error details:`, transactionResult.details)
           results.failedTransactions++
           results.errors.push({
             contractId: eligibleContract.contractId,
@@ -99,6 +105,7 @@ export async function generateTransactionsForEligibleContracts(timezone?: string
           })
         }
       } catch (error) {
+        console.error(`[TRANSACTION GEN] ❌ Exception for ${residentName}:`, error)
         results.failedTransactions++
         results.errors.push({
           contractId: eligibleContract.contractId,
@@ -150,9 +157,16 @@ export async function generateTransactionForContract(
   details?: any
 }> {
   try {
+    console.log(`[TRANSACTION] Starting generation for contract ${eligibleContract.contractId}`)
     const supabase = await createClient()
     const contract = eligibleContract.contract
     const resident = eligibleContract.resident
+    
+    console.log(`[TRANSACTION] Contract details:`, {
+      frequency: contract.automated_drawdown_frequency,
+      dailyCost: contract.daily_support_item_cost,
+      currentBalance: contract.current_balance
+    })
     
     // Calculate transaction amount
     const transactionAmount = getTransactionAmount(
@@ -160,7 +174,10 @@ export async function generateTransactionForContract(
       contract.daily_support_item_cost || 0
     )
     
+    console.log(`[TRANSACTION] Calculated transaction amount:`, transactionAmount)
+    
     if (transactionAmount <= 0) {
+      console.error(`[TRANSACTION] Invalid transaction amount:`, transactionAmount)
       return {
         success: false,
         error: 'Invalid transaction amount',
@@ -170,6 +187,10 @@ export async function generateTransactionForContract(
     
     // Check if contract has sufficient balance
     if (contract.current_balance < transactionAmount) {
+      console.error(`[TRANSACTION] Insufficient balance:`, {
+        currentBalance: contract.current_balance,
+        transactionAmount
+      })
       return {
         success: false,
         error: 'Insufficient contract balance',
@@ -179,6 +200,7 @@ export async function generateTransactionForContract(
     
     // Generate unique sequential TXN ID (same as manual transactions)
     const transactionId = await transactionService.generateNextTxnId()
+    console.log(`[TRANSACTION] Generated transaction ID:`, transactionId)
     const automationLogId = generateId()
     const now = new Date()
     
@@ -201,11 +223,13 @@ export async function generateTransactionForContract(
     }
     
     // Insert transaction
+    console.log(`[TRANSACTION] Inserting transaction:`, transactionData)
     const { error: transactionError } = await supabase
       .from('transactions')
       .insert(transactionData)
     
     if (transactionError) {
+      console.error(`[TRANSACTION] Failed to insert transaction:`, transactionError)
       return {
         success: false,
         error: 'Failed to create transaction',
@@ -213,12 +237,18 @@ export async function generateTransactionForContract(
       }
     }
     
+    console.log(`[TRANSACTION] Transaction inserted successfully`)
+    
     // Update contract balance and next run date
+    console.log(`[TRANSACTION] Updating contract balance and next run date`)
     const newBalance = contract.current_balance - transactionAmount
     const nextRunDate = calculateNextRunDate(
       new Date(contract.next_run_date!),
       contract.automated_drawdown_frequency as 'daily' | 'weekly' | 'fortnightly'
     )
+    
+    console.log(`[TRANSACTION] New balance:`, newBalance)
+    console.log(`[TRANSACTION] Next run date:`, nextRunDate.toISOString().split('T')[0])
     
     const { error: contractError } = await supabase
       .from('funding_contracts')
@@ -231,6 +261,7 @@ export async function generateTransactionForContract(
       .eq('id', contract.id)
     
     if (contractError) {
+      console.error(`[TRANSACTION] Failed to update contract:`, contractError)
       // If contract update fails, we should rollback the transaction
       await supabase
         .from('transactions')
@@ -243,6 +274,8 @@ export async function generateTransactionForContract(
         details: contractError
       }
     }
+    
+    console.log(`[TRANSACTION] Contract updated successfully`)
     
     // Create audit log entry
     const auditEntry = {
