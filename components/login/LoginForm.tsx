@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
+import Link from "next/link"
 import { Button } from "components/Button/Button"
 import { Input } from "components/ui/Input"
 import { LoginCredentials, LoginResponse } from "lib/types/auth"
@@ -230,6 +231,14 @@ export function LoginForm({ onSuccess, className }: LoginFormProps) {
           Please wait while we sign you in
         </div>
       )}
+
+      {/* Sign up link */}
+      <div className="pt-4 text-center text-sm text-gray-600">
+        Don't have an account?{' '}
+        <Link href="/signup" className="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
+          Sign up
+        </Link>
+      </div>
     </form>
   )
 }
