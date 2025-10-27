@@ -47,7 +47,7 @@ export default function SignupPage() {
         })
       })
 
-      const result = await response.json() as { success: boolean; error?: string; data?: { message?: string } }
+      const result = await response.json() as { success: boolean; error?: string; code?: string; data?: { message?: string } }
 
       if (result.success) {
         // Show success message
@@ -55,7 +55,13 @@ export default function SignupPage() {
         // Redirect to login
         router.push('/login?signup=success')
       } else {
-        setError(result.error || 'Signup failed')
+        // If email already exists, provide helpful message and redirect
+        if (result.code === 'email_exists') {
+          alert('An account with this email already exists. Please sign in instead.')
+          router.push('/login')
+        } else {
+          setError(result.error || 'Signup failed')
+        }
       }
     } catch (err) {
       setError('Network error. Please try again.')

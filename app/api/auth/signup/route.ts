@@ -58,8 +58,25 @@ export async function POST(request: NextRequest) {
       }
     )
     
-    // Step 1: Check if email already exists
+    // Step 1: Check if email already exists in Auth AND in users table
     console.log('[SIGNUP] Checking if email exists')
+    
+    // Check Supabase Auth first
+    const { data: authUsers, error: authCheckError } = await supabaseAdmin.auth.admin.listUsers()
+    const existingAuthUser = authUsers?.users.find(u => u.email === email)
+    
+    if (existingAuthUser) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: 'An account with this email already exists. Please sign in instead.',
+          code: 'email_exists'
+        },
+        { status: 400 }
+      )
+    }
+    
+    // Check users table
     const { data: existingUser } = await supabaseAdmin
       .from('users')
       .select('id')
@@ -68,7 +85,11 @@ export async function POST(request: NextRequest) {
     
     if (existingUser) {
       return NextResponse.json(
-        { success: false, error: 'An account with this email already exists' },
+        { 
+          success: false, 
+          error: 'An account with this email already exists. Please sign in instead.',
+          code: 'email_exists'
+        },
         { status: 400 }
       )
     }
