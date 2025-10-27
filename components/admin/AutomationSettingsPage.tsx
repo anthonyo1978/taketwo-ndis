@@ -812,8 +812,13 @@ export function AutomationSettingsPage() {
                       year: 'numeric' 
                     })
                     
-                    // Get today for comparison
-                    const today = new Date().toISOString().split('T')[0]
+                    // Get today for comparison (Australia timezone)
+                    const today = new Date().toLocaleDateString('en-AU', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      timeZone: 'Australia/Sydney'
+                    }).split('/').reverse().join('-') // Convert DD/MM/YYYY to YYYY-MM-DD
                     const isToday = date === today
                     
                     return (
