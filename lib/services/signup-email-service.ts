@@ -171,16 +171,24 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
     </html>
 `
 
+  console.log('[SIGNUP EMAIL] Starting email send for:', email)
+  console.log('[SIGNUP EMAIL] Organization:', organizationName)
+  console.log('[SIGNUP EMAIL] Login URL:', loginUrl)
+  
   try {
     const resend = getResendClient()
     
     if (!resend) {
       console.error('[SIGNUP EMAIL] Resend API key not configured')
+      console.error('[SIGNUP EMAIL] RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY)
+      console.error('[SIGNUP EMAIL] RESEND_KEY exists:', !!process.env.RESEND_KEY)
       return {
         success: false,
         error: 'Email service not configured'
       }
     }
+    
+    console.log('[SIGNUP EMAIL] Resend client initialized successfully')
 
     const result = await resend.emails.send({
       from: process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>',
