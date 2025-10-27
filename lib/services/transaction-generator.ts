@@ -158,7 +158,12 @@ export async function generateTransactionForContract(
 }> {
   try {
     console.log(`[TRANSACTION] Starting generation for contract ${eligibleContract.contractId}`)
-    const supabase = await createClient()
+    // Use service role client to bypass RLS for automation
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js')
+    const supabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
     const contract = eligibleContract.contract
     const resident = eligibleContract.resident
     
@@ -220,11 +225,15 @@ export async function generateTransactionForContract(
       }
     }
     
+    // Get organization ID from contract
+    const organizationId = contract.organization_id || eligibleContract.organizationId
+    
     // Create transaction record in DRAFT status (requires manual approval)
     const transactionData = {
       id: transactionId, // Uses TXN-A000001 format (same as manual transactions)
       resident_id: resident.id,
       contract_id: contract.id,
+      organization_id: organizationId, // Add organization context
       amount: transactionAmount,
       occurred_at: now.toISOString(),
       description: `Automated ${contract.automated_drawdown_frequency} drawdown - ${contract.type}`,
