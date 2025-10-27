@@ -44,8 +44,16 @@ export async function GET() {
       }, { status: 500 })
     }
     
-    // Generate preview for next 3 days
-    const today = new Date()
+    // Generate preview for next 3 days (using Australia/Sydney timezone)
+    const now = new Date()
+    // Get today's date in Australia/Sydney timezone
+    const todayStr = now.toLocaleDateString('en-CA', { 
+      timeZone: 'Australia/Sydney',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    })
+    const today = new Date(`${todayStr}T00:00:00`)
     today.setHours(0, 0, 0, 0) // Reset to start of day
     const previewDays = 3
     const contractsByDay: Record<string, any[]> = {}
