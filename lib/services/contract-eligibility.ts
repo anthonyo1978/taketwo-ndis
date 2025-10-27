@@ -208,8 +208,8 @@ export async function getEligibleContracts(timezone?: string, organizationId?: s
   // Check eligibility for each contract
   const results: ContractEligibilityResult[] = []
   for (const contract of contracts || []) {
-    const eligibilityChecks = await performEligibilityChecks(contract)
-    const reasons = getEligibilityReasons(eligibilityChecks, contract)
+    const eligibilityChecks = await performEligibilityChecks(contract, timezone)
+    const reasons = getEligibilityReasons(eligibilityChecks, contract, timezone)
     const isEligible = Object.values(eligibilityChecks).every(check => check === true)
     
     console.log(`[ELIGIBILITY] ${contract.resident?.first_name} ${contract.resident?.last_name}: isEligible=${isEligible}, reasons=${JSON.stringify(reasons)}`)
@@ -234,7 +234,7 @@ export async function getEligibleContracts(timezone?: string, organizationId?: s
 /**
  * Perform all eligibility checks on a contract
  */
-async function performEligibilityChecks(contract: ContractWithDetails): Promise<EligibilityCheck> {
+async function performEligibilityChecks(contract: ContractWithDetails, timezone: string = 'Australia/Sydney'): Promise<EligibilityCheck> {
   const today = new Date()
   const contractStartDate = new Date(contract.start_date)
   const contractEndDate = contract.end_date ? new Date(contract.end_date) : null
@@ -254,7 +254,7 @@ async function performEligibilityChecks(contract: ContractWithDetails): Promise<
     dateCheck: validateDateRange(contract, today, contractStartDate, contractEndDate),
     
     // Rule 5: Next Run Date
-    nextRunCheck: validateNextRunDate(today, nextRunDate)
+    nextRunCheck: validateNextRunDate(today, nextRunDate, timezone)
   }
 }
 
@@ -346,15 +346,21 @@ function validateDateRange(
  * Validate next run date
  * IMPORTANT: For "Run Automation Now", we only process contracts scheduled for TODAY
  */
-function validateNextRunDate(today: Date, nextRunDate: Date | null): boolean {
+function validateNextRunDate(today: Date, nextRunDate: Date | null, timezone: string = 'Australia/Sydney'): boolean {
   // Next run date must be set
   if (!nextRunDate) {
     return false
   }
 
   // Since next_run_date is now a DATE column, it comes back as a string "YYYY-MM-DD"
-  // Convert today to the same format for comparison
-  const todayStr = today.toISOString().split('T')[0] as string
+  // Convert today to the same format for comparison using the configured timezone
+  const todayStr = today.toLocaleDateString('en-CA', { 
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  })
+  
   const nextRunStr = typeof nextRunDate === 'string' 
     ? nextRunDate 
     : nextRunDate.toISOString().split('T')[0] as string
@@ -366,7 +372,7 @@ function validateNextRunDate(today: Date, nextRunDate: Date | null): boolean {
 /**
  * Get human-readable reasons for eligibility status
  */
-function getEligibilityReasons(checks: EligibilityCheck, contract: ContractWithDetails): string[] {
+function getEligibilityReasons(checks: EligibilityCheck, contract: ContractWithDetails, timezone: string = 'Australia/Sydney'): string[] {
   const reasons: string[] = []
 
   if (!checks.statusCheck) {
@@ -420,8 +426,20 @@ function getEligibilityReasons(checks: EligibilityCheck, contract: ContractWithD
     } else {
       const today = new Date()
       const nextRunDate = new Date(contract.next_run_date)
-      const todayStr = today.toISOString().split('T')[0] as string
-      const nextRunStr = nextRunDate.toISOString().split('T')[0] as string
+      
+      // Use timezone-aware date string matching
+      const todayStr = today.toLocaleDateString('en-CA', { 
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
+      const nextRunStr = nextRunDate.toLocaleDateString('en-CA', { 
+        timeZone: timezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
       
       if (nextRunStr < todayStr) {
         reasons.push(`Next run date is in the past (${contract.next_run_date}) - overdue, not scheduled for today`)
