@@ -3,15 +3,19 @@
 import { useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
-interface MonthlyTrend {
-  month: string
+interface TrendData {
+  [key: string]: any
   year: number
   transactionCount: number
   totalAmount: number
 }
 
 interface TransactionTrendsChartProps {
-  data: MonthlyTrend[]
+  data: {
+    monthly?: TrendData[]
+    daily?: TrendData[]
+    weekly?: TrendData[]
+  }
   isLoading?: boolean
 }
 
@@ -20,30 +24,24 @@ type TimePeriod = '7d' | '30d' | '6m' | '12m'
 export function TransactionTrendsChart({ data, isLoading = false }: TransactionTrendsChartProps) {
   const [period, setPeriod] = useState<TimePeriod>('7d')
   
-  // Filter data based on selected period
+  // Get data based on selected period
   const getFilteredData = () => {
-    const now = new Date()
-    let monthsBack = 1
-    
     switch (period) {
       case '7d':
-        // Show only the most recent month's data
-        monthsBack = 1
-        break
+        // Show daily data for last 7 days
+        return (data.daily || []).slice(-7)
       case '30d':
-        // Show only the most recent month's data
-        monthsBack = 1
-        break
+        // Show weekly data for last 30 days (4-5 weeks)
+        return (data.weekly || []).slice(-5)
       case '6m':
-        monthsBack = 6
-        break
+        // Show monthly data for last 6 months
+        return (data.monthly || []).slice(-6)
       case '12m':
-        monthsBack = 12
-        break
+        // Show monthly data for last 12 months
+        return (data.monthly || []).slice(-12)
+      default:
+        return (data.monthly || []).slice(-1)
     }
-    
-    // Return the last N months of data
-    return data.slice(-monthsBack)
   }
   
   const filteredData = getFilteredData()
@@ -60,10 +58,13 @@ export function TransactionTrendsChart({ data, isLoading = false }: TransactionT
   
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
+      const label = payload[0].payload.date || payload[0].payload.week || payload[0].payload.month
+      const year = payload[0].payload.year
+      
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="text-sm font-medium text-gray-900 mb-1">
-            {payload[0].payload.month} {payload[0].payload.year}
+            {label} {year}
           </p>
           <p className="text-sm text-gray-600">
             <span className="font-medium">{payload[0].payload.transactionCount}</span> transactions
@@ -117,7 +118,7 @@ export function TransactionTrendsChart({ data, isLoading = false }: TransactionT
           <BarChart data={filteredData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis 
-              dataKey="month" 
+              dataKey={period === '7d' ? 'date' : period === '30d' ? 'week' : 'month'} 
               tick={{ fill: '#6b7280', fontSize: 12 }}
               tickLine={{ stroke: '#d1d5db' }}
             />

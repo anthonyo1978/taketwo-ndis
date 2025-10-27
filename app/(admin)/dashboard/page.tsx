@@ -161,7 +161,11 @@ export default function DashboardPage() {
         
         {/* Chart */}
         <TransactionTrendsChart
-          data={stats?.monthlyTrends || []}
+          data={{
+            monthly: stats?.monthlyTrends || [],
+            daily: stats?.dailyTrends || [],
+            weekly: stats?.weeklyTrends || []
+          }}
           isLoading={isLoading}
         />
         

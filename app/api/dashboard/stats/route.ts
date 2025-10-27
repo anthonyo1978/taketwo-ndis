@@ -24,6 +24,18 @@ export interface DashboardStats {
     transactionCount: number
     totalAmount: number
   }>
+  dailyTrends: Array<{
+    date: string
+    year: number
+    transactionCount: number
+    totalAmount: number
+  }>
+  weeklyTrends: Array<{
+    week: string
+    year: number
+    transactionCount: number
+    totalAmount: number
+  }>
   recentActivity: Array<{
     transactionId: string
     residentId: string
@@ -123,6 +135,28 @@ export async function GET(request: NextRequest) {
       throw new Error('Failed to fetch monthly trends')
     }
     
+    console.log('[Dashboard API] Fetching daily trends...')
+    
+    // 4b. Get daily trends
+    const { data: dailyTrends, error: dailyTrendsError } = await supabase
+      .rpc('get_daily_transaction_trends', { org_id: organizationId, days_back: 30 })
+    
+    if (dailyTrendsError) {
+      console.error('[Dashboard API] Daily trends error:', dailyTrendsError)
+      throw new Error('Failed to fetch daily trends')
+    }
+    
+    console.log('[Dashboard API] Fetching weekly trends...')
+    
+    // 4c. Get weekly trends
+    const { data: weeklyTrends, error: weeklyTrendsError } = await supabase
+      .rpc('get_weekly_transaction_trends', { org_id: organizationId, weeks_back: 8 })
+    
+    if (weeklyTrendsError) {
+      console.error('[Dashboard API] Weekly trends error:', weeklyTrendsError)
+      throw new Error('Failed to fetch weekly trends')
+    }
+    
     console.log('[Dashboard API] Fetching recent activity...')
     
     // 5. Get recent activity
@@ -182,6 +216,18 @@ export async function GET(request: NextRequest) {
       },
       monthlyTrends: (monthlyTrends || []).map((trend: any) => ({
         month: trend.month,
+        year: trend.year,
+        transactionCount: Number(trend.transaction_count),
+        totalAmount: Number(trend.total_amount)
+      })),
+      dailyTrends: (dailyTrends || []).map((trend: any) => ({
+        date: trend.date,
+        year: trend.year,
+        transactionCount: Number(trend.transaction_count),
+        totalAmount: Number(trend.total_amount)
+      })),
+      weeklyTrends: (weeklyTrends || []).map((trend: any) => ({
+        week: trend.week,
         year: trend.year,
         transactionCount: Number(trend.transaction_count),
         totalAmount: Number(trend.total_amount)
