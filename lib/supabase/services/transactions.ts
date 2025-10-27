@@ -141,14 +141,20 @@ export class TransactionService {
   /**
    * Generate the next sequential TXN ID
    */
-  async generateNextTxnId(): Promise<string> {
+  async generateNextTxnId(maxRetries: number = 5): Promise<string> {
     const supabase = await createClient()
+    const organizationId = await getCurrentUserOrganizationId()
+    
+    if (!organizationId) {
+      throw new Error('User organization not found. Please log in again.')
+    }
     
     // Get all TXN IDs and filter for sequential format
     const { data, error } = await supabase
       .from('transactions')
       .select('id')
       .like('id', 'TXN-%')
+      .eq('organization_id', organizationId)
       .order('id', { ascending: false })
       .limit(100)
     
@@ -216,58 +222,95 @@ export class TransactionService {
    * Create a new transaction
    */
   async create(input: TransactionCreateInput, createdBy: string): Promise<Transaction> {
-    try {
-      // Get current user's organization ID
-      const organizationId = await getCurrentUserOrganizationId()
-      
-      if (!organizationId) {
-        throw new Error('User organization not found. Please log in again.')
+    let retryCount = 0
+    const maxRetries = 3
+    
+    while (retryCount < maxRetries) {
+      try {
+        // Get current user's organization ID
+        const organizationId = await getCurrentUserOrganizationId()
+        
+        if (!organizationId) {
+          throw new Error('User organization not found. Please log in again.')
+        }
+        
+        const supabase = await createClient()
+        
+        // Generate sequential TXN ID
+        const customId = await this.generateNextTxnId()
+        
+        // Check if this ID already exists (race condition handling)
+        const { data: existingTx } = await supabase
+          .from('transactions')
+          .select('id')
+          .eq('id', customId)
+          .single()
+        
+        if (existingTx) {
+          console.log(`[TRANSACTION] ID ${customId} already exists, retrying... (attempt ${retryCount + 1}/${maxRetries})`)
+          retryCount++
+          // Add small delay to avoid rapid retry
+          await new Promise(resolve => setTimeout(resolve, 100))
+          continue
+        }
+        
+        // Check if transaction is orphaned (outside contract date boundaries)
+        const isOrphaned = await this.checkIfTransactionIsOrphaned(input)
+        
+        // Add orphaned status to input
+        const inputWithOrphaned = {
+          ...input,
+          isOrphaned
+        }
+        
+        const dbTransaction = convertFrontendTransactionToDb(inputWithOrphaned, createdBy)
+        // Override the ID with our custom TXN prefixed ID
+        dbTransaction.id = customId
+        // Add organization context
+        dbTransaction.organization_id = organizationId
+
+        const { data, error } = await supabase
+          .from('transactions')
+          .insert(dbTransaction)
+          .select()
+          .single()
+
+        if (error) {
+          // If duplicate key error, retry
+          if (error.code === '23505') {
+            console.log(`[TRANSACTION] Duplicate key error, retrying... (attempt ${retryCount + 1}/${maxRetries})`)
+            retryCount++
+            await new Promise(resolve => setTimeout(resolve, 100))
+            continue
+          }
+          
+          console.error('Error creating transaction:', error)
+          throw new Error(`Failed to create transaction: ${error.message}`)
+        }
+        
+        // Success! Create audit trail and update balance
+        await this.createAuditEntry(data.id, 'created', createdBy, 'Transaction created', undefined, data)
+        
+        if (!isOrphaned) {
+          await this.updateContractBalance(input.contractId, input.amount || (input.quantity * input.unitPrice), false)
+        }
+        
+        return convertDbTransactionToFrontend(data)
+        
+      } catch (error) {
+        if (retryCount >= maxRetries - 1) {
+          console.error('Error in TransactionService.create after max retries:', error)
+          throw error
+        }
+        retryCount++
+        await new Promise(resolve => setTimeout(resolve, 100))
       }
-      
-      const supabase = await createClient()
-      
-      // Generate sequential TXN ID
-      const customId = await this.generateNextTxnId()
-      
-      // Check if transaction is orphaned (outside contract date boundaries)
-      const isOrphaned = await this.checkIfTransactionIsOrphaned(input)
-      
-      // Add orphaned status to input
-      const inputWithOrphaned = {
-        ...input,
-        isOrphaned
-      }
-      
-      const dbTransaction = convertFrontendTransactionToDb(inputWithOrphaned, createdBy)
-      // Override the ID with our custom TXN prefixed ID
-      dbTransaction.id = customId
-      // Add organization context
-      dbTransaction.organization_id = organizationId
-
-      const { data, error } = await supabase
-        .from('transactions')
-        .insert(dbTransaction)
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error creating transaction:', error)
-        throw new Error(`Failed to create transaction: ${error.message}`)
-      }
-
-      // Create audit trail entry for creation
-      await this.createAuditEntry(data.id, 'created', createdBy, 'Transaction created', undefined, data)
-
-      // Update contract balance if transaction is not orphaned
-      if (!isOrphaned) {
-        await this.updateContractBalance(input.contractId, input.amount || (input.quantity * input.unitPrice), false)
-      }
-
-      return convertDbTransactionToFrontend(data)
-    } catch (error) {
-      console.error('Error in TransactionService.create:', error)
-      throw error
     }
+    
+    throw new Error('Failed to create transaction after maximum retries')
+  } catch (error: any) {
+    console.error('Error in TransactionService.create:', error)
+    throw error
   }
 
   /**
