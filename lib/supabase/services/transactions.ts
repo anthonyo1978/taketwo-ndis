@@ -238,6 +238,7 @@ export class TransactionService {
         
         // Generate sequential TXN ID (IMPORTANT: Generate NEW ID on each retry!)
         let customId = await this.generateNextTxnId()
+        console.log(`[TRANSACTION] Generated initial ID: ${customId}`)
         
         // Check if this ID already exists (race condition handling)
         let { data: existingTx } = await supabase
@@ -246,17 +247,22 @@ export class TransactionService {
           .eq('id', customId)
           .single()
         
-        // If ID exists, generate a new one and check again (up to 5 attempts to find unused ID)
+        console.log(`[TRANSACTION] Initial ID ${customId} exists: ${!!existingTx}`)
+        
+        // If ID exists, generate a new one and check again (up to 10 attempts to find unused ID)
         let idCheckCount = 0
-        while (existingTx && idCheckCount < 5) {
-          console.log(`[TRANSACTION] ID ${customId} already exists, generating new ID...`)
+        while (existingTx && idCheckCount < 10) {
+          console.log(`[TRANSACTION] ID ${customId} already exists, generating new ID... (attempt ${idCheckCount + 1}/10)`)
+          const oldId = customId
           customId = await this.generateNextTxnId()
+          console.log(`[TRANSACTION] Generated new ID: ${oldId} -> ${customId}`)
           const { data: checkTx } = await supabase
             .from('transactions')
             .select('id')
             .eq('id', customId)
             .single()
           existingTx = checkTx
+          console.log(`[TRANSACTION] New ID ${customId} exists: ${!!existingTx}`)
           idCheckCount++
         }
         
