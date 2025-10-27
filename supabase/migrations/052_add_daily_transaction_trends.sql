@@ -17,7 +17,7 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT 
-    TO_CHAR(DATE_TRUNC('day', t.created_at), 'MMM DD') as date,
+    TO_CHAR(DATE_TRUNC('day', t.created_at), 'Mon DD') as date,
     EXTRACT(YEAR FROM t.created_at)::INTEGER as year,
     COUNT(*)::BIGINT as transaction_count,
     COALESCE(SUM(t.amount), 0) as total_amount
@@ -43,8 +43,8 @@ AS $$
 BEGIN
   RETURN QUERY
   SELECT 
-    'Week ' || TO_CHAR(DATE_TRUNC('week', t.created_at), 'WW') || ' ' || 
-    TO_CHAR(DATE_TRUNC('week', t.created_at), 'Mon') as week,
+    TO_CHAR(DATE_TRUNC('week', t.created_at), 'Mon DD') || ' - ' ||
+    TO_CHAR(DATE_TRUNC('week', t.created_at) + INTERVAL '6 days', 'Mon DD') as week,
     EXTRACT(YEAR FROM t.created_at)::INTEGER as year,
     COUNT(*)::BIGINT as transaction_count,
     COALESCE(SUM(t.amount), 0) as total_amount
