@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { Metadata } from 'next'
 import { MetricCard } from 'components/dashboard/MetricCard'
-import { TransactionTrendsChart } from 'components/dashboard/TransactionTrendsChart'
 import { RecentActivityFeed } from 'components/dashboard/RecentActivityFeed'
 import { HousePerformanceList } from 'components/dashboard/HousePerformanceList'
 import type { DashboardStats } from 'app/api/dashboard/stats/route'
@@ -158,16 +157,6 @@ export default function DashboardPage() {
             isLoading={isLoading}
           />
         </div>
-        
-        {/* Chart */}
-        <TransactionTrendsChart
-          data={{
-            monthly: stats?.monthlyTrends || [],
-            daily: stats?.dailyTrends || [],
-            weekly: stats?.weeklyTrends || []
-          }}
-          isLoading={isLoading}
-        />
         
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
