@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from 'components/Button/Button'
 import { LoadingSpinner } from 'components/ui/LoadingSpinner'
+import { StandardizedFiltersClaims } from 'components/ui/StandardizedFiltersClaims'
 import { CreateClaimModal } from 'components/claims/CreateClaimModal'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -27,8 +28,14 @@ interface Claim {
 export default function ClaimsPage() {
   const router = useRouter()
   const [claims, setClaims] = useState<Claim[]>([])
+  const [filteredClaims, setFilteredClaims] = useState<Claim[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  
+  // Filter state
+  const [searchValue, setSearchValue] = useState('')
+  const [createdDateValue, setCreatedDateValue] = useState('')
+  const [statusValue, setStatusValue] = useState('')
 
   const fetchClaims = async () => {
     try {
@@ -49,9 +56,51 @@ export default function ClaimsPage() {
     }
   }
 
+  // Apply filters whenever claims or filter values change
+  useEffect(() => {
+    let filtered = [...claims]
+
+    // Search filter (claim ID)
+    if (searchValue) {
+      filtered = filtered.filter(claim =>
+        claim.claimNumber.toLowerCase().includes(searchValue.toLowerCase())
+      )
+    }
+
+    // Created date filter
+    if (createdDateValue) {
+      const filterDate = createdDateValue
+      filtered = filtered.filter(claim => {
+        const claimDate = new Date(claim.createdAt).toISOString().split('T')[0]
+        return claimDate === filterDate
+      })
+    }
+
+    // Status filter
+    if (statusValue) {
+      filtered = filtered.filter(claim => claim.status === statusValue)
+    }
+
+    setFilteredClaims(filtered)
+  }, [claims, searchValue, createdDateValue, statusValue])
+
   useEffect(() => {
     fetchClaims()
   }, [])
+
+  const handleSearchSubmit = (value: string) => {
+    setSearchValue(value)
+  }
+
+  const handleImport = () => {
+    console.log('Import claims')
+    alert('Import functionality coming soon')
+  }
+
+  const handleExport = () => {
+    console.log('Export claims')
+    alert('Export functionality coming soon')
+  }
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -100,8 +149,23 @@ export default function ClaimsPage() {
           </Button>
         </div>
 
+        {/* Filters */}
+        <div className="mb-6">
+          <StandardizedFiltersClaims
+            searchValue={searchValue}
+            onSearchChange={setSearchValue}
+            onSearchSubmit={handleSearchSubmit}
+            createdDateValue={createdDateValue}
+            onCreatedDateChange={setCreatedDateValue}
+            statusValue={statusValue}
+            onStatusChange={setStatusValue}
+            onImport={handleImport}
+            onExport={handleExport}
+          />
+        </div>
+
         {/* Claims Table */}
-        {claims.length === 0 ? (
+        {filteredClaims.length === 0 && claims.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -148,7 +212,7 @@ export default function ClaimsPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {claims.map((claim) => (
+                {filteredClaims.map((claim) => (
                   <tr 
                     key={claim.id} 
                     className="hover:bg-gray-50 cursor-pointer"
