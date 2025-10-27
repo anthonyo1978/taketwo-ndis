@@ -221,7 +221,8 @@ export async function POST(request: NextRequest) {
     console.log('[SIGNUP] Signup completed successfully')
     
     // Step 7: Send welcome email (if Resend is properly configured)
-    console.log('[SIGNUP] Sending welcome email')
+    // Note: Currently limited by Resend free tier - can only send to verified emails
+    console.log('[SIGNUP] Attempting to send welcome email')
     const emailResult = await sendSignupWelcomeEmail({
       firstName,
       lastName,
@@ -232,6 +233,7 @@ export async function POST(request: NextRequest) {
     
     if (!emailResult.success) {
       console.error('[SIGNUP] Failed to send welcome email:', emailResult.error)
+      console.log('[SIGNUP] Note: Resend free tier only sends to verified addresses')
       console.log('[SIGNUP] User can still log in with their credentials')
       // Don't fail the signup if email fails - user can still log in
     } else {
