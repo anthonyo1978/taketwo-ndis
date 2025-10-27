@@ -142,10 +142,13 @@ export default function ClaimsPage() {
             </p>
           </div>
           <Button
-            intent="primary"
             onClick={() => setShowCreateModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
           >
-            + Create Claim
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Create Claim
           </Button>
         </div>
 
