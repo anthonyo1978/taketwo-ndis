@@ -81,11 +81,11 @@ export async function GET(request: NextRequest) {
           status: result.success && result.failedTransactions === 0 ? 'success' 
             : result.failedTransactions > 0 && result.successfulTransactions > 0 ? 'partial'
             : 'failed',
-          contracts_processed: result.successfulTransactions,
+          contracts_processed: result.processedContracts,
           contracts_skipped: 0,
           contracts_failed: result.failedTransactions,
           execution_time_ms: orgExecutionTime,
-          errors: result.errors,
+          errors: JSON.stringify(result.errors),
           summary: generateHumanReadableSummary(result, executionDate, orgName)
         }
         

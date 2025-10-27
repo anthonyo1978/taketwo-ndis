@@ -202,6 +202,11 @@ function generateEmailBody(data: AutomationEmailData): string {
         ${data.errors.map((error, index) => `
           <div class="error-item">
             <strong>${index + 1}.</strong> ${error.residentName || 'Unknown'}: ${error.error}
+            ${error.details ? `
+              <div style="margin-left: 20px; margin-top: 4px; font-size: 12px; color: #6b7280;">
+                Details: ${typeof error.details === 'string' ? error.details : JSON.stringify(error.details, null, 2)}
+              </div>
+            ` : ''}
           </div>
         `).join('')}
       </div>
