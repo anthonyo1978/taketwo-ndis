@@ -5,17 +5,10 @@
 
 import { Resend } from 'resend'
 
-// Helper to get Resend client
-function getResendClient() {
-  const apiKey = process.env.RESEND_API_KEY || process.env.RESEND_KEY
-  
-  if (!apiKey) {
-    console.error('[SIGNUP EMAIL] RESEND_API_KEY not found')
-    return null
-  }
+// Initialize Resend client (same pattern as automation email service)
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
-  return new Resend(apiKey)
-}
+console.log('[SIGNUP EMAIL] Resend initialized at module level. API key exists:', !!process.env.RESEND_API_KEY)
 
 interface SignupEmailData {
   firstName: string
@@ -176,19 +169,15 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
   console.log('[SIGNUP EMAIL] Login URL:', loginUrl)
   
   try {
-    const resend = getResendClient()
-    
     if (!resend) {
-      console.error('[SIGNUP EMAIL] Resend API key not configured')
-      console.error('[SIGNUP EMAIL] RESEND_API_KEY exists:', !!process.env.RESEND_API_KEY)
-      console.error('[SIGNUP EMAIL] RESEND_KEY exists:', !!process.env.RESEND_KEY)
+      console.error('[SIGNUP EMAIL] Resend client not initialized - API key missing')
       return {
         success: false,
         error: 'Email service not configured'
       }
     }
     
-    console.log('[SIGNUP EMAIL] Resend client initialized successfully')
+    console.log('[SIGNUP EMAIL] Resend client ready')
 
     const result = await resend.emails.send({
       from: process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>',
