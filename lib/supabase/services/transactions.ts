@@ -236,21 +236,35 @@ export class TransactionService {
         
         const supabase = await createClient()
         
-        // Generate sequential TXN ID
-        const customId = await this.generateNextTxnId()
+        // Generate sequential TXN ID (IMPORTANT: Generate NEW ID on each retry!)
+        let customId = await this.generateNextTxnId()
         
         // Check if this ID already exists (race condition handling)
-        const { data: existingTx } = await supabase
+        let { data: existingTx } = await supabase
           .from('transactions')
           .select('id')
           .eq('id', customId)
           .single()
         
+        // If ID exists, generate a new one and check again (up to 5 attempts to find unused ID)
+        let idCheckCount = 0
+        while (existingTx && idCheckCount < 5) {
+          console.log(`[TRANSACTION] ID ${customId} already exists, generating new ID...`)
+          customId = await this.generateNextTxnId()
+          const { data: checkTx } = await supabase
+            .from('transactions')
+            .select('id')
+            .eq('id', customId)
+            .single()
+          existingTx = checkTx
+          idCheckCount++
+        }
+        
         if (existingTx) {
-          console.log(`[TRANSACTION] ID ${customId} already exists, retrying... (attempt ${retryCount + 1}/${maxRetries})`)
+          console.log(`[TRANSACTION] Unable to generate unique ID after 5 attempts, retrying... (attempt ${retryCount + 1}/${maxRetries})`)
           retryCount++
           // Add small delay to avoid rapid retry
-          await new Promise(resolve => setTimeout(resolve, 100))
+          await new Promise(resolve => setTimeout(resolve, 200))
           continue
         }
         
