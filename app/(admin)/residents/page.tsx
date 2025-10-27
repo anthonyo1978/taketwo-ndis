@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react"
 
+import { Button } from "components/Button/Button"
 import { GlobalResidentTable } from "components/residents/GlobalResidentTable"
 import { ResidentForm } from "components/residents/ResidentForm"
 import { LoadingSpinner } from "components/ui/LoadingSpinner"
@@ -25,7 +26,7 @@ function ResidentsPageContent() {
             <h1 className="text-3xl font-bold text-gray-900">Residents</h1>
             <p className="text-gray-600 mt-1">Manage residents across all houses</p>
           </div>
-          <button
+          <Button
             onClick={() => setShowResidentForm(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
           >
@@ -33,7 +34,7 @@ function ResidentsPageContent() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Add New Resident
-          </button>
+          </Button>
         </div>
 
         {/* Global Residents Table */}

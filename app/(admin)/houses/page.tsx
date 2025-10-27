@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState, useCallback, useRef, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { Button } from "components/Button/Button"
 import { ResidentAvatars } from "components/residents/ResidentAvatars"
 import { Pagination } from "components/ui/Pagination"
 import { SearchAndFilter } from "components/ui/SearchAndFilter"
