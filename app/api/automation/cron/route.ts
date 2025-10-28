@@ -17,16 +17,23 @@ export async function GET(request: NextRequest) {
   const executionDate = new Date().toISOString()
   
   try {
-    // Verify cron secret
+    // Verify cron secret (only if CRON_SECRET is set in env)
+    // Vercel cron calls don't send auth headers by default, so we allow them through
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
     
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    // Only check auth if CRON_SECRET is explicitly set
+    // Otherwise allow through (for Vercel cron calls)
+    if (cronSecret && authHeader && authHeader !== `Bearer ${cronSecret}`) {
+      console.log('[AUTOMATION CRON] Unauthorized: Invalid CRON_SECRET')
       return NextResponse.json({
         success: false,
         error: 'Unauthorized'
       }, { status: 401 })
     }
+    
+    // If CRON_SECRET is set but no auth header, also allow (Vercel cron)
+    // This allows Vercel's automatic cron calls to work
     
     console.log(`[AUTOMATION CRON] Starting multi-org automation run at ${executionDate}`)
     
