@@ -15,6 +15,10 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now()
   const executionDate = new Date().toISOString()
   
+  // Check for catch-up mode query parameter (for testing - processes contracts scheduled for today or earlier)
+  const { searchParams } = new URL(request.url)
+  const catchUpMode = searchParams.get('catchup') === 'true' || searchParams.get('catchUp') === 'true'
+  
   try {
     // Verify cron secret (only if CRON_SECRET is set in env)
     // Vercel cron calls don't send auth headers by default, so we allow them through
@@ -35,6 +39,9 @@ export async function GET(request: NextRequest) {
     // This allows Vercel's automatic cron calls to work
     
     console.log(`[AUTOMATION CRON] Starting multi-org automation run at ${executionDate}`)
+    if (catchUpMode) {
+      console.log('[AUTOMATION CRON] ⚠️ CATCH-UP MODE ENABLED - Processing contracts scheduled for today or earlier')
+    }
     
     // Use service role client to bypass RLS (cron runs without user session)
     const { createClient: createServiceClient } = await import('@supabase/supabase-js')
@@ -108,7 +115,7 @@ export async function GET(request: NextRequest) {
       
       try {
         // Generate transactions for this org (uses Australia/Sydney timezone by default)
-        const result = await generateTransactionsForEligibleContracts('Australia/Sydney', orgId)
+        const result = await generateTransactionsForEligibleContracts('Australia/Sydney', orgId, catchUpMode)
         
         const orgExecutionTime = Date.now() - startTime
         

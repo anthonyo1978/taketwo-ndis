@@ -122,7 +122,7 @@ export async function checkContractEligibility(contractId: string): Promise<Cont
  * 
  * @param timezone - IANA timezone string (e.g., "Australia/Sydney"). If not provided, fetches from database.
  */
-export async function getEligibleContracts(timezone?: string, organizationId?: string): Promise<ContractEligibilityResult[]> {
+export async function getEligibleContracts(timezone?: string, organizationId?: string, catchUpMode: boolean = false): Promise<ContractEligibilityResult[]> {
   const supabase = await createClient()
   
   // If timezone not provided, fetch from automation settings
@@ -158,9 +158,11 @@ export async function getEligibleContracts(timezone?: string, organizationId?: s
   console.log('[ELIGIBILITY] Configured timezone:', timezone)
   console.log('[ELIGIBILITY] Current time (UTC):', now.toISOString())
   console.log('[ELIGIBILITY] Today in', timezone, ':', todayStr)
-  console.log('[ELIGIBILITY] Checking for contracts with next_run_date =', todayStr)
+  console.log('[ELIGIBILITY] Catch-up mode:', catchUpMode)
+  console.log('[ELIGIBILITY] Checking for contracts with next_run_date', catchUpMode ? '<=' : '=', todayStr)
 
   // Get all contracts with automation enabled that have next_run_date = TODAY
+  // In catch-up mode, process contracts scheduled for today or earlier (allows testing)
   // Simple equality check since next_run_date is now DATE type (no timezone component)
   // Build query with optional organization filter
   let query = supabase
@@ -184,7 +186,14 @@ export async function getEligibleContracts(timezone?: string, organizationId?: s
       )
     `)
     .eq('auto_billing_enabled', true)
-    .eq('next_run_date', todayStr)
+  
+  // In catch-up mode, process contracts scheduled for today or earlier
+  // Otherwise, only process contracts scheduled exactly for today
+  if (catchUpMode) {
+    query = query.lte('next_run_date', todayStr)
+  } else {
+    query = query.eq('next_run_date', todayStr)
+  }
   
   // Filter by organization if specified
   if (organizationId) {
