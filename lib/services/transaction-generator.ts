@@ -289,6 +289,10 @@ export async function generateTransactionForContract(
     console.log(`[TRANSACTION] Updating contract balance and next run date`)
     const newBalance = contract.current_balance - transactionAmount
     const frequency = contract.automated_drawdown_frequency as 'daily' | 'weekly' | 'fortnightly'
+    
+    // Calculate next run date in Australian timezone
+    // contract.next_run_date is a DATE string like '2025-10-30'
+    // We need to calculate the next date, keeping it as a DATE (no time component)
     const nextRunDate = calculateNextRunDate(
       new Date(contract.next_run_date!),
       frequency

@@ -248,3 +248,137 @@ U-4	Download file	Generate signed URL for 15-minute access	User can open/downloa
 U-5	Naming standard	File name uses claim number + timestamp	Matches pattern
 U-6	Audit logging	Record user ID and event (“claim_file_generated”)
 
+
+
+Phase 2 
+
+adds the ability to import official claim-response files (received externally from the funding body) 
+back into Haven.These response files contain the outcome of each transaction submitted in a claim — which ones were paid, partially paid, or rejected
+ — and update Haven’s internal records accordingly.
+
+ Problem Statement
+
+After submitting claim files externally, there’s currently no automated or structured way to bring results back into Haven. Users must manually track which transactions were approved or denied. This breaks the financial audit chain and makes reporting unreliable.
+This enhancement introduces a manual response upload flow that:
+
+ - accepts a government-formatted results file (CSV / XML / NDIA PACE export),
+ - parses outcomes per transaction,
+ - updates each transaction’s and claim’s status, and
+ - provides clear feedback and error reporting to the user.
+
+ Goals & Non-Goals
+Goals
+
+* Enable manual upload of a claim-response file to reconcile claim outcomes.
+* Automatically update both the claim and its linked transactions to the new statuses (paid, error, rejected, etc.).
+* Provide a summary of updates after upload (success count, error count).
+* Maintain a full audit trail of the reconciliation event.
+* Store the upload file, and log everything!
+
+Non-Goals (Phase 2)
+
+* No automated API integration with NDIA / PACE yet.
+* No financial remittance reconciliation yet!
+* No partial-payment handling (whole-transaction outcome only).
+
+Audience / Users
+
+Finance admins / claims officers who handle NDIA claim uploads and responses.
+Operational admins who need visibility into claim outcomes.
+
+Scope
+In Scope
+
+ - New “Upload Response” action on each claim record.
+ - Parsing of response file (CSV or XML).
+ - Updating statuses for claim and linked transactions.
+ - Upload summary view — counts of success, error, and skipped transactions.
+ - Logging the upload event (uploaded_by, timestamp).
+
+User Experience (UX)
+Flow: Reconcile Claim
+
+1️⃣ User opens a claim (e.g. CLM-0000001).
+2️⃣ Clicks “Upload Response” button.
+3️⃣ Upload modal appears:
+– Drag and drop CSV / XML file or upload from PC
+– Format preview and mapping validation
+4️⃣ User clicks Upload & Process.
+5️⃣ System parses file, matches records by transaction ID or external reference.
+6️⃣ Each transaction’s status is updated based on the response:
+
+success → transaction approved
+rejected or error → transaction denied for some reason
+
+If unmatched → left as picked_up with warning
+7️⃣ Claim status auto-updates based on aggregate results:
+
+
+
+Any rejected → Claim status = partially_paid or error
+8️⃣ Completion toast: “Response processed: 47 paid, 3 errors.”
+9️⃣ Summary table appears in Claim Detail view with import metadata.
+
+8️⃣ Completion toast: “Response processed: 47 paid, 3 errors.”
+9️⃣ Summary table appears in Claim Detail view with import metadata.
+
+
+Functional Requirements
+ID	Function	Description	Acceptance Criteria
+F-1	Upload Response File	Allow user to upload CSV/XML response	File validated and parsed successfully
+F-2	Match records	Match each line to a transaction by ID	≥ 95 % match rate
+F-3	Update transaction status	Set status based on response code	All matched records updated
+F-4	Update claim status	Derive overall claim status	Correct aggregate status displayed
+F-5	Upload summary	Show totals of success/error/skipped	Displayed after processing
+F-6	Audit logging	Record who uploaded and when	Logged in claim_reconciliations table
+
+Technical Requirements
+Database Additions
+
+Table: claim_reconciliations
+
+Field	Type	Notes
+id	uuid	Primary key
+claim_id	uuid	FK to claims
+uploaded_by	uuid	User ID
+file_name	text	Original filename
+results_json	jsonb	Aggregated counts (summary + errors)
+created_at	timestamptz	Upload timestamp
+
+Updates to transactions table:
+Add enum values paid, rejected, error.
+
+Updates to claims table:
+Add enum values partially_paid, paid, error.
+
+Backend Logic
+
+API route POST /api/claims/:id/upload-response
+
+Validate file type (CSV/XML).
+
+Parse and match by transaction_id.
+
+Batch update transactions.
+
+Recalculate claim status.
+
+Insert audit row in claim_reconciliations.
+
+Frontend
+
+Upload modal component.
+
+Progress bar + success/error summary.
+
+Claim detail tab showing history of reconciliations.
+
+Metrics / Success Criteria
+
+100 % claim uploads complete without data loss.
+
+All transactions within a claim reflect correct status after upload.
+
+Audit entry created for every upload.
+
+File processing < 10 seconds for ≤ 1,000 records.

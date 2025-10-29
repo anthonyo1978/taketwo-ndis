@@ -124,3 +124,19 @@ Risk that toikens expire mid session
 10. Future Enhancements
 
 down the road we will ad profile pics, increased logging and more
+
+
+**** Update Extensions ******
+
+With certain events now logging, the logs are not actually visible and or available to the end user.
+To solve this, within the "Settings" page, Make it so that when the user clicks on the existing "System Setting" tile that a page of setting launches.
+
+Update that initial System prefences tile  to have the foptter text read "Configure application behavior and logging levels"
+
+Then, when the user clicks on this page they can...
+
+* enable logging in the UI ( although this is always on) - this is cosmentic
+* Create a lkogging report, where by they can click a button and choose a data range and click submit.. ( pre canned ranges = TODAY, Yesterday, last 1 week, last 2 week, last 12 weeks, all time)
+* This will run a report and provide logs from the system_logs table based on the created at date.
+* The report is not stored on the UI but intead a CSV is downloaded by the browser
+

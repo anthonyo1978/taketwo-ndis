@@ -474,3 +474,13 @@ vercel.json                             # Cron configuration
 **Last Updated:** October 9, 2025  
 **Status:** Core System Operational - Contract Expiry Automation Needed
 
+
+
+
+Extra to do list  -----
+
+
+When an automated TXN creates, on the Transactiosn screen it would be good toi be able to easily identy whethyer this was manually or auto created
+Also - on the txn screen, the data the txn was created is different that delivery date - seperating these would ne good!
+
+
