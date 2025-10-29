@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateTransactionsForEligibleContracts } from "lib/services/transaction-generator"
-import { createClient } from "lib/supabase/server"
 import { sendAutomationCompletionEmail, sendAutomationErrorEmail } from "lib/services/email-notifications"
 
 /**
@@ -37,24 +36,56 @@ export async function GET(request: NextRequest) {
     
     console.log(`[AUTOMATION CRON] Starting multi-org automation run at ${executionDate}`)
     
-    const supabase = await createClient()
+    // Use service role client to bypass RLS (cron runs without user session)
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js')
+    const supabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
     
-    // Get ALL organizations with automation enabled
+    console.log('[AUTOMATION CRON] Using service role client to query automation_settings')
+    console.log('[AUTOMATION CRON] SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING')
+    console.log('[AUTOMATION CRON] SERVICE_ROLE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING')
+    
+    // First, check raw automation_settings without join to see what we have
+    const { data: rawSettings, error: rawError } = await supabase
+      .from('automation_settings')
+      .select('organization_id, enabled, admin_emails')
+      .eq('enabled', true)
+    
+    if (rawError) {
+      console.error('[AUTOMATION CRON] Error fetching raw automation_settings:', rawError)
+    } else {
+      console.log('[AUTOMATION CRON] Raw automation_settings with enabled=true:', rawSettings?.length || 0)
+      if (rawSettings && rawSettings.length > 0) {
+        console.log('[AUTOMATION CRON] Found org IDs:', rawSettings.map(s => s.organization_id))
+      }
+    }
+    
+    // Get ALL organizations with automation enabled (with join)
     const { data: allOrgSettings, error: settingsError } = await supabase
       .from('automation_settings')
       .select('organization_id, enabled, admin_emails, organizations!inner(name, slug)')
       .eq('enabled', true)
     
     if (settingsError) {
-      console.error('[AUTOMATION CRON] Error fetching org settings:', settingsError)
+      console.error('[AUTOMATION CRON] Error fetching org settings with join:', settingsError)
+      console.error('[AUTOMATION CRON] Error details:', JSON.stringify(settingsError, null, 2))
       return NextResponse.json({
         success: false,
-        error: 'Failed to fetch automation settings'
+        error: 'Failed to fetch automation settings',
+        details: settingsError
       }, { status: 500 })
     }
     
+    console.log('[AUTOMATION CRON] Query result with join:', {
+      found: allOrgSettings?.length || 0,
+      orgs: allOrgSettings?.map(s => ({ id: s.organization_id, name: (s.organizations as any)?.name }))
+    })
+    
     if (!allOrgSettings || allOrgSettings.length === 0) {
-      console.log('[AUTOMATION CRON] No organizations have automation enabled')
+      console.log('[AUTOMATION CRON] No organizations found after join')
+      console.log('[AUTOMATION CRON] Possible causes: 1) Missing organization records, 2) RLS still blocking, 3) Join failing')
       return NextResponse.json({
         success: true,
         message: 'No organizations have automation enabled',
