@@ -15,9 +15,10 @@ export async function GET(request: NextRequest) {
   const startTime = Date.now()
   const executionDate = new Date().toISOString()
   
-  // Check for catch-up mode query parameter (for testing - processes contracts scheduled for today or earlier)
-  const { searchParams } = new URL(request.url)
-  const catchUpMode = searchParams.get('catchup') === 'true' || searchParams.get('catchUp') === 'true'
+  // Catch-up mode is now always enabled by default
+  // This ensures contracts don't get skipped if a cron run fails or is delayed
+  // Processes contracts scheduled for today or earlier
+  const catchUpMode = true
   
   try {
     // Verify cron secret (only if CRON_SECRET is set in env)
@@ -39,9 +40,7 @@ export async function GET(request: NextRequest) {
     // This allows Vercel's automatic cron calls to work
     
     console.log(`[AUTOMATION CRON] Starting multi-org automation run at ${executionDate}`)
-    if (catchUpMode) {
-      console.log('[AUTOMATION CRON] ⚠️ CATCH-UP MODE ENABLED - Processing contracts scheduled for today or earlier')
-    }
+    console.log('[AUTOMATION CRON] Catch-up mode enabled - Processing contracts scheduled for today or earlier')
     
     // Use service role client to bypass RLS (cron runs without user session)
     const { createClient: createServiceClient } = await import('@supabase/supabase-js')
