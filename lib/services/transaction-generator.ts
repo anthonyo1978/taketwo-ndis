@@ -40,7 +40,7 @@ export interface TransactionError {
  * Generate transactions for all eligible contracts
  * 
  * @param timezone - IANA timezone string (e.g., "Australia/Sydney"). If not provided, fetches from database.
- * @param catchUpMode - If true, processes contracts scheduled for today or earlier (for testing)
+ * @param catchUpMode - If true, processes contracts scheduled for today or earlier (default: true for safety)
  */
 export async function generateTransactionsForEligibleContracts(timezone?: string, organizationId?: string, catchUpMode: boolean = true): Promise<TransactionGenerationResult> {
   try {
