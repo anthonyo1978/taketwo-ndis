@@ -468,7 +468,7 @@ export function AutomationSettingsPage() {
                       ⏰ Automated Schedule
                     </p>
                     <p className="text-sm text-blue-800">
-                      Automation runs daily at <strong>12:00 AM UTC (midnight)</strong> for all organizations. 
+                      Automation runs daily at <strong>2:00 AM ACST (Australian Central Standard Time)</strong> for all organizations. 
                       Eligible contracts are processed automatically and notifications are sent to admin emails.
                     </p>
                   </div>
