@@ -216,7 +216,8 @@ export async function generateTransactionForContract(
     const organizationId = contract.organization_id || eligibleContract.organizationId
     
     // Generate ID with random suffix (same logic as manual transactions to prevent collisions)
-    let baseId = await transactionService.generateNextTxnId()
+    // Pass organizationId explicitly for cron context (no user session)
+    let baseId = await transactionService.generateNextTxnId(organizationId)
     const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
     let transactionId = `${baseId}-${randomSuffix}`
     console.log(`[TRANSACTION] Generated transaction ID with suffix:`, transactionId)

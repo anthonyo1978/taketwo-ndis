@@ -140,12 +140,15 @@ export class TransactionService {
 
   /**
    * Generate the next sequential TXN ID
+   * @param organizationId - Optional organization ID. If not provided, fetches from current user session.
    */
-  async generateNextTxnId(maxRetries: number = 5): Promise<string> {
+  async generateNextTxnId(organizationId?: string, maxRetries: number = 5): Promise<string> {
     const supabase = await createClient()
-    const organizationId = await getCurrentUserOrganizationId()
     
-    if (!organizationId) {
+    // If organizationId not provided, try to get from session
+    const orgId = organizationId || await getCurrentUserOrganizationId()
+    
+    if (!orgId) {
       throw new Error('User organization not found. Please log in again.')
     }
     
@@ -154,7 +157,7 @@ export class TransactionService {
       .from('transactions')
       .select('id')
       .like('id', 'TXN-%')
-      .eq('organization_id', organizationId)
+      .eq('organization_id', orgId)
       .order('id', { ascending: false })
       .limit(100)
     
