@@ -33,12 +33,9 @@ export function useProductTour() {
       showButtons: ['next', 'previous', 'close'],
       steps: [
         {
-          element: 'body',
           popover: {
             title: '👋 Welcome to Haven!',
-            description: 'Let\'s take a quick 30-second tour to get you started. You can skip anytime or press ESC.',
-            side: 'center',
-            align: 'center'
+            description: 'Let\'s take a quick 30-second tour to get you started. You can skip anytime or press ESC.'
           }
         },
         {
