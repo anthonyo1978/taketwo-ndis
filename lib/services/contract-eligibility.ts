@@ -122,8 +122,23 @@ export async function checkContractEligibility(contractId: string): Promise<Cont
  * 
  * @param timezone - IANA timezone string (e.g., "Australia/Sydney"). If not provided, fetches from database.
  */
-export async function getEligibleContracts(timezone?: string, organizationId?: string, catchUpMode: boolean = true): Promise<ContractEligibilityResult[]> {
-  const supabase = await createClient()
+export async function getEligibleContracts(
+  timezone?: string,
+  organizationId?: string,
+  catchUpMode: boolean = true,
+  useServiceRole: boolean = false
+): Promise<ContractEligibilityResult[]> {
+  // Use service role client when explicitly requested (e.g., cron context)
+  let supabase: any
+  if (useServiceRole && process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { createClient: createServiceClient } = await import('@supabase/supabase-js')
+    supabase = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  } else {
+    supabase = await createClient()
+  }
   
   // If timezone not provided, fetch from automation settings
   if (!timezone) {
@@ -207,7 +222,7 @@ export async function getEligibleContracts(timezone?: string, organizationId?: s
     return []
   }
 
-  console.log(`[ELIGIBILITY] Found ${contracts?.length || 0} contracts with next_run_date on ${todayStr}`)
+  console.log(`[ELIGIBILITY] Found ${contracts?.length || 0} contracts with next_run_date ${catchUpMode ? '<=' : '='} ${todayStr}`)
   
   if (contracts) {
     contracts.forEach(c => {
@@ -218,7 +233,7 @@ export async function getEligibleContracts(timezone?: string, organizationId?: s
   // Check eligibility for each contract
   const results: ContractEligibilityResult[] = []
   for (const contract of contracts || []) {
-    const eligibilityChecks = await performEligibilityChecks(contract, timezone)
+    const eligibilityChecks = await performEligibilityChecks(contract, timezone, catchUpMode)
     const reasons = getEligibilityReasons(eligibilityChecks, contract, timezone)
     const isEligible = Object.values(eligibilityChecks).every(check => check === true)
     
@@ -245,7 +260,7 @@ export async function getEligibleContracts(timezone?: string, organizationId?: s
 /**
  * Perform all eligibility checks on a contract
  */
-async function performEligibilityChecks(contract: ContractWithDetails, timezone: string = 'Australia/Sydney'): Promise<EligibilityCheck> {
+async function performEligibilityChecks(contract: ContractWithDetails, timezone: string = 'Australia/Sydney', catchUpMode: boolean = true): Promise<EligibilityCheck> {
   const today = new Date()
   const contractStartDate = new Date(contract.start_date)
   const contractEndDate = contract.end_date ? new Date(contract.end_date) : null
@@ -265,7 +280,7 @@ async function performEligibilityChecks(contract: ContractWithDetails, timezone:
     dateCheck: validateDateRange(contract, today, contractStartDate, contractEndDate),
     
     // Rule 5: Next Run Date
-    nextRunCheck: validateNextRunDate(today, nextRunDate, timezone)
+    nextRunCheck: validateNextRunDate(today, nextRunDate, timezone, catchUpMode)
   }
 }
 
@@ -355,9 +370,10 @@ function validateDateRange(
 
 /**
  * Validate next run date
- * IMPORTANT: For "Run Automation Now", we only process contracts scheduled for TODAY
+ * In catch-up mode: accepts next_run_date <= today (processes overdue contracts)
+ * Otherwise: only accepts next_run_date === today (scheduled for today only)
  */
-function validateNextRunDate(today: Date, nextRunDate: Date | null, timezone: string = 'Australia/Sydney'): boolean {
+function validateNextRunDate(today: Date, nextRunDate: Date | null, timezone: string = 'Australia/Sydney', catchUpMode: boolean = true): boolean {
   // Next run date must be set
   if (!nextRunDate) {
     return false
@@ -376,8 +392,13 @@ function validateNextRunDate(today: Date, nextRunDate: Date | null, timezone: st
     ? nextRunDate 
     : nextRunDate.toISOString().split('T')[0] as string
   
-  // Next run date must be EXACTLY today (not overdue, not future)
-  return nextRunStr === todayStr
+  // In catch-up mode, accept next_run_date <= today (process overdue + today)
+  // Otherwise, only accept next_run_date === today (scheduled for today)
+  if (catchUpMode) {
+    return nextRunStr <= todayStr
+  } else {
+    return nextRunStr === todayStr
+  }
 }
 
 /**

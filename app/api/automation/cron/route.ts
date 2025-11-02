@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
       
       try {
         // Generate transactions for this org (uses Australia/Sydney timezone by default)
-        const result = await generateTransactionsForEligibleContracts('Australia/Sydney', orgId, catchUpMode)
+        const result = await generateTransactionsForEligibleContracts('Australia/Sydney', orgId, catchUpMode, true)
         
         const orgExecutionTime = Date.now() - startTime
         
@@ -209,6 +209,9 @@ export async function GET(request: NextRequest) {
           } else {
             console.log(`[AUTOMATION CRON] ${orgName} - Email sent to: ${adminEmails.join(', ')}`)
           }
+
+          // Delay 1s to respect Resend's 2 requests/second rate limit
+          await new Promise(resolve => setTimeout(resolve, 1000))
         }
         
         // Store result for summary
