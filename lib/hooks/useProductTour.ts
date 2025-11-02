@@ -35,14 +35,14 @@ export function useProductTour() {
         {
           popover: {
             title: '👋 Welcome to Haven!',
-            description: 'Let\'s take a quick 30-second tour to get you started. You can skip anytime or press ESC.'
+            description: 'Haven helps you manage houses, residents, transactions, and claiming. Let\'s take a quick 30-second tour to get you started. You can skip anytime or press ESC.'
           }
         },
         {
           element: '[data-tour="houses-nav"]',
           popover: {
             title: '🏠 Start with Houses',
-            description: 'Create houses to organize your residents. This is the foundation of your setup.',
+            description: 'Create houses to organise your residents. This is the foundation of your setup.',
             side: 'right',
             align: 'start'
           }
@@ -50,17 +50,26 @@ export function useProductTour() {
         {
           element: '[data-tour="residents-nav"]',
           popover: {
-            title: '👥 Add Residents',
-            description: 'Add residents to your houses. Each resident needs to be active to enable billing.',
+            title: '👥 Create Residents',
+            description: 'Create residents and add them to your houses. Each resident record carries important resident details, including contact details, funding details, and preferences.',
             side: 'right',
             align: 'start'
           }
         },
         {
-          element: '[data-tour="residents-nav"]',
+          element: '[data-tour="transactions-nav"]',
           popover: {
-            title: '📋 The Billing Flow',
-            description: 'Remember: <strong>Active House → Active Resident → Active Contract</strong><br/>Only then can you generate bills!',
+            title: '💳 Transactions',
+            description: 'Transactions are records of service delivery, and they live here. Remember: <strong>Active House → Active Resident (linked to house) → Active Contract</strong> — only then can you generate transactions.',
+            side: 'right',
+            align: 'start'
+          }
+        },
+        {
+          element: '[data-tour="claims-nav"]',
+          popover: {
+            title: '📄 Claiming',
+            description: 'In this section, you can build your claims and automatically send them to the NDIA or create downloadable files.',
             side: 'right',
             align: 'start'
           }
@@ -69,7 +78,7 @@ export function useProductTour() {
           element: '[data-tour="settings-nav"]',
           popover: {
             title: '⚙️ Automation is Key',
-            description: 'Set up automated billing in Settings to save hours each week. Haven can automatically generate transactions based on your schedule.',
+            description: 'In Settings, you can easily set up automation to automatically create transactions. This section also allows much configuration of the system and user management.',
             side: 'right',
             align: 'start'
           }
