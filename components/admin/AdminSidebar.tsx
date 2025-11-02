@@ -157,6 +157,16 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
               <UserProfileIcon />
             </div>
             
+            {/* Version Info (only when expanded) */}
+            {!isCollapsed && (
+              <div className="px-2 py-1.5 bg-gray-50 rounded-md border border-gray-200">
+                <div className="text-xs text-gray-500 font-medium">Version</div>
+                <div className="text-xs text-gray-700 font-mono">
+                  {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || process.env.NEXT_PUBLIC_APP_VERSION || 'dev'}
+                </div>
+              </div>
+            )}
+            
             {/* Collapse Button */}
             <div className={`flex ${isCollapsed ? 'justify-center' : 'justify-end'}`}>
               <Button
