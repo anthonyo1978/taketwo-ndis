@@ -24,31 +24,37 @@ const NAVIGATION_ITEMS = [
     href: "/dashboard",
     icon: LayoutDashboard,
     exactMatch: true,
+    tourId: "dashboard-nav",
   },
   {
     label: "Houses",
     href: "/houses",
     icon: Home,
+    tourId: "houses-nav",
   },
   {
     label: "Residents",
     href: "/residents",
     icon: Users,
+    tourId: "residents-nav",
   },
   {
     label: "Transactions",
     href: "/transactions",
     icon: CreditCard,
+    tourId: "transactions-nav",
   },
   {
     label: "Claims",
     href: "/claims",
     icon: FileCheck,
+    tourId: "claims-nav",
   },
   {
     label: "Settings",
     href: "/settings",
     icon: Settings,
+    tourId: "settings-nav",
   },
 ] as const
 
@@ -146,6 +152,7 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
                 label={item.label}
                 collapsed={isCollapsed}
                 exactMatch={'exactMatch' in item ? item.exactMatch : false}
+                tourId={'tourId' in item ? item.tourId : undefined}
               />
             ))}
           </nav>

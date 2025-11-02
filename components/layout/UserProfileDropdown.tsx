@@ -1,6 +1,7 @@
 "use client"
 
 import { useSession, SessionUser } from 'lib/contexts/SessionContext'
+import { useProductTour } from 'lib/hooks/useProductTour'
 
 interface UserProfileDropdownProps {
   user: SessionUser
@@ -9,10 +10,16 @@ interface UserProfileDropdownProps {
 
 export function UserProfileDropdown({ user, onClose }: UserProfileDropdownProps) {
   const { logout } = useSession()
+  const { resetTour } = useProductTour()
 
   const handleLogout = async () => {
     onClose()
     await logout()
+  }
+
+  const handleRestartTour = () => {
+    onClose()
+    resetTour()
   }
 
   const getRoleBadgeColor = (role: string) => {
@@ -65,8 +72,17 @@ export function UserProfileDropdown({ user, onClose }: UserProfileDropdownProps)
         )}
       </div>
 
-      {/* Footer with Logout */}
-      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
+      {/* Footer with Actions */}
+      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 space-y-2">
+        <button
+          onClick={handleRestartTour}
+          className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+        >
+          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Restart Tour
+        </button>
         <button
           onClick={handleLogout}
           className="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"

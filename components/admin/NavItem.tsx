@@ -52,6 +52,7 @@ export interface NavItemProps extends VariantProps<typeof navItem> {
   collapsed?: boolean
   exactMatch?: boolean
   className?: string
+  tourId?: string
 }
 
 /**
@@ -66,7 +67,8 @@ export function NavItem({
   label, 
   collapsed = false, 
   exactMatch = false,
-  className 
+  className,
+  tourId
 }: NavItemProps) {
   const pathname = usePathname()
   
@@ -80,6 +82,7 @@ export function NavItem({
       href={href}
       className={twMerge(navItem({ active: isActive, collapsed }), "group", className)}
       aria-current={isActive ? "page" : undefined}
+      data-tour={tourId}
     >
       <Icon 
         className="size-5 shrink-0 transition-transform duration-200 group-hover:scale-110" 

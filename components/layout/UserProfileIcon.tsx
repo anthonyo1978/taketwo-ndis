@@ -37,7 +37,7 @@ export function UserProfileIcon() {
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} data-tour="user-profile">
       {/* Profile Icon Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}

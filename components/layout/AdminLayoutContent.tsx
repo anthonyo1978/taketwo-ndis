@@ -4,6 +4,7 @@ import { useState, ReactNode } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { useSession } from 'lib/contexts/SessionContext'
 import { useInactivityTimer } from 'lib/hooks/useInactivityTimer'
+import { useProductTour } from 'lib/hooks/useProductTour'
 import { AdminSidebar } from 'components/admin/AdminSidebar'
 import { InactivityWarningModal } from './InactivityWarningModal'
 
@@ -14,6 +15,9 @@ interface AdminLayoutContentProps {
 export function AdminLayoutContent({ children }: AdminLayoutContentProps) {
   const { logout } = useSession()
   const [showWarning, setShowWarning] = useState(false)
+  
+  // Initialize product tour (auto-starts on first login)
+  useProductTour()
 
   // Inactivity timer: 10 minutes timeout, show warning at 9 minutes
   const { isWarningShown, secondsRemaining, resetTimer, dismissWarning } = useInactivityTimer({
