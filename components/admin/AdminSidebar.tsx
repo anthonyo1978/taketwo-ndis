@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   CreditCard, 
   FileCheck,
+  HelpCircle,
   Home, 
   LayoutDashboard, 
   Settings, 
@@ -55,6 +56,12 @@ const NAVIGATION_ITEMS = [
     href: "/settings",
     icon: Settings,
     tourId: "settings-nav",
+  },
+  {
+    label: "Help",
+    href: "/help",
+    icon: HelpCircle,
+    tourId: "help-nav",
   },
 ] as const
 

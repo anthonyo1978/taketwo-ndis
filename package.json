@@ -78,7 +78,11 @@
     "react-dom": "^19.1.0",
     "react-hook-form": "^7.62.0",
     "react-hot-toast": "^2.6.0",
+    "react-markdown": "^10.1.0",
     "recharts": "^3.2.1",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1",
     "resend": "^6.1.2",
     "tailwind-merge": "^2.6.0",
     "zod": "^3.24.4"
