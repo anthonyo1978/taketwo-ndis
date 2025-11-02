@@ -84,6 +84,15 @@ export function useProductTour() {
           }
         },
         {
+          element: '[data-tour="help-nav"]',
+          popover: {
+            title: '📚 Help Center',
+            description: 'Quick Start guides, Training materials, FAQs, and in-depth documentation all live here. Access them anytime you need help.',
+            side: 'right',
+            align: 'start'
+          }
+        },
+        {
           element: '[data-tour="user-profile"]',
           popover: {
             title: '✅ You\'re All Set!',
