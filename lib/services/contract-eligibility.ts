@@ -225,7 +225,7 @@ export async function getEligibleContracts(
   console.log(`[ELIGIBILITY] Found ${contracts?.length || 0} contracts with next_run_date ${catchUpMode ? '<=' : '='} ${todayStr}`)
   
   if (contracts) {
-    contracts.forEach(c => {
+    contracts.forEach((c: ContractWithDetails) => {
       console.log(`[ELIGIBILITY] - ${c.resident?.first_name} ${c.resident?.last_name}: next_run_date=${c.next_run_date}, frequency=${c.automated_drawdown_frequency}`)
     })
   }
