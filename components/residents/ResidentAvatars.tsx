@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import type { Resident } from "types/resident"
+import { getResidentBillingStatus, getBillingStatusRingClass } from "lib/utils/billing-status"
 
 interface ResidentAvatarsProps {
   houseId: string
@@ -81,14 +82,18 @@ export function ResidentAvatars({ houseId, maxDisplay = 4 }: ResidentAvatarsProp
 
   return (
     <div className="flex items-center space-x-1">
-      {displayResidents.map((resident, index) => (
+      {displayResidents.map((resident, index) => {
+        const billingStatus = getResidentBillingStatus(resident)
+        const borderColor = billingStatus.color === 'green' ? 'border-green-500' : 'border-orange-500'
+        
+        return (
         <div 
           key={resident.id}
           className="relative group"
           style={{ zIndex: displayResidents.length - index }}
         >
-          {/* Avatar */}
-          <div className="h-8 w-8 rounded-full border-2 border-white shadow-sm overflow-hidden bg-gray-100 hover:scale-110 transition-transform">
+          {/* Avatar with billing status border */}
+          <div className={`h-8 w-8 rounded-full border-2 ${borderColor} shadow-sm overflow-hidden bg-gray-100 hover:scale-110 transition-transform`}>
             {resident.photoBase64 ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -111,10 +116,16 @@ export function ResidentAvatars({ houseId, maxDisplay = 4 }: ResidentAvatarsProp
             {resident.dateOfBirth && (
               <span className="text-gray-300"> • {new Date().getFullYear() - new Date(resident.dateOfBirth).getFullYear()}y</span>
             )}
+            {billingStatus.status === 'not-ready' && (
+              <div className="text-orange-300 text-xs mt-1">
+                ⚠️ {billingStatus.reasons.join(', ')}
+              </div>
+            )}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
           </div>
         </div>
-      ))}
+        )
+      })}
       
       {/* Show count if more residents exist */}
       {hasMore && (

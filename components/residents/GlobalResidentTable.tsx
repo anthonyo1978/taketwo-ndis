@@ -9,6 +9,7 @@ import { StandardizedFiltersResidents } from "components/ui/StandardizedFiltersR
 import { LoadingSpinner } from "components/ui/LoadingSpinner"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
+import { getResidentBillingStatus, getBillingStatusRingClass } from "lib/utils/billing-status"
 
 interface ApiResponse {
   success: boolean
@@ -384,22 +385,33 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
                 </td>
               </tr>
             ) : (
-              paginatedResidents.map((resident) => (
+              paginatedResidents.map((resident) => {
+                const billingStatus = getResidentBillingStatus(resident)
+                const ringClass = getBillingStatusRingClass(billingStatus.status)
+                
+                return (
               <tr key={resident.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex-shrink-0 h-10 w-10">
+                  <div className="flex-shrink-0 h-10 w-10 relative group">
                     {resident.photoBase64 ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        className="h-10 w-10 rounded-full object-cover"
+                        className={`h-10 w-10 rounded-full object-cover ${ringClass}`}
                         src={resident.photoBase64}
                         alt={`${resident.firstName} ${resident.lastName}`}
                       />
                     ) : (
-                      <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                      <div className={`h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center ${ringClass}`}>
                         <span className="text-gray-600 text-sm font-medium">
                           {resident.firstName.charAt(0)}{resident.lastName.charAt(0)}
                         </span>
+                      </div>
+                    )}
+                    {/* Tooltip showing billing status */}
+                    {billingStatus.status === 'not-ready' && billingStatus.reasons.length > 0 && (
+                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                        Not billing-ready: {billingStatus.reasons.join(', ')}
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
                       </div>
                     )}
                   </div>
@@ -457,7 +469,8 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
                   </div>
                 </td>
               </tr>
-              ))
+                )
+              })
             )}
           </tbody>
         </table>
