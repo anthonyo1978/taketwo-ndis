@@ -254,9 +254,9 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
                     )}
                     {/* Tooltip showing billing status */}
                     {billingStatus.status === 'not-ready' && billingStatus.reasons.length > 0 && (
-                      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                      <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                         Not billing-ready: {billingStatus.reasons.join(', ')}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                        <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
                       </div>
                     )}
                   </div>
