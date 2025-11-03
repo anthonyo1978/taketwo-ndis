@@ -29,6 +29,17 @@ export interface BillingStatusDetails {
 export function getResidentBillingStatus(resident: any): BillingStatusDetails {
   const reasons: string[] = []
   
+  // Debug logging (remove in production if needed)
+  if (typeof window !== 'undefined' && window.location.search.includes('debug-billing')) {
+    console.log('[BILLING STATUS] Checking resident:', {
+      id: resident.id,
+      name: `${resident.firstName} ${resident.lastName}`,
+      status: resident.status,
+      houseId: resident.houseId || resident.house_id,
+      contracts: resident.fundingContracts || resident.funding_contracts || []
+    })
+  }
+  
   // Check 1: Resident status must be 'Active'
   const isActive = resident.status?.toLowerCase() === 'active'
   if (!isActive) {
@@ -66,6 +77,18 @@ export function getResidentBillingStatus(resident: any): BillingStatusDetails {
   
   // Determine status
   const isReady = isActive && hasHouse && activeContracts.length > 0 && contractsWithFunds.length > 0
+  
+  // Debug logging
+  if (typeof window !== 'undefined' && window.location.search.includes('debug-billing')) {
+    console.log('[BILLING STATUS] Result:', {
+      isReady,
+      isActive,
+      hasHouse,
+      activeContractsCount: activeContracts.length,
+      contractsWithFundsCount: contractsWithFunds.length,
+      reasons
+    })
+  }
   
   return {
     status: isReady ? 'ready' : 'not-ready',
