@@ -144,7 +144,14 @@ export class ResidentService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('residents')
-        .select('*')
+        .select(`
+          *,
+          funding_contracts (
+            id,
+            contract_status,
+            current_balance
+          )
+        `)
         .eq('house_id', houseId)
         .order('created_at', { ascending: false })
 

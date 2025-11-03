@@ -110,16 +110,11 @@ export function ResidentAvatars({ houseId, maxDisplay = 4 }: ResidentAvatarsProp
             )}
           </div>
           
-          {/* Hover tooltip */}
+          {/* Simple tooltip with name only (no billing details) */}
           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
             {resident.firstName} {resident.lastName}
             {resident.dateOfBirth && (
               <span className="text-gray-300"> • {new Date().getFullYear() - new Date(resident.dateOfBirth).getFullYear()}y</span>
-            )}
-            {billingStatus.status === 'not-ready' && (
-              <div className="text-orange-300 text-xs mt-1">
-                ⚠️ {billingStatus.reasons.join(', ')}
-              </div>
             )}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
           </div>
