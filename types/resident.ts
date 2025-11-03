@@ -121,6 +121,12 @@ export interface Resident {
   createdBy: string
   updatedAt: Date
   updatedBy: string
+  // Raw funding_contracts from DB join (for billing status checks)
+  funding_contracts?: Array<{
+    id: string
+    contract_status: string
+    current_balance: number
+  }>
 }
 
 /**

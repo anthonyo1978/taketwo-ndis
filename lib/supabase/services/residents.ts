@@ -37,7 +37,9 @@ export class ResidentService {
       createdAt: new Date(dbResident.created_at),
       createdBy: dbResident.created_by,
       updatedAt: new Date(dbResident.updated_at),
-      updatedBy: dbResident.updated_by
+      updatedBy: dbResident.updated_by,
+      // Include funding_contracts for billing status checks
+      funding_contracts: dbResident.funding_contracts || []
     }
   }
 
@@ -67,6 +69,7 @@ export class ResidentService {
 
   /**
    * Get all residents from the database.
+   * Includes funding contracts for billing status checks.
    * 
    * @returns Promise resolving to array of all residents
    * @throws Error if database query fails
@@ -76,7 +79,14 @@ export class ResidentService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('residents')
-        .select('*')
+        .select(`
+          *,
+          funding_contracts (
+            id,
+            contract_status,
+            current_balance
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (error) {
