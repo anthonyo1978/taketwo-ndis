@@ -13,12 +13,19 @@ export function useProductTour() {
     // Only run on client-side and when user is loaded
     if (!user) return
 
-    // Check if tour was completed
+    // Check if tour was completed or user is navigating from tour
     const completed = localStorage.getItem('haven-tour-completed')
+    const navigating = localStorage.getItem('haven-tour-navigating')
+    
+    // Clear navigating flag after checking
+    if (navigating) {
+      localStorage.removeItem('haven-tour-navigating')
+    }
+    
     setTourCompleted(completed === 'true')
 
-    // Auto-start tour on first login (desktop only)
-    if (!completed && window.innerWidth >= 768) {
+    // Auto-start tour on first login (desktop only), but not if user just clicked a link
+    if (!completed && !navigating && window.innerWidth >= 768) {
       // Small delay to ensure DOM is ready
       const timeout = setTimeout(() => {
         startTour()
@@ -31,6 +38,24 @@ export function useProductTour() {
     const driverObj = driver({
       showProgress: true,
       showButtons: ['next', 'previous', 'close'],
+      onDestroyed: () => {
+        // Mark tour as completed
+        localStorage.setItem('haven-tour-completed', 'true')
+        setTourCompleted(true)
+      },
+      // Prevent tour from auto-restarting when clicking internal links
+      onPopoverRender: (popover, { config, state }) => {
+        // Add click handler to links that marks tour as "user navigating"
+        const links = popover.wrapper.querySelectorAll('a')
+        links.forEach(link => {
+          link.addEventListener('click', () => {
+            // Temporarily mark as completed so tour doesn't auto-restart
+            localStorage.setItem('haven-tour-navigating', 'true')
+            // Destroy the tour when user clicks a link
+            driverObj.destroy()
+          })
+        })
+      },
       steps: [
         {
           popover: {
@@ -101,12 +126,7 @@ export function useProductTour() {
             align: 'end'
           }
         }
-      ],
-      onDestroyed: () => {
-        // Mark tour as completed
-        localStorage.setItem('haven-tour-completed', 'true')
-        setTourCompleted(true)
-      }
+      ]
     })
 
     driverObj.drive()

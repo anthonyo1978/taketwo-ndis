@@ -2,6 +2,7 @@
 
 import { ArrowLeft, BookOpen } from 'lucide-react'
 import Link from 'next/link'
+import { useEffect } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeRaw from 'rehype-raw'
@@ -13,6 +14,25 @@ interface GuideViewerProps {
 }
 
 export function GuideViewer({ content, guideId }: GuideViewerProps) {
+  // Handle anchor scrolling on mount
+  useEffect(() => {
+    // Check for hash in URL
+    const hash = window.location.hash
+    if (hash) {
+      // Small delay to ensure content is rendered
+      setTimeout(() => {
+        const element = document.querySelector(hash)
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          // Highlight the section briefly
+          element.classList.add('bg-yellow-100')
+          setTimeout(() => {
+            element.classList.remove('bg-yellow-100')
+          }, 2000)
+        }
+      }, 100)
+    }
+  }, [])
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
