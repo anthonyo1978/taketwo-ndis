@@ -68,7 +68,6 @@ export function HousePerformanceList({ houses, isLoading = false }: HousePerform
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
       <div className="px-6 py-4 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900">House Performance</h3>
-        <p className="text-sm text-gray-500 mt-1">Click to expand details</p>
       </div>
       
       <div className="divide-y divide-gray-100">
@@ -78,7 +77,8 @@ export function HousePerformanceList({ houses, isLoading = false }: HousePerform
               {/* House Summary Row */}
               <button
                 onClick={() => toggleHouse(house.houseId)}
-                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
+                className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left group"
+                title="Click to expand details"
               >
                 <div className="flex items-center space-x-4 flex-1">
                   <div className="flex-shrink-0">
