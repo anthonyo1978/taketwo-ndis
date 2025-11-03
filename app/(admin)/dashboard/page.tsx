@@ -5,6 +5,7 @@ import { Metadata } from 'next'
 import { MetricCard } from 'components/dashboard/MetricCard'
 import { RecentActivityFeed } from 'components/dashboard/RecentActivityFeed'
 import { HousePerformanceList } from 'components/dashboard/HousePerformanceList'
+import { SystemStatusBadges } from 'components/dashboard/SystemStatusBadges'
 import type { DashboardStats } from 'app/api/dashboard/stats/route'
 
 export default function DashboardPage() {
@@ -75,12 +76,17 @@ export default function DashboardPage() {
   return (
     <div className="p-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Welcome back! Here's your portfolio overview
-          </p>
+        {/* Header with System Status */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-gray-600 mt-1">
+              Welcome back! Here's your portfolio overview
+            </p>
+          </div>
+          
+          {/* System Status Indicators */}
+          <SystemStatusBadges className="mt-1" />
         </div>
         
         {/* Portfolio Metrics */}
