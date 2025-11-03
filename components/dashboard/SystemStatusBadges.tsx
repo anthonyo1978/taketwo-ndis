@@ -27,7 +27,10 @@ export function SystemStatusBadges({ className = '' }: SystemStatusBadgesProps) 
       
       // Fetch automation settings
       const automationResponse = await fetch('/api/automation/settings')
-      const automationResult = await automationResponse.json()
+      const automationResult = await automationResponse.json() as {
+        success: boolean
+        data?: { enabled: boolean }
+      }
       
       if (automationResult.success && automationResult.data) {
         setAutomationEnabled(automationResult.data.enabled || false)
