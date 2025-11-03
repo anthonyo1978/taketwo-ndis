@@ -61,34 +61,27 @@ export function SystemStatusBadges({ className = '' }: SystemStatusBadgesProps) 
   }
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
+    <div className={`flex items-center gap-2 ${className}`}>
       {/* Automation Status Badge */}
       <Link 
         href="/settings/automation"
         className="group"
       >
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all hover:shadow-md ${
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${
           automationEnabled 
-            ? 'bg-green-50 border-green-500 hover:bg-green-100' 
-            : 'bg-orange-50 border-orange-500 hover:bg-orange-100'
+            ? 'bg-white border-green-200 hover:border-green-300 hover:bg-green-50' 
+            : 'bg-white border-orange-200 hover:border-orange-300 hover:bg-orange-50'
         }`}>
           {automationEnabled ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
           ) : (
-            <XCircle className="h-4 w-4 text-orange-600" />
+            <XCircle className="h-3.5 w-3.5 text-orange-500" />
           )}
-          <div className="flex flex-col">
-            <span className={`text-xs font-semibold ${
-              automationEnabled ? 'text-green-700' : 'text-orange-700'
-            }`}>
-              Automated Billing
-            </span>
-            <span className={`text-xs ${
-              automationEnabled ? 'text-green-600' : 'text-orange-600'
-            }`}>
-              {automationEnabled ? 'Enabled' : 'Disabled'}
-            </span>
-          </div>
+          <span className={`text-xs font-medium ${
+            automationEnabled ? 'text-green-700' : 'text-orange-700'
+          }`}>
+            Auto Billing: {automationEnabled ? 'On' : 'Off'}
+          </span>
         </div>
       </Link>
 
@@ -97,28 +90,21 @@ export function SystemStatusBadges({ className = '' }: SystemStatusBadgesProps) 
         href="/settings/claiming"
         className="group"
       >
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all hover:shadow-md ${
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${
           ndiaNotificationsEnabled 
-            ? 'bg-green-50 border-green-500 hover:bg-green-100' 
-            : 'bg-orange-50 border-orange-500 hover:bg-orange-100'
+            ? 'bg-white border-green-200 hover:border-green-300 hover:bg-green-50' 
+            : 'bg-white border-orange-200 hover:border-orange-300 hover:bg-orange-50'
         }`}>
           {ndiaNotificationsEnabled ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />
           ) : (
-            <XCircle className="h-4 w-4 text-orange-600" />
+            <XCircle className="h-3.5 w-3.5 text-orange-500" />
           )}
-          <div className="flex flex-col">
-            <span className={`text-xs font-semibold ${
-              ndiaNotificationsEnabled ? 'text-green-700' : 'text-orange-700'
-            }`}>
-              NDIA Notifications
-            </span>
-            <span className={`text-xs ${
-              ndiaNotificationsEnabled ? 'text-green-600' : 'text-orange-600'
-            }`}>
-              {ndiaNotificationsEnabled ? 'Enabled' : 'Disabled'}
-            </span>
-          </div>
+          <span className={`text-xs font-medium ${
+            ndiaNotificationsEnabled ? 'text-green-700' : 'text-orange-700'
+          }`}>
+            NDIA Notify: {ndiaNotificationsEnabled ? 'On' : 'Off'}
+          </span>
         </div>
       </Link>
     </div>
