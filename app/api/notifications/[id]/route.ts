@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createClient } from 'lib/supabase/server'
 import { getCurrentUserOrganizationId } from 'lib/utils/organization'
+
+// Validation schema for PATCH request
+const updateNotificationSchema = z.object({
+  read: z.boolean().optional()
+})
 
 /**
  * PATCH /api/notifications/[id]
@@ -12,7 +18,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const body = await request.json()
+    const body = updateNotificationSchema.parse(await request.json())
     const supabase = await createClient()
     const organizationId = await getCurrentUserOrganizationId()
 

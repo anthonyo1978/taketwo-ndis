@@ -1,7 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { createClient } from 'lib/supabase/server'
 import { getCurrentUserOrganizationId } from 'lib/utils/organization'
 import { getCurrentUserId } from 'lib/services/audit-logger'
+
+// Validation schema for PATCH request
+const updateTodoSchema = z.object({
+  status: z.enum(['todo', 'done']).optional(),
+  priority: z.enum(['low', 'medium', 'high']).optional(),
+  title: z.string().optional(),
+  description: z.string().nullable().optional(),
+  dueDate: z.string().nullable().optional()
+})
 
 /**
  * PATCH /api/todos/[id]
@@ -13,7 +23,7 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params
-    const body = await request.json()
+    const body = updateTodoSchema.parse(await request.json())
     const supabase = await createClient()
     const organizationId = await getCurrentUserOrganizationId()
     const userId = await getCurrentUserId()
@@ -59,28 +69,30 @@ export async function PATCH(
       updated_at: new Date().toISOString()
     }
 
-    if (body.status && ['todo', 'done'].includes(body.status)) {
+    if (body.status !== undefined) {
       updateData.status = body.status
     }
 
-    if (body.priority && ['low', 'medium', 'high'].includes(body.priority)) {
+    if (body.priority !== undefined) {
       updateData.priority = body.priority
     }
 
-    if (body.title) {
+    if (body.title !== undefined) {
       updateData.title = body.title
     }
 
     if (body.description !== undefined) {
-      updateData.description = body.description || null
+      updateData.description = body.description
     }
 
-    if (body.dueDate) {
-      const dueDate = new Date(body.dueDate)
-      dueDate.setHours(0, 0, 0, 0)
-      updateData.due_date = dueDate.toISOString().split('T')[0]
-    } else if (body.dueDate === null) {
-      updateData.due_date = null
+    if (body.dueDate !== undefined) {
+      if (body.dueDate === null) {
+        updateData.due_date = null
+      } else {
+        const dueDate = new Date(body.dueDate)
+        dueDate.setHours(0, 0, 0, 0)
+        updateData.due_date = dueDate.toISOString().split('T')[0]
+      }
     }
 
     const { data: todo, error } = await supabase
