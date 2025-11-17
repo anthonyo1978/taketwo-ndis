@@ -24,6 +24,16 @@ export function NotificationsPanel() {
   // Feature flag check
   const isEnabled = process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS === 'true'
   
+  // Debug log (remove after confirming it works)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[NotificationsPanel] Feature flag:', {
+        envVar: process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS,
+        isEnabled
+      })
+    }
+  }, [isEnabled])
+  
   if (!isEnabled) {
     return null
   }
