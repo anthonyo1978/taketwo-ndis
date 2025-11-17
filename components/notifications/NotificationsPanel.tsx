@@ -26,12 +26,11 @@ export function NotificationsPanel() {
   
   // Debug log (remove after confirming it works)
   useEffect(() => {
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[NotificationsPanel] Feature flag:', {
-        envVar: process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS,
-        isEnabled
-      })
-    }
+    console.log('[NotificationsPanel] Feature flag check:', {
+      envVar: process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS,
+      isEnabled,
+      willRender: isEnabled
+    })
   }, [isEnabled])
   
   if (!isEnabled) {
