@@ -53,6 +53,7 @@ export interface NavItemProps extends VariantProps<typeof navItem> {
   exactMatch?: boolean
   className?: string
   tourId?: string
+  havenMode?: boolean
 }
 
 /**
@@ -68,7 +69,8 @@ export function NavItem({
   collapsed = false, 
   exactMatch = false,
   className,
-  tourId
+  tourId,
+  havenMode = false
 }: NavItemProps) {
   const pathname = usePathname()
   
@@ -77,10 +79,20 @@ export function NavItem({
     ? pathname === href 
     : pathname.startsWith(href)
 
+  // Adjust styles for Haven mode
+  const havenModeStyles = havenMode && !isActive
+    ? "text-gray-300 hover:bg-gray-800 hover:text-white"
+    : ""
+
   const content = (
     <Link
       href={href}
-      className={twMerge(navItem({ active: isActive, collapsed }), "group", className)}
+      className={twMerge(
+        navItem({ active: isActive, collapsed }), 
+        "group", 
+        havenModeStyles,
+        className
+      )}
       aria-current={isActive ? "page" : undefined}
       data-tour={tourId}
     >

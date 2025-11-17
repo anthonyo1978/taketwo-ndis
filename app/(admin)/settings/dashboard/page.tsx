@@ -12,6 +12,7 @@ interface DashboardWidget {
 }
 
 export default function DashboardSettingsPage() {
+  const [havenMode, setHavenMode] = useState(false)
   const [widgets, setWidgets] = useState<DashboardWidget[]>([
     {
       id: 'total-houses',
@@ -91,6 +92,11 @@ export default function DashboardSettingsPage() {
   const loadSettings = async () => {
     try {
       setIsLoading(true)
+      // Load Haven mode from localStorage
+      const storedHavenMode = localStorage.getItem('haven-mode-enabled')
+      if (storedHavenMode !== null) {
+        setHavenMode(JSON.parse(storedHavenMode) as boolean)
+      }
       // For now, we'll use the default settings
       // In the future, this would load from an API
       setTimeout(() => {
@@ -110,10 +116,19 @@ export default function DashboardSettingsPage() {
     ))
   }
 
+  const handleToggleHavenMode = () => {
+    const newValue = !havenMode
+    setHavenMode(newValue)
+    localStorage.setItem('haven-mode-enabled', JSON.stringify(newValue))
+    toast.success(`Haven mode ${newValue ? 'enabled' : 'disabled'}`)
+  }
+
   const handleSaveSettings = async () => {
     setIsSaving(true)
     
     try {
+      // Save Haven mode to localStorage
+      localStorage.setItem('haven-mode-enabled', JSON.stringify(havenMode))
       // For now, just simulate saving
       // In the future, this would save to an API
       await new Promise(resolve => setTimeout(resolve, 1000))
@@ -174,6 +189,55 @@ export default function DashboardSettingsPage() {
             </div>
           </div>
           <p className="text-gray-600">Configure the settings, the viewable settings of your dashboard.</p>
+        </div>
+
+        {/* Appearance Settings */}
+        <div className="bg-white rounded-lg border border-gray-200 mb-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h2 className="text-lg font-semibold text-gray-900">Appearance</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              Customize the visual appearance of your Haven interface
+            </p>
+          </div>
+
+          <div className="p-6">
+            <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 bg-gray-50">
+              <div className="flex items-center space-x-3">
+                <div className={`h-3 w-3 rounded-full ${
+                  havenMode 
+                    ? 'bg-blue-500' 
+                    : 'bg-gray-400'
+                }`}></div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Haven Mode</p>
+                  <p className="text-xs text-gray-600">Enable night sky background with stars on the left and right side panels</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className={`text-sm font-medium ${
+                  havenMode ? 'text-blue-700' : 'text-gray-600'
+                }`}>
+                  {havenMode ? 'Enabled' : 'Disabled'}
+                </span>
+                <button
+                  onClick={handleToggleHavenMode}
+                  className="relative inline-flex items-center cursor-pointer"
+                >
+                  <input 
+                    type="checkbox" 
+                    checked={havenMode}
+                    onChange={() => {}}
+                    className="sr-only peer" 
+                  />
+                  <div className={`w-11 h-6 rounded-full peer after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all ${
+                    havenMode
+                      ? 'bg-blue-600 peer-checked:after:translate-x-full'
+                      : 'bg-gray-200'
+                  }`}></div>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Widget Settings */}

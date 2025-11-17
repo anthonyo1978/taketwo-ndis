@@ -6,6 +6,8 @@ import { useSession } from 'lib/contexts/SessionContext'
 import { useInactivityTimer } from 'lib/hooks/useInactivityTimer'
 import { useProductTour } from 'lib/hooks/useProductTour'
 import { AdminSidebar } from 'components/admin/AdminSidebar'
+import { NotificationsPanel } from 'components/notifications/NotificationsPanel'
+import { TodoProvider } from 'lib/contexts/TodoContext'
 import { InactivityWarningModal } from './InactivityWarningModal'
 
 interface AdminLayoutContentProps {
@@ -43,13 +45,18 @@ export function AdminLayoutContent({ children }: AdminLayoutContentProps) {
   return (
     <>
       <div className="flex h-screen bg-gray-50">
-        {/* Sidebar */}
+        {/* Left Sidebar */}
         <AdminSidebar />
         
         {/* Main content area - no top bar, more space for content */}
         <main className="flex-1 overflow-auto">
           {children}
         </main>
+
+        {/* Right Notifications Panel - Feature flag controlled */}
+        <TodoProvider>
+          <NotificationsPanel />
+        </TodoProvider>
       </div>
 
       {/* Toast notifications */}
