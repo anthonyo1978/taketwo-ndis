@@ -5,10 +5,17 @@
 
 import { Resend } from 'resend'
 
-// Initialize Resend client (same pattern as automation email service)
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
-
-console.log('[SIGNUP EMAIL] Resend initialized at module level. API key exists:', !!process.env.RESEND_API_KEY)
+// Helper to get Resend client (initialized at runtime, not build time)
+function getResendClient() {
+  const apiKey = process.env.RESEND_API_KEY || process.env.RESEND_KEY
+  
+  if (!apiKey) {
+    console.error('[SIGNUP EMAIL] RESEND_API_KEY not found in environment variables')
+    return null
+  }
+  
+  return new Resend(apiKey)
+}
 
 interface SignupEmailData {
   firstName: string
@@ -169,6 +176,8 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
   console.log('[SIGNUP EMAIL] Login URL:', loginUrl)
   
   try {
+    const resend = getResendClient()
+    
     if (!resend) {
       console.error('[SIGNUP EMAIL] Resend client not initialized - API key missing')
       return {
