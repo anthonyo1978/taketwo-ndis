@@ -1,6 +1,7 @@
 "use client"
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 import { Clipboard, CheckCircle2, Circle } from 'lucide-react'
 import { Notification } from './mockNotifications'
@@ -12,6 +13,7 @@ interface NotificationItemProps {
 }
 
 export function NotificationItem({ notification, onMarkAsRead }: NotificationItemProps) {
+  const router = useRouter()
   const { createTodoFromNotification } = useTodos()
   const timeAgo = formatDistanceToNow(notification.timestamp, { addSuffix: true })
   
@@ -21,6 +23,12 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
     if (!notification.read) {
       onMarkAsRead(notification.id)
     }
+  }
+
+  const handleClick = (e: React.MouseEvent) => {
+    // Navigate to detail page when clicking the notification
+    e.preventDefault()
+    router.push(`/notifications/${notification.id}`)
   }
 
   const handleCreateTodo = (e: React.MouseEvent) => {
@@ -39,7 +47,8 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
 
   const content = (
     <div
-      className={`p-3 rounded-lg border transition-colors ${
+      onClick={handleClick}
+      className={`p-3 rounded-lg border transition-colors cursor-pointer ${
         notification.read
           ? 'bg-white border-gray-200 hover:bg-gray-50'
           : 'bg-blue-50 border-blue-200 hover:bg-blue-100'
@@ -72,7 +81,10 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
             {/* Left side - Mark as read button + timestamp */}
             <div className="flex items-center gap-3">
               <button
-                onClick={handleMarkAsRead}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleMarkAsRead(e)
+                }}
                 className="flex items-center gap-1.5 p-1 hover:bg-gray-100 rounded transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1"
                 title={notification.read ? 'Mark as unread' : 'Read'}
               >
@@ -92,7 +104,10 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
             <div className="flex items-center gap-2">
               {/* Create todo button */}
               <button
-                onClick={handleCreateTodo}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleCreateTodo(e)
+                }}
                 className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                 title="Create todo from this notification"
               >
@@ -103,6 +118,7 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
                 <Link
                   href={notification.actionUrl}
                   onClick={(e) => {
+                    e.stopPropagation()
                     // Mark as read when clicking view link
                     if (!notification.read) {
                       handleMarkAsRead(e)
@@ -119,15 +135,6 @@ export function NotificationItem({ notification, onMarkAsRead }: NotificationIte
       </div>
     </div>
   )
-
-  // If there's an actionUrl, wrap in Link but prevent default navigation on the whole card
-  if (notification.actionUrl) {
-    return (
-      <div onClick={(e) => e.stopPropagation()}>
-        {content}
-      </div>
-    )
-  }
 
   return content
 }

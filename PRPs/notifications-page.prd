@@ -1,0 +1,239 @@
+# Notifications Page - Product Requirements Document
+
+## Overview
+A detailed Notifications page in the left sidebar that provides comprehensive management and viewing of notifications. This is the "heavy" interface that complements the lightweight right-side panel.
+
+## Positioning
+- **Location**: Left sidebar navigation
+- **Position**: Between "Claims" and "Settings"
+- **Icon**: Bell icon (📬 or `Bell` from lucide-react)
+- **Route**: `/notifications`
+
+## Relationship to Right Panel
+- **Right Panel**: Quick-access, lightweight, attention-grabbing, actionable
+- **Notifications Page**: Detailed view, comprehensive filtering, full metadata, bulk actions, export
+
+## User Stories
+
+### 1. List View
+**As a user, I want to see all notifications in a detailed table so I can:**
+- Filter by category (automation, billing, n8n, system, user, other)
+- Filter by priority (low, medium, high)
+- Filter by read status (read/unread)
+- Filter by date range
+- Search by title/message
+- Sort by date, priority, category
+- See key information at a glance
+
+### 2. Detail View
+**As a user, I want to view a notification's full details so I can:**
+- See complete message and metadata
+- View raw payload/data (JSON metadata expanded)
+- See creation timestamp and details
+- Mark as read/unread
+- Navigate to action URL (if available)
+- View related todos (if created from notification)
+- Delete notification (if needed)
+
+### 3. Bulk Actions
+**As a user, I want to perform bulk actions so I can:**
+- Mark multiple as read
+- Delete multiple notifications
+- Filter then bulk action
+
+### 4. Integration
+**As a user, I want seamless integration with the right panel so:**
+- Clicking a notification in the right panel opens the detail page
+- Right panel shows a summary, page shows full details
+- Actions in both places stay in sync
+
+## Features
+
+### List Page (`/notifications`)
+- **Table/List View** with columns:
+  - Checkbox (for bulk selection)
+  - Icon
+  - Title
+  - Message (truncated)
+  - Category (badge)
+  - Priority (badge/indicator)
+  - Read status
+  - Date/Time
+  - Actions (View, Mark Read, Delete)
+  
+- **Filters**:
+  - Search (title/message)
+  - Category dropdown
+  - Priority dropdown
+  - Read status toggle
+  - Date range picker
+  
+- **Sorting**:
+  - Default: Newest first
+  - Options: Date, Priority, Category, Title
+  
+- **Bulk Actions**:
+  - Mark selected as read
+  - Delete selected
+  - Clear filters
+  
+- **Stats/Summary**:
+  - Total notifications
+  - Unread count
+  - By category counts
+  - By priority counts
+
+### Detail Page (`/notifications/[id]`)
+- **Header**:
+  - Title
+  - Priority badge
+  - Category badge
+  - Read status toggle
+  - Created date/time
+  - Actions (Mark Read, Delete, Back)
+  
+- **Content**:
+  - Message (full text)
+  - Icon display
+  
+- **Metadata Section** (collapsible):
+  - Raw JSON metadata (pretty-printed)
+  - Organization ID
+  - Created by (if available)
+  
+- **Actions**:
+  - "View" button (if action_url exists)
+  - Create Todo from notification
+  - Delete notification
+  
+- **Related Items**:
+  - Related todos (if notification_id linked)
+  - Related automation logs (if linked via metadata)
+
+## Technical Requirements
+
+### API Endpoints
+- ✅ `GET /api/notifications` - Already exists
+- ✅ `PATCH /api/notifications/[id]` - Already exists
+- ✅ `DELETE /api/notifications/[id]` - Already exists
+- ⚠️ May need: `POST /api/notifications/bulk` for bulk operations
+- ⚠️ May need: Enhanced filtering in GET endpoint
+
+### Data Structure
+Based on `notifications` table:
+- `id`, `organization_id`, `title`, `message`, `icon`
+- `category`, `priority`, `action_url`, `read`
+- `metadata` (JSONB) - contains detailed payloads
+- `created_at`, `updated_at`, `created_by`
+
+### UI Components
+- Reuse existing patterns from Claims/Transactions pages
+- Table component (similar to TransactionsTable)
+- Filter component (similar to StandardizedFiltersTransactions)
+- Detail page layout (similar to Claim detail page)
+
+## Questions for Product Owner
+
+### 1. Detail Page Content
+- **Q**: Should metadata be displayed as:
+  - A) Expandable JSON viewer (collapsible, pretty-printed)
+  - B) Tabbed interface (Details | Metadata | Related Items)
+  - C) Flat display with sections
+- **Recommendation**: Option B (Tabs) for better organization
+
+### 2. Bulk Operations
+- **Q**: Should bulk operations include:
+  - A) Mark as read, Delete only
+  - B) Plus: Change priority, Change category, Export selected
+  - C) Plus: Archive, Tag, etc.
+- **Recommendation**: Start with A, add B later
+
+### 3. Export Functionality
+- **Q**: Should users be able to:
+  - A) Export filtered results to CSV/JSON
+  - B) Export individual notification as JSON
+  - C) Both
+- **Recommendation**: Option C
+
+### 4. Pagination
+- **Q**: How should we handle large notification lists?
+  - A) Pagination (10/25/50/100 per page)
+  - B) Infinite scroll
+  - C) Virtual scrolling (for performance)
+- **Recommendation**: Option A (standard pagination, consistent with other pages)
+
+### 5. Integration with Right Panel
+- **Q**: When user clicks notification in right panel:
+  - A) Navigate to detail page (`/notifications/[id]`)
+  - B) Open detail page in modal/overlay
+  - C) Both (configurable)
+- **Recommendation**: Option A (clear navigation pattern)
+
+### 6. Notification Lifecycle
+- **Q**: Should notifications be:
+  - A) Permanently stored (manual delete only)
+  - B) Auto-archived after X days
+  - C) Auto-deleted after X days
+- **Recommendation**: Option B (archived after 90 days, visible in "Archived" view)
+
+### 7. Search/Filter Depth
+- **Q**: Should search also search within:
+  - A) Title and message only
+  - B) Plus: Metadata JSON (deep search)
+  - C) Plus: Related data (todo titles, etc.)
+- **Recommendation**: Start with A, add B as enhancement
+
+### 8. Stats/Dashboard
+- **Q**: Should list page show:
+  - A) Simple counts (total, unread)
+  - B) Plus: Category breakdown, Priority breakdown
+  - C) Plus: Charts/visualizations
+- **Recommendation**: Option B (useful insights without clutter)
+
+### 9. Real-time Updates
+- **Q**: Should the list page:
+  - A) Refresh manually only
+  - B) Auto-refresh every 30 seconds
+  - C) Use websockets for real-time
+- **Recommendation**: Option B (consistent with right panel polling)
+
+### 10. Mobile Responsiveness
+- **Q**: Should notifications page:
+  - A) Full desktop table view only
+  - B) Responsive (cards on mobile, table on desktop)
+  - C) Mobile-optimized separate view
+- **Recommendation**: Option B (consistent with other pages)
+
+## Success Metrics
+- Users can find specific notifications quickly (search time < 10 seconds)
+- Bulk operations work smoothly (process 100+ notifications in < 5 seconds)
+- Detail page loads metadata instantly
+- No performance degradation with 1000+ notifications
+
+## Implementation Phases
+
+### Phase 1: Basic List & Detail (MVP)
+- List page with basic filters
+- Detail page with core content
+- Navigation from right panel
+- Mark as read/delete actions
+
+### Phase 2: Enhanced Features
+- Bulk operations
+- Export functionality
+- Metadata viewer
+- Stats/summary section
+
+### Phase 3: Advanced Features
+- Advanced filtering
+- Notification lifecycle (archive)
+- Deep search
+- Real-time updates
+
+## Out of Scope (v1)
+- Notification templates
+- Custom notification creation UI (use API)
+- Notification rules/automation
+- Email notifications from this page
+- Notification preferences/settings
+

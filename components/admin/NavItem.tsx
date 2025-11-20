@@ -79,9 +79,11 @@ export function NavItem({
     ? pathname === href 
     : pathname.startsWith(href)
 
-  // Adjust styles for Haven mode
+  // Adjust styles for Haven mode - bright white text for visibility
   const havenModeStyles = havenMode && !isActive
-    ? "text-gray-300 hover:bg-gray-800 hover:text-white"
+    ? "!text-white hover:bg-gray-800/50 hover:!text-white"
+    : havenMode && isActive
+    ? "" // Active items already have white text from bg-blue-600
     : ""
 
   const content = (
@@ -97,7 +99,7 @@ export function NavItem({
       data-tour={tourId}
     >
       <Icon 
-        className="size-5 shrink-0 transition-transform duration-200 group-hover:scale-110" 
+        className={`size-5 shrink-0 transition-transform duration-200 group-hover:scale-110 ${havenMode ? 'text-white' : ''}`}
         aria-hidden="true"
       />
       {!collapsed && (

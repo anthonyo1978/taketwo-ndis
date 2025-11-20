@@ -2,6 +2,7 @@
 
 import * as Tooltip from "@radix-ui/react-tooltip"
 import { 
+  Bell,
   ChevronLeft,
   CreditCard, 
   FileCheck,
@@ -50,6 +51,12 @@ const NAVIGATION_ITEMS = [
     href: "/claims",
     icon: FileCheck,
     tourId: "claims-nav",
+  },
+  {
+    label: "Notifications",
+    href: "/notifications",
+    icon: Bell,
+    tourId: "notifications-nav",
   },
   {
     label: "Settings",
@@ -238,8 +245,8 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
             {/* Version Info (only when expanded) */}
             {!isCollapsed && (
               <div className={`px-2 py-1.5 rounded-md border ${havenMode ? 'bg-gray-800/50 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-                <div className={`text-xs font-medium ${havenMode ? 'text-gray-400' : 'text-gray-500'}`}>Version</div>
-                <div className={`text-xs font-mono ${havenMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                <div className={`text-xs font-medium ${havenMode ? 'text-white' : 'text-gray-500'}`}>Version</div>
+                <div className={`text-xs font-mono ${havenMode ? 'text-white' : 'text-gray-700'}`}>
                   {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 7) || process.env.NEXT_PUBLIC_APP_VERSION || 'dev'}
                 </div>
               </div>
@@ -250,13 +257,13 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
               <Button
                 type="button"
                 onClick={toggleCollapsed}
-                className={`p-2 ${havenMode ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'} rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
+                className={`p-2 ${havenMode ? 'text-white hover:text-white hover:bg-gray-800/50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'} rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 ${
                   isCollapsed ? 'w-8 h-8' : ''
                 }`}
                 aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
               >
                 <ChevronLeft 
-                  className={`size-4 transition-transform ${
+                  className={`size-4 transition-transform ${havenMode ? 'text-white' : ''} ${
                     isCollapsed ? 'rotate-180' : ''
                   }`}
                   aria-hidden="true"

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateTransactionsForEligibleContracts } from "lib/services/transaction-generator"
 import { sendAutomationCompletionEmail, sendAutomationErrorEmail } from "lib/services/email-notifications"
+import { createNotification } from "lib/services/notification-service"
 
 /**
  * Automated Billing Cron Job - Multi-Tenant
@@ -212,6 +213,37 @@ export async function GET(request: NextRequest) {
 
           // Delay 1s to respect Resend's 2 requests/second rate limit
           await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+        
+        // Create notification in Haven for this organization
+        if (result.successfulTransactions > 0) {
+          try {
+            const notificationMessage = result.failedTransactions > 0
+              ? `Generated ${result.successfulTransactions} transaction${result.successfulTransactions > 1 ? 's' : ''}${result.failedTransactions > 0 ? ` (${result.failedTransactions} failed)` : ''}`
+              : `Successfully generated ${result.successfulTransactions} transaction${result.successfulTransactions > 1 ? 's' : ''}`
+            
+            await createNotification({
+              organizationId: orgId,
+              title: 'Automation Run Complete',
+              message: notificationMessage,
+              icon: result.failedTransactions > 0 ? '⚠️' : '✅',
+              category: 'automation',
+              priority: result.successfulTransactions >= 10 ? 'high' : 'medium',
+              actionUrl: '/dashboard/transactions',
+              metadata: {
+                executionDate,
+                successfulTransactions: result.successfulTransactions,
+                failedTransactions: result.failedTransactions,
+                processedContracts: result.processedContracts,
+                totalAmount: result.summary.totalAmount
+              }
+            })
+            
+            console.log(`[AUTOMATION CRON] ${orgName} - Notification created`)
+          } catch (notificationError) {
+            // Don't fail the cron job if notification creation fails
+            console.error(`[AUTOMATION CRON] ${orgName} - Failed to create notification:`, notificationError)
+          }
         }
         
         // Store result for summary

@@ -84,11 +84,51 @@ export function NotificationsPanel() {
     }
   }, [havenMode])
 
-  // Load mock notifications
+  // Load notifications from API
+  const [loading, setLoading] = useState(true)
+  
   useEffect(() => {
-    if (mounted) {
-      setNotifications(generateMockNotifications())
+    if (!mounted) return
+    
+    const fetchNotifications = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/notifications')
+        const result = await response.json() as { success: boolean; data?: any[]; error?: string }
+        
+        if (result.success && result.data) {
+          // Map database format to frontend format
+          const mappedNotifications: Notification[] = result.data.map((n: any) => ({
+            id: n.id,
+            type: n.category === 'n8n' ? 'n8n' : n.category === 'automation' ? 'n8n' : 'system',
+            category: n.category || 'other',
+            title: n.title,
+            message: n.message,
+            timestamp: new Date(n.created_at),
+            read: n.read || false,
+            actionUrl: n.action_url || undefined,
+            icon: n.icon || undefined
+          }))
+          setNotifications(mappedNotifications)
+        } else {
+          // Fallback to mock data if API fails
+          console.warn('[NotificationsPanel] API failed, using mock data:', result.error)
+          setNotifications(generateMockNotifications())
+        }
+      } catch (error) {
+        console.error('[NotificationsPanel] Error fetching notifications:', error)
+        // Fallback to mock data on error
+        setNotifications(generateMockNotifications())
+      } finally {
+        setLoading(false)
+      }
     }
+    
+    fetchNotifications()
+    
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => clearInterval(interval)
   }, [mounted])
 
   // Save collapsed state to localStorage
@@ -102,16 +142,74 @@ export function NotificationsPanel() {
     setIsCollapsed(!isCollapsed)
   }
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
+    // Optimistically update UI
     setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, read: true } : n)
     )
+    
+    // Update in database
+    try {
+      const response = await fetch(`/api/notifications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ read: true })
+      })
+      
+      if (!response.ok) {
+        // Revert on error
+        setNotifications(prev =>
+          prev.map(n => n.id === id ? { ...n, read: false } : n)
+        )
+        console.error('[NotificationsPanel] Failed to mark notification as read')
+      }
+    } catch (error) {
+      // Revert on error
+      setNotifications(prev =>
+        prev.map(n => n.id === id ? { ...n, read: false } : n)
+      )
+      console.error('[NotificationsPanel] Error marking notification as read:', error)
+    }
   }
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    // Optimistically update UI
+    const unreadIds = notifications.filter(n => !n.read).map(n => n.id)
     setNotifications(prev =>
       prev.map(n => ({ ...n, read: true }))
     )
+    
+    // Update all in database
+    try {
+      await Promise.all(
+        unreadIds.map(id =>
+          fetch(`/api/notifications/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ read: true })
+          })
+        )
+      )
+    } catch (error) {
+      console.error('[NotificationsPanel] Error marking all as read:', error)
+      // Revert on error - reload from API
+      const response = await fetch('/api/notifications')
+      const result = await response.json() as { success: boolean; data?: any[]; error?: string }
+      if (result.success && result.data) {
+        const mappedNotifications: Notification[] = result.data.map((n: any) => ({
+          id: n.id,
+          type: n.category === 'n8n' ? 'n8n' : n.category === 'automation' ? 'n8n' : 'system',
+          category: n.category || 'other',
+          title: n.title,
+          message: n.message,
+          timestamp: new Date(n.created_at),
+          read: n.read || false,
+          actionUrl: n.action_url || undefined,
+          icon: n.icon || undefined
+        }))
+        setNotifications(mappedNotifications)
+      }
+    }
   }
 
   const unreadCount = notifications.filter(n => !n.read).length
@@ -183,10 +281,10 @@ export function NotificationsPanel() {
 
   return (
     <aside 
-      className={`${havenMode ? 'border-l border-gray-600' : 'bg-white border-l border-gray-200'} ${isCollapsed ? 'w-12' : 'w-80'} transition-all duration-300 flex-shrink-0`}
+      className={`${havenMode ? 'border-l border-gray-600' : 'bg-white border-l border-gray-200'} ${isCollapsed ? 'w-12' : 'w-80'} transition-all duration-300 flex-shrink-0 h-screen`}
       style={havenModeStyles}
     >
-      <div className={`h-full flex flex-col ${havenMode ? 'text-white' : ''}`}>
+      <div className={`h-full flex flex-col overflow-hidden ${havenMode ? 'text-white' : ''}`}>
         {/* Header - Collapsed state shows both icons with badges */}
         <div className={`py-4 flex items-center ${isCollapsed ? 'flex-col gap-3 px-2' : 'px-4 justify-between'} ${havenMode ? 'border-b border-gray-700' : ''}`}>
           {isCollapsed ? (
@@ -263,9 +361,9 @@ export function NotificationsPanel() {
 
         {/* Content - Only show when expanded */}
         {!isCollapsed && (
-          <>
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {/* Tabs */}
-            <div className={`px-4 pb-3 border-b ${havenMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            <div className={`px-4 pb-3 border-b ${havenMode ? 'border-gray-700' : 'border-gray-200'} flex-shrink-0`}>
               <div className="flex gap-2">
                 <button
                   onClick={() => setActiveTab('notifications')}
@@ -314,7 +412,7 @@ export function NotificationsPanel() {
             {activeTab === 'notifications' ? (
               <>
                 {/* Filter tabs */}
-                <div className={`px-4 py-3 border-b ${havenMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className={`px-4 py-3 border-b ${havenMode ? 'border-gray-700' : 'border-gray-200'} flex-shrink-0`}>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setFilter('unread')}
@@ -348,7 +446,7 @@ export function NotificationsPanel() {
                 </div>
 
                 {/* Notifications list */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
                   {/* Unread section */}
                   {groupedNotifications.unread.length > 0 && (
                     <div>
@@ -447,7 +545,7 @@ export function NotificationsPanel() {
             ) : (
               <TodoList />
             )}
-          </>
+          </div>
         )}
       </div>
     </aside>
