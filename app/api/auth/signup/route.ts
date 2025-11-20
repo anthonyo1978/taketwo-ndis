@@ -223,21 +223,32 @@ export async function POST(request: NextRequest) {
     // Step 7: Send welcome email (if Resend is properly configured)
     // Note: Currently limited by Resend free tier - can only send to verified emails
     console.log('[SIGNUP] Attempting to send welcome email')
-    const emailResult = await sendSignupWelcomeEmail({
-      firstName,
-      lastName,
-      email,
-      organizationName: organizationName,
-      organizationSlug: slug
-    })
+    let emailSent = false
+    let emailError = null
     
-    if (!emailResult.success) {
-      console.error('[SIGNUP] Failed to send welcome email:', emailResult.error)
-      console.log('[SIGNUP] Note: Resend free tier only sends to verified addresses')
-      console.log('[SIGNUP] User can still log in with their credentials')
+    try {
+      const emailResult = await sendSignupWelcomeEmail({
+        firstName,
+        lastName,
+        email,
+        organizationName: organizationName,
+        organizationSlug: slug
+      })
+      
+      if (!emailResult.success) {
+        console.error('[SIGNUP] Failed to send welcome email:', emailResult.error)
+        emailError = emailResult.error
+        console.log('[SIGNUP] Note: Resend free tier only sends to verified addresses')
+        console.log('[SIGNUP] User can still log in with their credentials')
+        // Don't fail the signup if email fails - user can still log in
+      } else {
+        console.log('[SIGNUP] Welcome email sent successfully to:', email)
+        emailSent = true
+      }
+    } catch (emailErr) {
+      console.error('[SIGNUP] Exception sending welcome email:', emailErr)
+      emailError = emailErr instanceof Error ? emailErr.message : 'Unknown error'
       // Don't fail the signup if email fails - user can still log in
-    } else {
-      console.log('[SIGNUP] Welcome email sent successfully')
     }
     
     return NextResponse.json({
@@ -246,7 +257,11 @@ export async function POST(request: NextRequest) {
         organizationId: organization.id,
         userId: user.id,
         email,
-        message: 'Organization created successfully. Check your email for login instructions.'
+        emailSent,
+        emailError: emailError || undefined,
+        message: emailSent 
+          ? 'Organization created successfully. Check your email for login instructions.'
+          : 'Organization created successfully. You can log in with your credentials.' + (emailError ? ` (Email not sent: ${emailError})` : '')
       }
     }, { status: 201 })
     

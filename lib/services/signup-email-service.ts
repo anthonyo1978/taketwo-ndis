@@ -174,15 +174,18 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
   console.log('[SIGNUP EMAIL] Starting email send for:', email)
   console.log('[SIGNUP EMAIL] Organization:', organizationName)
   console.log('[SIGNUP EMAIL] Login URL:', loginUrl)
+  console.log('[SIGNUP EMAIL] Checking for RESEND_API_KEY:', !!process.env.RESEND_API_KEY)
+  console.log('[SIGNUP EMAIL] Checking for RESEND_KEY:', !!process.env.RESEND_KEY)
   
   try {
     const resend = getResendClient()
     
     if (!resend) {
       console.error('[SIGNUP EMAIL] Resend client not initialized - API key missing')
+      console.error('[SIGNUP EMAIL] Available env vars with RESEND:', Object.keys(process.env).filter(k => k.includes('RESEND')).join(', ') || 'NONE')
       return {
         success: false,
-        error: 'Email service not configured'
+        error: 'Email service not configured - RESEND_API_KEY not found'
       }
     }
     
@@ -192,6 +195,7 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
     
     const fromAddress = process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>'
     console.log('[SIGNUP EMAIL] Will send FROM:', fromAddress)
+    console.log('[SIGNUP EMAIL] Will send TO:', email)
 
     const result = await resend.emails.send({
       from: fromAddress,
@@ -202,21 +206,34 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
     })
 
     if (result.error) {
-      console.error('[SIGNUP EMAIL] Failed to send email:', result.error)
+      console.error('[SIGNUP EMAIL] Failed to send email - Resend API error:', result.error)
+      console.error('[SIGNUP EMAIL] Error details:', JSON.stringify(result.error, null, 2))
       return {
         success: false,
-        error: result.error.message
+        error: result.error.message || 'Failed to send email via Resend'
       }
     }
 
-    console.log('[SIGNUP EMAIL] Email sent to:', email)
+    if (!result.data) {
+      console.error('[SIGNUP EMAIL] No data returned from Resend - email may not have been sent')
+      return {
+        success: false,
+        error: 'No response from email service'
+      }
+    }
+
+    console.log('[SIGNUP EMAIL] Email sent successfully to:', email)
+    console.log('[SIGNUP EMAIL] Message ID:', result.data.id)
     return {
       success: true,
-      messageId: result.data?.id
+      messageId: result.data.id
     }
 
   } catch (error) {
-    console.error('[SIGNUP EMAIL] Error sending email:', error)
+    console.error('[SIGNUP EMAIL] Exception sending email:', error)
+    console.error('[SIGNUP EMAIL] Error type:', error instanceof Error ? error.constructor.name : typeof error)
+    console.error('[SIGNUP EMAIL] Error message:', error instanceof Error ? error.message : String(error))
+    console.error('[SIGNUP EMAIL] Error stack:', error instanceof Error ? error.stack : 'No stack')
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
