@@ -171,10 +171,17 @@ export class TransactionService {
       return 'TXN-A000001'
     }
     
-    // Filter for sequential format IDs (TXN-A000001, TXN-B000001, etc.)
+    // Filter for sequential format IDs (TXN-A000001 OR TXN-A000001-XXX)
+    // Extract base ID and sort by the base sequential number
     const sequentialIds = data
       .map(item => item.id)
-      .filter(id => /^TXN-[A-Z]\d{6}$/.test(id))
+      .filter(id => /^TXN-[A-Z]\d{6}(-\d+)?$/.test(id)) // Match with or without suffix
+      .map(id => {
+        // Extract base ID (remove suffix if present)
+        const baseMatch = id.match(/^(TXN-[A-Z]\d{6})/)
+        return baseMatch ? baseMatch[1] : id
+      })
+      .filter((id, index, self) => self.indexOf(id) === index) // Remove duplicates
       .sort((a, b) => {
         // Sort by letter first, then by number
         const aMatch = a.match(/^TXN-([A-Z])(\d+)$/)
@@ -197,7 +204,7 @@ export class TransactionService {
       return 'TXN-A000001'
     }
     
-    // Get the highest sequential ID
+    // Get the highest sequential ID (base, without suffix)
     const latestId = sequentialIds[0] // Now properly sorted descending
     const match = latestId.match(/^TXN-([A-Z])(\d+)$/)
     
@@ -226,7 +233,7 @@ export class TransactionService {
    */
   async create(input: TransactionCreateInput, createdBy: string): Promise<Transaction> {
     let retryCount = 0
-    const maxRetries = 3
+    const maxRetries = 5
     
     while (retryCount < maxRetries) {
       try {
@@ -239,47 +246,30 @@ export class TransactionService {
         
         const supabase = await createClient()
         
-        // Generate sequential TXN ID (IMPORTANT: Generate NEW ID on each retry!)
-        let baseId = await this.generateNextTxnId()
-        console.log(`[TRANSACTION] Generated initial base ID: ${baseId}`)
+        // Generate sequential TXN ID - increment on each retry to avoid collisions
+        let baseId = await this.generateNextTxnId(organizationId)
         
-        // Add small random suffix to handle race conditions (000-999)
-        const randomSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-        let customId = `${baseId}-${randomSuffix}`
-        console.log(`[TRANSACTION] Generated ID with suffix: ${customId}`)
+        // On retry, add the retry count to ensure we get a fresh ID
+        if (retryCount > 0) {
+          console.log(`[TRANSACTION] Retry ${retryCount}: Regenerating ID...`)
+          // Force a small delay to allow other transactions to complete
+          await new Promise(resolve => setTimeout(resolve, 100 * retryCount))
+          baseId = await this.generateNextTxnId(organizationId)
+        }
         
-        // Check if this ID already exists (race condition handling)
-        let { data: existingTx } = await supabase
+        const customId = baseId
+        console.log(`[TRANSACTION] Using ID: ${customId} (attempt ${retryCount + 1}/${maxRetries})`)
+        
+        // Check if this ID already exists
+        const { data: existingTx } = await supabase
           .from('transactions')
           .select('id')
           .eq('id', customId)
-          .single()
-        
-        console.log(`[TRANSACTION] ID ${customId} exists: ${!!existingTx}`)
-        
-        // If ID exists, generate a new one and check again (up to 10 attempts to find unused ID)
-        let idCheckCount = 0
-        while (existingTx && idCheckCount < 10) {
-          console.log(`[TRANSACTION] ID ${customId} already exists, generating new suffix... (attempt ${idCheckCount + 1}/10)`)
-          const oldId = customId
-          const newSuffix = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
-          customId = `${baseId}-${newSuffix}`
-          console.log(`[TRANSACTION] Generated new ID: ${oldId} -> ${customId}`)
-          const { data: checkTx } = await supabase
-            .from('transactions')
-            .select('id')
-            .eq('id', customId)
-            .single()
-          existingTx = checkTx
-          console.log(`[TRANSACTION] New ID ${customId} exists: ${!!existingTx}`)
-          idCheckCount++
-        }
+          .maybeSingle()
         
         if (existingTx) {
-          console.log(`[TRANSACTION] Unable to generate unique ID after 5 attempts, retrying... (attempt ${retryCount + 1}/${maxRetries})`)
+          console.log(`[TRANSACTION] ID ${customId} already exists, will retry...`)
           retryCount++
-          // Add small delay to avoid rapid retry
-          await new Promise(resolve => setTimeout(resolve, 200))
           continue
         }
         
