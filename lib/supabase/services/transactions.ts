@@ -152,13 +152,17 @@ export class TransactionService {
       throw new Error('User organization not found. Please log in again.')
     }
     
-    console.log(`[TXN ID GEN] Fetching transactions for org: ${orgId}`)
+    // Generate org-specific prefix (first 6 chars of org ID in uppercase)
+    const orgPrefix = orgId.substring(0, 6).toUpperCase()
+    console.log(`[TXN ID GEN] Fetching transactions for org: ${orgId} (prefix: ${orgPrefix})`)
     
-    // Get all TXN IDs and filter for sequential format
+    // Query transactions for THIS organization with org-specific prefix
+    // Format: TXN-{ORG_PREFIX}-A000001
+    // This ensures each org has its own ID sequence
     const { data, error } = await supabase
       .from('transactions')
       .select('id')
-      .like('id', 'TXN-%')
+      .like('id', `TXN-${orgPrefix}-%`)
       .eq('organization_id', orgId)
       .order('id', { ascending: false })
       .limit(100)
@@ -174,26 +178,34 @@ export class TransactionService {
     }
     
     if (!data || data.length === 0) {
-      // First transaction
-      console.log('[TXN ID GEN] No existing transactions, starting with TXN-A000001')
-      return 'TXN-A000001'
+      // First transaction for this org
+      const firstId = `TXN-${orgPrefix}-A000001`
+      console.log(`[TXN ID GEN] No existing transactions, starting with ${firstId}`)
+      return firstId
     }
     
-    // Filter for sequential format IDs (TXN-A000001 OR TXN-A000001-XXX)
-    // Extract base ID and sort by the base sequential number
+    // Filter for sequential format IDs
+    // Format: TXN-{ORG_PREFIX}-A000001 OR TXN-{ORG_PREFIX}-A000001-XXX (old suffix format)
+    // Also support legacy format: TXN-A000001 (no org prefix)
+    const legacyPattern = /^TXN-[A-Z]\d{6}(-\d+)?$/
+    const newPattern = new RegExp(`^TXN-${orgPrefix}-[A-Z]\\d{6}(-\\d+)?$`)
+    
     const sequentialIds = data
       .map(item => item.id)
-      .filter(id => /^TXN-[A-Z]\d{6}(-\d+)?$/.test(id)) // Match with or without suffix
+      .filter(id => legacyPattern.test(id) || newPattern.test(id)) // Match both formats
       .map(id => {
         // Extract base ID (remove suffix if present)
-        const baseMatch = id.match(/^(TXN-[A-Z]\d{6})/)
+        // Handles: TXN-A000001-XXX → TXN-A000001
+        // Handles: TXN-D9430C-A000001-XXX → TXN-D9430C-A000001
+        const baseMatch = id.match(/^(TXN-(?:[A-Z0-9]+-)?[A-Z]\d{6})/)
         return baseMatch ? baseMatch[1] : id
       })
       .filter((id, index, self) => self.indexOf(id) === index) // Remove duplicates
       .sort((a, b) => {
         // Sort by letter first, then by number
-        const aMatch = a.match(/^TXN-([A-Z])(\d+)$/)
-        const bMatch = b.match(/^TXN-([A-Z])(\d+)$/)
+        // Handles: TXN-A000001 or TXN-D9430C-A000001
+        const aMatch = a.match(/^TXN-(?:[A-Z0-9]+-)?([A-Z])(\d+)$/)
+        const bMatch = b.match(/^TXN-(?:[A-Z0-9]+-)?([A-Z])(\d+)$/)
         
         if (!aMatch || !bMatch) return 0
         
@@ -214,20 +226,23 @@ export class TransactionService {
     
     if (sequentialIds.length === 0) {
       // No sequential format found, start with A000001
-      console.log('[TXN ID GEN] No sequential IDs found, starting with TXN-A000001')
-      return 'TXN-A000001'
+      const firstId = `TXN-${orgPrefix}-A000001`
+      console.log(`[TXN ID GEN] No sequential IDs found, starting with ${firstId}`)
+      return firstId
     }
     
     // Get the highest sequential ID (base, without suffix)
     const latestId = sequentialIds[0] // Now properly sorted descending
     console.log(`[TXN ID GEN] Latest ID from sort: ${latestId}`)
     
-    const match = latestId.match(/^TXN-([A-Z])(\d+)$/)
+    // Match both formats: TXN-A000001 or TXN-D9430C-A000001
+    const match = latestId.match(/^TXN-(?:[A-Z0-9]+-)?([A-Z])(\d+)$/)
     
     if (!match) {
       // This shouldn't happen since we filtered, but just in case
-      console.log('[TXN ID GEN] Failed to parse latest ID, defaulting to TXN-A000001')
-      return 'TXN-A000001'
+      const firstId = `TXN-${orgPrefix}-A000001`
+      console.log(`[TXN ID GEN] Failed to parse latest ID, defaulting to ${firstId}`)
+      return firstId
     }
     
     const [, letter, numberStr] = match
@@ -244,7 +259,8 @@ export class TransactionService {
       currentNumber += 1
     }
     
-    const nextId = `TXN-${currentLetter}${currentNumber.toString().padStart(6, '0')}`
+    // Generate ID with org prefix: TXN-{ORG_PREFIX}-A000001
+    const nextId = `TXN-${orgPrefix}-${currentLetter}${currentNumber.toString().padStart(6, '0')}`
     console.log(`[TXN ID GEN] Generated next ID: ${nextId}`)
     
     return nextId
