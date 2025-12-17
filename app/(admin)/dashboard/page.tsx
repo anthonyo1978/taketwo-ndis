@@ -98,6 +98,7 @@ export default function DashboardPage() {
             subtitle="Active properties"
             color="blue"
             isLoading={isLoading}
+            compact
           />
           <MetricCard
             title="Total Residents"
@@ -106,6 +107,7 @@ export default function DashboardPage() {
             subtitle="Active participants"
             color="purple"
             isLoading={isLoading}
+            compact
           />
           <MetricCard
             title="Active Contracts"
@@ -114,6 +116,7 @@ export default function DashboardPage() {
             subtitle="Funding agreements"
             color="green"
             isLoading={isLoading}
+            compact
           />
           <MetricCard
             title="Available Funding"
@@ -122,14 +125,7 @@ export default function DashboardPage() {
             subtitle="Remaining funds (active contracts)"
             color="orange"
             isLoading={isLoading}
-          />
-          <MetricCard
-            title="Claims Paid"
-            value={stats ? formatCurrency(stats.claims.totalPaidAmount) : '$0'}
-            icon="✅"
-            subtitle={`representing ${stats?.claims.totalPaidTransactions || 0} transactions`}
-            color="green"
-            isLoading={isLoading}
+            compact
           />
           <MetricCard
             title="Outstanding Claims"
@@ -138,6 +134,16 @@ export default function DashboardPage() {
             subtitle={`${stats?.claims.totalOutstandingTransactions || 0} transactions pending`}
             color="orange"
             isLoading={isLoading}
+            compact
+          />
+          <MetricCard
+            title="Claims Paid"
+            value={stats ? formatCurrency(stats.claims.totalPaidAmount) : '$0'}
+            icon="✅"
+            subtitle={`representing ${stats?.claims.totalPaidTransactions || 0} transactions`}
+            color="green"
+            isLoading={isLoading}
+            compact
           />
         </div>
         

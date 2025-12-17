@@ -8,6 +8,7 @@ interface MetricCardProps {
   subtitle?: string
   isLoading?: boolean
   color?: 'blue' | 'purple' | 'green' | 'orange'
+  compact?: boolean
 }
 
 export function MetricCard({ 
@@ -17,7 +18,8 @@ export function MetricCard({
   trend, 
   subtitle, 
   isLoading = false,
-  color = 'blue'
+  color = 'blue',
+  compact = false
 }: MetricCardProps) {
   
   const colorClasses = {
@@ -41,13 +43,13 @@ export function MetricCard({
   
   if (isLoading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
+      <div className={`bg-white rounded-xl border border-gray-200 shadow-sm ${compact ? 'p-4' : 'p-6'}`}>
         <div className="animate-pulse">
-          <div className="flex items-center justify-between mb-4">
+          <div className={`flex items-center justify-between ${compact ? 'mb-3' : 'mb-4'}`}>
             <div className="h-4 bg-gray-200 rounded w-24"></div>
-            <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+            <div className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} bg-gray-200 rounded-lg`}></div>
           </div>
-          <div className="h-8 bg-gray-200 rounded w-32 mb-2"></div>
+          <div className={`${compact ? 'h-7' : 'h-8'} bg-gray-200 rounded w-32 mb-2`}></div>
           <div className="h-3 bg-gray-200 rounded w-20"></div>
         </div>
       </div>
@@ -55,26 +57,26 @@ export function MetricCard({
   }
   
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-medium text-gray-600">{title}</p>
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
-          <span className="text-2xl">{icon}</span>
+    <div className={`bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+      <div className={`flex items-center justify-between ${compact ? 'mb-3' : 'mb-4'}`}>
+        <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-600`}>{title}</p>
+        <div className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
+          <span className={compact ? 'text-xl' : 'text-2xl'}>{icon}</span>
         </div>
       </div>
       
       <div className="flex items-baseline space-x-2">
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
+        <p className={`${compact ? 'text-2xl' : 'text-3xl'} font-bold text-gray-900`}>{value}</p>
       </div>
       
-      <div className="flex items-center space-x-2 mt-2">
+      <div className={`flex items-center space-x-2 ${compact ? 'mt-1' : 'mt-2'}`}>
         {trend !== undefined && (
-          <span className={`text-sm font-medium ${getTrendColor(trend)}`}>
+          <span className={`${compact ? 'text-xs' : 'text-sm'} font-medium ${getTrendColor(trend)}`}>
             {getTrendIcon(trend)} {Math.abs(trend).toFixed(1)}%
           </span>
         )}
         {subtitle && (
-          <span className="text-sm text-gray-500">{subtitle}</span>
+          <span className={`${compact ? 'text-xs' : 'text-sm'} text-gray-500`}>{subtitle}</span>
         )}
       </div>
     </div>
