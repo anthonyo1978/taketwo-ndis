@@ -31,10 +31,14 @@ Section	Description	Data Source / Table	Notes
 
 🏠 Total Houses	Count of all active properties	houses	Filtered where status = active
 👥 Total Residents	Count of all active residents	residents	Filtered where status = active
-💰 Transaction Volume (7d / 30d / 12m)	Sum of all transactions over different time windows	transactions	Filter by created_at date
+📋 Active Contracts	Count of active funding agreements	funding_contracts	Filtered where contract_status = 'Active'
+💰 Available Funding	Total remaining balance in active contracts	funding_contracts	Sum of current_balance where contract_status = 'Active'
+✅ Claims Paid	Total amount of paid transactions	transactions	Sum of amount where status = 'paid'
+⏳ Outstanding Claims	Total amount of unpaid transactions	transactions	Sum of amount where status != 'paid' (includes draft, picked_up, submitted, rejected)
+📊 Transaction Volume (7d / 30d / 12m)	Sum of all transactions over different time windows	transactions	Filter by created_at date
 📈 Monthly Trends Graph	Bar/line chart of transaction totals per month	transactions	Group by month-year
-⚡ Recent Activity Feed	Last 5 transactions or key events	transactions, residents, houses	Ordered by created_at DESC
-✅ Quick Actions	Buttons for “Add House”, “Add Resident”, “Create Transaction”	—	Triggers modal forms from existing components
+⚡ Recent Activity Feed	Last 10 transactions or key events	transactions, residents, houses	Ordered by created_at DESC
+🏘️ House Performance	Performance metrics per house	houses, residents, contracts, transactions	Aggregated by house_id
 🔔 Notifications (Future)	Alerts for overdue compliance, expiring leases, etc.	TBD	Placeholder for later phase
 
 6. Functional Requirements
@@ -79,6 +83,12 @@ DECISIONS (Confirmed with User):
 6. Quick Actions: REMOVED from Phase 1 (add later if needed)
 7. Data Aggregation: Supabase RPC functions for performance
 8. Charting: Recharts (as per original PRD)
+9. **Outstanding Claims Tile**: Shows sum of all non-paid transactions (draft, picked_up, submitted, rejected)
+   - Positioned next to "Claims Paid" tile for easy comparison
+   - Icon: ⏳ (hourglass) to indicate pending status
+   - Color: Orange (to indicate attention needed)
+   - Subtitle: "{count} transactions pending" 
+   - Can be toggled on/off in Dashboard Settings
 
 Metric cards should have icons (🏠, 👥, 💰) and smooth loading shimmer states.
 Include contextual labels like:

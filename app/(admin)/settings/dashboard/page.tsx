@@ -45,6 +45,12 @@ export default function DashboardSettingsPage() {
       enabled: true
     },
     {
+      id: 'outstanding-claims',
+      name: 'Outstanding Claims',
+      description: 'Show total amount of unpaid transactions (draft, picked up, submitted, rejected)',
+      enabled: true
+    },
+    {
       id: 'last-7-days-transactions',
       name: 'Last 7 Days Transactions',
       description: 'Display transaction volume for the past 7 days',
