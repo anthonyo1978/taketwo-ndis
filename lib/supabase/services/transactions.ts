@@ -232,40 +232,45 @@ export class TransactionService {
    * Create a new transaction
    */
   async create(input: TransactionCreateInput, createdBy: string): Promise<Transaction> {
+    // Get current user's organization ID ONCE at the start
+    const organizationId = await getCurrentUserOrganizationId()
+    
+    if (!organizationId) {
+      console.error('[TRANSACTION] No organization ID found for user')
+      throw new Error('User organization not found. Please log in again.')
+    }
+    
+    console.log(`[TRANSACTION] Creating transaction for org: ${organizationId}`)
+    
     let retryCount = 0
     const maxRetries = 5
+    const supabase = await createClient()
     
     while (retryCount < maxRetries) {
       try {
-        // Get current user's organization ID
-        const organizationId = await getCurrentUserOrganizationId()
-        
-        if (!organizationId) {
-          throw new Error('User organization not found. Please log in again.')
-        }
-        
-        const supabase = await createClient()
-        
-        // Generate sequential TXN ID - increment on each retry to avoid collisions
-        let baseId = await this.generateNextTxnId(organizationId)
-        
-        // On retry, add the retry count to ensure we get a fresh ID
+        // Generate sequential TXN ID - regenerate on each retry to avoid collisions
         if (retryCount > 0) {
-          console.log(`[TRANSACTION] Retry ${retryCount}: Regenerating ID...`)
+          console.log(`[TRANSACTION] Retry ${retryCount}: Waiting before regenerating ID...`)
           // Force a small delay to allow other transactions to complete
           await new Promise(resolve => setTimeout(resolve, 100 * retryCount))
-          baseId = await this.generateNextTxnId(organizationId)
         }
         
-        const customId = baseId
-        console.log(`[TRANSACTION] Using ID: ${customId} (attempt ${retryCount + 1}/${maxRetries})`)
+        const customId = await this.generateNextTxnId(organizationId)
+        console.log(`[TRANSACTION] Generated ID: ${customId} (attempt ${retryCount + 1}/${maxRetries})`)
         
         // Check if this ID already exists
-        const { data: existingTx } = await supabase
+        const { data: existingTx, error: checkError } = await supabase
           .from('transactions')
           .select('id')
           .eq('id', customId)
+          .eq('organization_id', organizationId)
           .maybeSingle()
+        
+        if (checkError && checkError.code !== 'PGRST116') {
+          // PGRST116 = no rows returned, which is fine
+          console.error('[TRANSACTION] Error checking existing ID:', checkError)
+          throw checkError
+        }
         
         if (existingTx) {
           console.log(`[TRANSACTION] ID ${customId} already exists, will retry...`)
