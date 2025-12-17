@@ -152,6 +152,8 @@ export class TransactionService {
       throw new Error('User organization not found. Please log in again.')
     }
     
+    console.log(`[TXN ID GEN] Fetching transactions for org: ${orgId}`)
+    
     // Get all TXN IDs and filter for sequential format
     const { data, error } = await supabase
       .from('transactions')
@@ -162,12 +164,18 @@ export class TransactionService {
       .limit(100)
     
     if (error) {
-      console.error('Error fetching latest TXN ID:', error)
+      console.error('[TXN ID GEN] Error fetching latest TXN ID:', error)
       throw new Error('Failed to generate TXN ID')
+    }
+    
+    console.log(`[TXN ID GEN] Found ${data?.length || 0} existing transaction IDs`)
+    if (data && data.length > 0) {
+      console.log(`[TXN ID GEN] First 5 IDs from DB:`, data.slice(0, 5).map(d => d.id))
     }
     
     if (!data || data.length === 0) {
       // First transaction
+      console.log('[TXN ID GEN] No existing transactions, starting with TXN-A000001')
       return 'TXN-A000001'
     }
     
@@ -199,23 +207,34 @@ export class TransactionService {
         return parseInt(bNum) - parseInt(aNum) // Higher numbers first
       })
     
+    console.log(`[TXN ID GEN] After filtering, found ${sequentialIds.length} sequential IDs`)
+    if (sequentialIds.length > 0) {
+      console.log(`[TXN ID GEN] Top 3 sequential IDs:`, sequentialIds.slice(0, 3))
+    }
+    
     if (sequentialIds.length === 0) {
       // No sequential format found, start with A000001
+      console.log('[TXN ID GEN] No sequential IDs found, starting with TXN-A000001')
       return 'TXN-A000001'
     }
     
     // Get the highest sequential ID (base, without suffix)
     const latestId = sequentialIds[0] // Now properly sorted descending
+    console.log(`[TXN ID GEN] Latest ID from sort: ${latestId}`)
+    
     const match = latestId.match(/^TXN-([A-Z])(\d+)$/)
     
     if (!match) {
       // This shouldn't happen since we filtered, but just in case
+      console.log('[TXN ID GEN] Failed to parse latest ID, defaulting to TXN-A000001')
       return 'TXN-A000001'
     }
     
     const [, letter, numberStr] = match
     let currentLetter = letter
     let currentNumber = parseInt(numberStr, 10)
+    
+    console.log(`[TXN ID GEN] Parsed: letter=${currentLetter}, number=${currentNumber}`)
     
     // Check if we need to move to next letter (assuming 999999 is the max per letter)
     if (currentNumber >= 999999) {
@@ -225,7 +244,10 @@ export class TransactionService {
       currentNumber += 1
     }
     
-    return `TXN-${currentLetter}${currentNumber.toString().padStart(6, '0')}`
+    const nextId = `TXN-${currentLetter}${currentNumber.toString().padStart(6, '0')}`
+    console.log(`[TXN ID GEN] Generated next ID: ${nextId}`)
+    
+    return nextId
   }
 
   /**
@@ -332,9 +354,6 @@ export class TransactionService {
     }
     
     throw new Error('Failed to create transaction after maximum retries')
-  } catch (error: any) {
-    console.error('Error in TransactionService.create:', error)
-    throw error
   }
 
   /**
