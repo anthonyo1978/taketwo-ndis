@@ -193,9 +193,21 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
     console.log('[SIGNUP EMAIL] FROM_EMAIL env var:', process.env.FROM_EMAIL || 'NOT SET')
     console.log('[SIGNUP EMAIL] RESEND_FROM_EMAIL env var:', process.env.RESEND_FROM_EMAIL || 'NOT SET')
     
-    const fromAddress = process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>'
+    // Determine FROM address with detailed logging
+    let fromAddress = process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL
+    
+    if (!fromAddress) {
+      // Fallback to onboarding@resend.dev but warn about limitations
+      fromAddress = 'Haven <onboarding@resend.dev>'
+      console.warn('⚠️ [SIGNUP EMAIL] FROM_EMAIL not configured - using Resend test domain')
+      console.warn('⚠️ [SIGNUP EMAIL] Test domain can ONLY send to verified email addresses')
+      console.warn('⚠️ [SIGNUP EMAIL] To fix: Add FROM_EMAIL env var with a verified domain in Vercel')
+      console.warn('⚠️ [SIGNUP EMAIL] See SIGNUP-EMAIL-FIX.md for detailed instructions')
+    }
+    
     console.log('[SIGNUP EMAIL] Will send FROM:', fromAddress)
     console.log('[SIGNUP EMAIL] Will send TO:', email)
+    console.log('[SIGNUP EMAIL] Subject:', `Welcome to Haven - ${organizationName} is Ready!`)
 
     const result = await resend.emails.send({
       from: fromAddress,
@@ -206,24 +218,37 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
     })
 
     if (result.error) {
-      console.error('[SIGNUP EMAIL] Failed to send email - Resend API error:', result.error)
+      console.error('[SIGNUP EMAIL] ❌ Failed to send email - Resend API error:', result.error)
       console.error('[SIGNUP EMAIL] Error details:', JSON.stringify(result.error, null, 2))
+      
+      // Check for common errors and provide helpful messages
+      let errorMessage = result.error.message || 'Failed to send email via Resend'
+      
+      if (errorMessage.includes('onboarding@resend.dev') || errorMessage.includes('not verified')) {
+        console.error('⚠️ [SIGNUP EMAIL] LIKELY CAUSE: Using test domain or unverified recipient')
+        console.error('⚠️ [SIGNUP EMAIL] Solution 1: Add FROM_EMAIL env var with verified domain to Vercel')
+        console.error('⚠️ [SIGNUP EMAIL] Solution 2: Verify recipient email in Resend dashboard')
+        console.error('⚠️ [SIGNUP EMAIL] See SIGNUP-EMAIL-FIX.md for step-by-step instructions')
+        errorMessage = `${errorMessage}. See SIGNUP-EMAIL-FIX.md for solutions.`
+      }
+      
       return {
         success: false,
-        error: result.error.message || 'Failed to send email via Resend'
+        error: errorMessage
       }
     }
 
     if (!result.data) {
-      console.error('[SIGNUP EMAIL] No data returned from Resend - email may not have been sent')
+      console.error('[SIGNUP EMAIL] ❌ No data returned from Resend - email may not have been sent')
       return {
         success: false,
         error: 'No response from email service'
       }
     }
 
-    console.log('[SIGNUP EMAIL] Email sent successfully to:', email)
-    console.log('[SIGNUP EMAIL] Message ID:', result.data.id)
+    console.log('[SIGNUP EMAIL] ✅ Email sent successfully to:', email)
+    console.log('[SIGNUP EMAIL] ✅ Message ID:', result.data.id)
+    console.log('[SIGNUP EMAIL] ✅ From:', fromAddress)
     return {
       success: true,
       messageId: result.data.id
