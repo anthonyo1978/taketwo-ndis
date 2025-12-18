@@ -189,19 +189,68 @@ export async function GET(request: NextRequest) {
             })
           )
           
+          // Calculate success and failed totals
+          const totalSuccessAmount = transactionDetails.reduce((sum, txn) => sum + txn.amount, 0)
+          
+          // Get tomorrow's eligible contracts for preview
+          const tomorrow = new Date()
+          const tomorrowStr = tomorrow.toLocaleDateString('en-CA', { 
+            timeZone: 'Australia/Sydney',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+          })
+          const tomorrowDate = new Date(`${tomorrowStr}T00:00:00`)
+          tomorrowDate.setDate(tomorrowDate.getDate() + 1)
+          const tomorrowDateStr = tomorrowDate.toISOString().split('T')[0]
+          
+          console.log(`[AUTOMATION CRON] ${orgName} - Fetching tomorrow's preview (${tomorrowDateStr})`)
+          
+          const { data: tomorrowContracts, error: tomorrowError } = await supabase
+            .from('funding_contracts')
+            .select(`
+              id,
+              automated_drawdown_amount,
+              automated_drawdown_frequency,
+              next_run_date,
+              resident:residents!inner(
+                id,
+                first_name,
+                last_name
+              )
+            `)
+            .eq('organization_id', orgId)
+            .eq('auto_billing_enabled', true)
+            .eq('next_run_date', tomorrowDateStr)
+          
+          let tomorrowPreview: Array<{ residentName: string; amount: number; frequency: string }> = []
+          
+          if (!tomorrowError && tomorrowContracts) {
+            console.log(`[AUTOMATION CRON] ${orgName} - Found ${tomorrowContracts.length} contracts for tomorrow`)
+            tomorrowPreview = tomorrowContracts.map((contract: any) => ({
+              residentName: `${contract.resident.first_name} ${contract.resident.last_name}`,
+              amount: contract.automated_drawdown_amount || 0,
+              frequency: contract.automated_drawdown_frequency || 'unknown'
+            }))
+          }
+          
           const emailResult = await sendAutomationCompletionEmail(
             adminEmails,
             {
+              organizationName: orgName,
               executionDate,
               executionTime: orgExecutionTime,
               processedContracts: result.processedContracts,
               successfulTransactions: result.successfulTransactions,
               failedTransactions: result.failedTransactions,
               totalAmount: result.summary.totalAmount,
+              totalSuccessAmount,
+              totalFailedAmount: 0, // We don't have failed amounts since those transactions weren't created
               transactions: transactionDetails,
               errors: errorsWithNames,
               summary: result.summary,
-              timezone: 'Australia/Sydney'
+              timezone: 'Australia/Sydney',
+              tomorrowPreview: tomorrowPreview.length > 0 ? tomorrowPreview : undefined
             }
           )
           
