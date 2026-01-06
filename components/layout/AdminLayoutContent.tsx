@@ -44,20 +44,20 @@ export function AdminLayoutContent({ children }: AdminLayoutContentProps) {
 
   return (
     <>
-      <div className="flex h-screen bg-gray-50">
-        {/* Left Sidebar */}
-        <AdminSidebar />
-        
-        {/* Main content area - no top bar, more space for content */}
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
+      <TodoProvider>
+        <div className="flex h-screen bg-gray-50">
+          {/* Left Sidebar */}
+          <AdminSidebar />
+          
+          {/* Main content area - no top bar, more space for content */}
+          <main className="flex-1 overflow-auto">
+            {children}
+          </main>
 
-        {/* Right Notifications Panel - Feature flag controlled */}
-        <TodoProvider>
+          {/* Right Notifications Panel - Feature flag controlled */}
           <NotificationsPanel />
-        </TodoProvider>
-      </div>
+        </div>
+      </TodoProvider>
 
       {/* Toast notifications */}
       <Toaster

@@ -9,6 +9,55 @@ const updateNotificationSchema = z.object({
 })
 
 /**
+ * GET /api/notifications/[id]
+ * Get a single notification by ID
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+    const supabase = await createClient()
+    const organizationId = await getCurrentUserOrganizationId()
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'User organization not found' },
+        { status: 401 }
+      )
+    }
+
+    // Fetch notification and verify it belongs to user's organization
+    const { data: notification, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('id', id)
+      .eq('organization_id', organizationId)
+      .single()
+
+    if (error || !notification) {
+      return NextResponse.json(
+        { success: false, error: 'Notification not found' },
+        { status: 404 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: notification
+    })
+
+  } catch (error) {
+    console.error('[NOTIFICATIONS API] Error fetching notification:', error)
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
  * PATCH /api/notifications/[id]
  * Update a notification (e.g., mark as read)
  */

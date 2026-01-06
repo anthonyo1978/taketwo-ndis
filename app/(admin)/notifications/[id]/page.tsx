@@ -161,7 +161,16 @@ export default function NotificationDetailPage() {
     return null
   }
 
-  const hasMetadata = notification.metadata && Object.keys(notification.metadata).length > 0
+  const hasMetadata = notification.metadata && typeof notification.metadata === 'object' && Object.keys(notification.metadata).length > 0
+
+  // Safe date formatting
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'MMMM d, yyyy h:mm a')
+    } catch {
+      return dateString
+    }
+  }
 
   return (
     <div className="p-8">
@@ -201,8 +210,8 @@ export default function NotificationDetailPage() {
               </div>
 
               <div className="space-y-1 text-sm text-gray-600">
-                <p><span className="font-medium">Created:</span> {format(new Date(notification.created_at), 'MMMM d, yyyy h:mm a')}</p>
-                <p><span className="font-medium">Updated:</span> {format(new Date(notification.updated_at), 'MMMM d, yyyy h:mm a')}</p>
+                <p><span className="font-medium">Created:</span> {formatDate(notification.created_at)}</p>
+                <p><span className="font-medium">Updated:</span> {formatDate(notification.updated_at)}</p>
                 {notification.action_url && (
                   <p><span className="font-medium">Action URL:</span> <Link href={notification.action_url} className="text-blue-600 hover:underline">{notification.action_url}</Link></p>
                 )}
