@@ -10,11 +10,13 @@ import type { DashboardStats } from 'app/api/dashboard/stats/route'
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [organizationName, setOrganizationName] = useState<string>('Haven')
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   
   useEffect(() => {
     fetchDashboardStats()
+    fetchOrganizationName()
   }, [])
   
   const fetchDashboardStats = async () => {
@@ -39,6 +41,20 @@ export default function DashboardPage() {
       setError('Failed to load dashboard')
     } finally {
       setIsLoading(false)
+    }
+  }
+  
+  const fetchOrganizationName = async () => {
+    try {
+      const response = await fetch('/api/organization/settings')
+      const result = await response.json()
+      
+      if (result.success && result.data?.organizationName) {
+        setOrganizationName(result.data.organizationName)
+      }
+    } catch (err) {
+      console.error('Failed to fetch organization name:', err)
+      // Silently fail - use default "Haven"
     }
   }
   
@@ -79,9 +95,11 @@ export default function DashboardPage() {
         {/* Header with System Status */}
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              Welcome to your {organizationName} Dashboard
+            </h1>
             <p className="text-gray-600 mt-1">
-              Welcome back! Here's your portfolio overview
+              Here's your portfolio overview
             </p>
           </div>
           

@@ -1,9 +1,11 @@
 name: "Feature PRP Example - Portfolio Dashboard
 1. Overview
 
-The Haven Landing Page Dashboard is the first screen users see after logging in. It provides a portfolio-level snapshot of a provider’s SDA housing portfolio — showing how many properties are under management, how many residents are active, and how much financial activity has occurred over recent periods.
+The Haven Landing Page Dashboard is the first screen users see after logging in. It provides a portfolio-level snapshot of a provider's SDA housing portfolio — showing how many properties are under management, how many residents are active, and how much financial activity has occurred over recent periods.
 
 This dashboard acts as the command centre for all users, combining high-level metrics, trend summaries, and navigation shortcuts into the deeper modules of Haven (Properties, Residents, Transactions, Agreements, etc.).
+
+**Personalization**: The dashboard header displays the organization's name (e.g., "Welcome to your [Organization Name] Dashboard") which is fetched from organization_settings. This can be configured in Settings > Organization.
 
 2. Goals
 

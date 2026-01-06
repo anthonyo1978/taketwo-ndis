@@ -15,6 +15,24 @@ export default function SettingsPage() {
         {/* Settings Categories */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <Link 
+            href="/settings/organization" 
+            className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer block"
+          >
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-sky-100 rounded-lg">
+                <svg className="size-6 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+              </div>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Organization</h3>
+            <p className="text-gray-600 text-sm mb-4">Configure your organization's name, contact details, and branding.</p>
+            <div className="text-blue-600 text-sm font-medium hover:text-blue-800">
+              Configure →
+            </div>
+          </Link>
+          
+          <Link 
             href="/settings/users" 
             className="bg-white rounded-lg border border-gray-200 p-6 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer block"
           >
