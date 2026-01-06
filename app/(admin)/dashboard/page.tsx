@@ -124,10 +124,10 @@ export default function DashboardPage() {
             compact
           />
           <MetricCard
-            title="Total Residents"
+            title="Active Residents"
             value={stats?.portfolio.totalResidents || 0}
             icon="👥"
-            subtitle="Active participants"
+            subtitle="Active Residents"
             color="purple"
             isLoading={isLoading}
             compact
