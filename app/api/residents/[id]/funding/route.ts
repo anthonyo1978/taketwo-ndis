@@ -87,7 +87,6 @@ export async function POST(
       autoBillingEnabled: z.boolean().default(false),
       automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
       nextRunDate: z.coerce.date().optional(),
-      generateCatchupClaims: z.boolean().default(false),
       // Duration field (calculated from start/end dates)
       durationDays: z.number().int().positive().optional()
     }).refine(
@@ -128,29 +127,6 @@ export async function POST(
         }, 
         { status: 400 }
       )
-    }
-    
-    // Validate catch-up generation if enabled
-    if (validation.data.generateCatchupClaims && validation.data.nextRunDate) {
-      const catchupValidation = validateCatchupGeneration(
-        validation.data.nextRunDate,
-        validation.data.startDate,
-        validation.data.automatedDrawdownFrequency
-      )
-      
-      if (!catchupValidation.valid) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: catchupValidation.error || 'Catch-up generation validation failed'
-          }, 
-          { status: 400 }
-        )
-      }
-      
-      if (catchupValidation.warning) {
-        console.log('[CATCHUP] Warning:', catchupValidation.warning)
-      }
     }
     
     // Simulate realistic delay for loading states
