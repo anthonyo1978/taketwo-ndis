@@ -138,7 +138,7 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
               icon: '✅',
               category: 'system',
               priority: 'high',
-              actionUrl: `/residents/${residentId}`
+              actionUrl: '' // Empty actionUrl - clicking notification goes to detail page
             })
           })
           
