@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from 'lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 
 /**
  * TEST ENDPOINT - Check what users exist in the system
@@ -7,12 +7,23 @@ import { createClient } from 'lib/supabase/server'
  * Usage: GET /api/test/check-users
  * 
  * This will show you all users and their emails (for diagnostics only)
+ * Uses service role to bypass RLS
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
+    // Use service role client to bypass RLS
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll: () => [],
+          setAll: () => {},
+        },
+      }
+    )
 
-    console.log('🔍 [USER CHECK] Checking users table...')
+    console.log('🔍 [USER CHECK] Checking users table (using service role)...')
 
     // Get all users (limit to 20 for safety)
     const { data: users, error } = await supabase

@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from 'lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 import { sendPasswordResetEmail } from 'lib/services/user-email-service'
 import crypto from 'crypto'
 
 /**
  * Password Reset API Endpoint
  * Sends a custom password reset email using Resend
+ * 
+ * NOTE: Uses service role client to bypass RLS since users are not authenticated
+ * when requesting password reset
  */
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +28,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    // Use service role client to bypass RLS (users aren't authenticated during password reset)
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          getAll: () => [],
+          setAll: () => {},
+        },
+      }
+    )
+
+    console.log('✅ [PASSWORD RESET] Service role client initialized (bypasses RLS)')
 
     // Check if user exists in our users table
     const { data: user, error: userError } = await supabase
