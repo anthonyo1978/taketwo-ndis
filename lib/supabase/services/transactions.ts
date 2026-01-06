@@ -192,9 +192,9 @@ export class TransactionService {
     const newPattern = new RegExp(`^TXN-${orgPrefix}-[A-Z]\\d{6}(-\\d+)?$`)
     
     const sequentialIds = data
-      .map(item => item.id)
-      .filter(id => legacyPattern.test(id) || newPattern.test(id)) // Match both formats
-      .map(id => {
+      .map((item: { id: string }) => item.id)
+      .filter((id: string) => legacyPattern.test(id) || newPattern.test(id)) // Match both formats
+      .map((id: string) => {
         // Extract base ID (remove suffix if present)
         // Handles: TXN-A000001-XXX → TXN-A000001
         // Handles: TXN-D9430C-A000001-XXX → TXN-D9430C-A000001
