@@ -201,8 +201,8 @@ export class TransactionService {
         const baseMatch = id.match(/^(TXN-(?:[A-Z0-9]+-)?[A-Z]\d{6})/)
         return baseMatch ? baseMatch[1] : id
       })
-      .filter((id, index, self) => self.indexOf(id) === index) // Remove duplicates
-      .sort((a, b) => {
+      .filter((id: string, index: number, self: string[]) => self.indexOf(id) === index) // Remove duplicates
+      .sort((a: string, b: string) => {
         // Sort by letter first, then by number
         // Handles: TXN-A000001 or TXN-D9430C-A000001
         const aMatch = a.match(/^TXN-(?:[A-Z0-9]+-)?([A-Z])(\d+)$/)
