@@ -1,4 +1,5 @@
 import { createClient } from '../server'
+import { getCurrentUserOrganizationId } from '../../utils/organization'
 import type { OrganizationSettings, OrganizationSettingsUpdateInput } from '../../../types/organization'
 
 /**
@@ -37,38 +38,16 @@ export class OrganizationService {
   }
 
   /**
-   * Get current user's organization ID from session
-   */
-  private async getCurrentOrganizationId(): Promise<string> {
-    const supabase = await this.getSupabase()
-    
-    // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
-    
-    if (userError || !user) {
-      throw new Error('Not authenticated')
-    }
-    
-    // Get user's organization_id from users table
-    const { data: userData, error: orgError } = await supabase
-      .from('users')
-      .select('organization_id')
-      .eq('auth_user_id', user.id)
-      .single()
-    
-    if (orgError || !userData) {
-      throw new Error('User organization not found')
-    }
-    
-    return userData.organization_id
-  }
-
-  /**
    * Get organization settings for current user's organization
    */
   async getSettings(): Promise<OrganizationSettings | null> {
     try {
-      const organizationId = await this.getCurrentOrganizationId()
+      const organizationId = await getCurrentUserOrganizationId()
+      
+      if (!organizationId) {
+        throw new Error('User not authenticated or no organization found')
+      }
+      
       return await this.getByOrganizationId(organizationId)
     } catch (error) {
       console.error('OrganizationService.getSettings error:', error)
@@ -108,7 +87,12 @@ export class OrganizationService {
    */
   async updateSettings(updates: OrganizationSettingsUpdateInput): Promise<OrganizationSettings> {
     try {
-      const organizationId = await this.getCurrentOrganizationId()
+      const organizationId = await getCurrentUserOrganizationId()
+      
+      if (!organizationId) {
+        throw new Error('User not authenticated or no organization found')
+      }
+      
       return await this.update(organizationId, updates)
     } catch (error) {
       console.error('OrganizationService.updateSettings error:', error)
