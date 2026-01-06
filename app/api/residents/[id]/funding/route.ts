@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { fundingInformationSchema } from 'lib/schemas/resident'
 import { residentService } from 'lib/supabase/services/residents'
-import { generateCatchupTransactions, validateCatchupGeneration } from 'lib/services/catchup-transaction-generator'
 
 interface RouteParams {
   id: string
@@ -190,39 +189,10 @@ export async function POST(
       durationDays: durationDays
     })
     
-    // Generate catch-up transactions if enabled
-    let catchupResult = null
-    if (validation.data.generateCatchupClaims && validation.data.nextRunDate && validation.data.dailySupportItemCost) {
-      console.log('[CATCHUP] Generating catch-up transactions for contract:', newFunding.id)
-      
-      catchupResult = await generateCatchupTransactions({
-        contractId: newFunding.id,
-        residentId: id,
-        nextRunDate: validation.data.nextRunDate,
-        frequency: validation.data.automatedDrawdownFrequency,
-        amount: validation.data.dailySupportItemCost,
-        currentBalance: validation.data.amount,
-        startDate: validation.data.startDate,
-        createdBy: 'system' // TODO: Get from authenticated user
-      })
-      
-      if (!catchupResult.success) {
-        console.error('[CATCHUP] Failed to generate catch-up transactions:', catchupResult.error)
-        // Don't fail the whole request, just log and return warning
-      } else {
-        console.log(`[CATCHUP] Successfully created ${catchupResult.transactionsCreated} catch-up transactions`)
-      }
-    }
-    
     return NextResponse.json({
       success: true,
       data: newFunding,
-      message: 'Funding information added successfully',
-      catchupTransactions: catchupResult ? {
-        created: catchupResult.transactionsCreated,
-        transactions: catchupResult.transactions,
-        warnings: catchupResult.warnings
-      } : undefined
+      message: 'Funding information added successfully'
     }, { status: 201 })
   } catch (error) {
     console.error('Error adding funding information:', error)

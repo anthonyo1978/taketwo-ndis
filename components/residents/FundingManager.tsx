@@ -45,7 +45,6 @@ const fundingFormSchema = z.object({
   autoBillingEnabled: z.boolean().default(false),
   automatedDrawdownFrequency: z.enum(['daily', 'weekly', 'fortnightly'] as const).default('fortnightly'),
   nextRunDate: z.string().optional(),
-  generateCatchupClaims: z.boolean().default(false),
   // Duration field (calculated from start/end dates)
   durationDays: z.number().int().positive().optional()
 }).refine(
@@ -769,45 +768,23 @@ export function FundingManager({ residentId, fundingInfo, onFundingChange, editi
                     <Input
                       label="Next Run Date *"
                       type="date"
+                      min={(() => {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        return tomorrow.toISOString().split('T')[0];
+                      })()}
                       {...form.register("nextRunDate")}
                       error={form.formState.errors.nextRunDate?.message}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      <strong>When should billing start?</strong> This can be:
+                      <strong>When should billing start?</strong> Select when automated billing should begin.
                     </p>
-                    <ul className="text-xs text-gray-600 mt-1 ml-4 space-y-1">
-                      <li>• <strong>Today</strong> - Start billing from today</li>
-                      <li>• <strong>Future date</strong> - Schedule billing to start later</li>
-                      <li>• <strong>Past date</strong> - Backdate and use catch-up claims below</li>
-                    </ul>
+                    <p className="text-xs text-gray-600 mt-1">
+                      ⚠️ The earliest available date is tomorrow (automated billing runs daily at 2:00 AM ACST).
+                    </p>
                     <p className="text-xs text-gray-500 mt-2">
-                      ⚠️ Must be on or after contract start date ({form.watch("startDate") ? new Date(form.watch("startDate")).toLocaleDateString() : 'not set'})
+                      ℹ️ Next run date must be on or after contract start date ({form.watch("startDate") ? new Date(form.watch("startDate")).toLocaleDateString() : 'not set'})
                     </p>
-                  </div>
-
-                  {/* Catch-up Claims Checkbox */}
-                  <div className="col-span-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <label className="flex items-start space-x-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        {...form.register("generateCatchupClaims")}
-                        className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                      />
-                      <div className="flex-1">
-                        <span className="text-sm font-medium text-gray-900">
-                          Automatically generate catch-up claims
-                        </span>
-                        <p className="text-xs text-gray-600 mt-1">
-                          If enabled, the system will create retrospective transactions from the Next Run Date until today, based on your billing frequency.
-                        </p>
-                        <p className="text-xs text-gray-600 mt-2">
-                          <strong>Example:</strong> If Next Run Date is 30 days ago with daily frequency, this will create 30 draft transactions for review.
-                        </p>
-                        <p className="text-xs text-blue-700 font-medium mt-2">
-                          ⚠️ All catch-up transactions will be created in Draft status for your review before posting.
-                        </p>
-                      </div>
-                    </label>
                   </div>
                 </div>
               )}
