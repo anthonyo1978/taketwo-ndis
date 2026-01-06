@@ -118,21 +118,21 @@ export function useProductTour() {
           }
         },
         {
-          element: '[data-tour="notifications-panel-bell"]',
+          element: '[data-tour="notifications-panel"]',
           popover: {
             title: '🔔 Notifications Panel',
-            description: 'The notification bell on the right shows real-time alerts as they happen. Click it to see notifications instantly without leaving your current page. This complements the Notifications module on the left!',
+            description: 'The notification panel on the right shows real-time alerts as they happen. Click the bell icon to see notifications instantly without leaving your current page. This complements the Notifications module on the left!',
             side: 'left',
-            align: 'start'
+            align: 'center'
           }
         },
         {
-          element: '[data-tour="todos-panel-icon"]',
+          element: '[data-tour="notifications-panel"]',
           popover: {
             title: '✅ To-Do List',
-            description: 'Your simple to-do list is always accessible here. Create tasks from notifications or add your own reminders to stay organized.',
+            description: 'This panel also includes your simple to-do list. Click the clipboard icon to access it. Create tasks from notifications or add your own reminders to stay organized.',
             side: 'left',
-            align: 'start'
+            align: 'center'
           }
         },
         {

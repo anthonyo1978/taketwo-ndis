@@ -281,6 +281,7 @@ export function NotificationsPanel() {
 
   return (
     <aside 
+      data-tour="notifications-panel"
       className={`${havenMode ? 'border-l border-gray-600' : 'bg-white border-l border-gray-200'} ${isCollapsed ? 'w-12' : 'w-80'} transition-all duration-300 flex-shrink-0 h-screen`}
       style={havenModeStyles}
     >
