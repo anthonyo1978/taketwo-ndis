@@ -175,7 +175,7 @@ export class TransactionService {
     
     console.log(`[TXN ID GEN] Found ${data?.length || 0} existing transaction IDs`)
     if (data && data.length > 0) {
-      console.log(`[TXN ID GEN] First 5 IDs from DB:`, data.slice(0, 5).map(d => d.id))
+      console.log(`[TXN ID GEN] First 5 IDs from DB:`, data.slice(0, 5).map((d: { id: string }) => d.id))
     }
     
     if (!data || data.length === 0) {
