@@ -37,7 +37,11 @@ export default function OrganizationSettingsPage() {
       setError(null)
       
       const response = await fetch('/api/organization/settings')
-      const result = await response.json()
+      const result = await response.json() as {
+        success: boolean
+        data?: OrganizationSettings
+        error?: string
+      }
       
       if (result.success && result.data) {
         setSettings(result.data)
@@ -81,10 +85,14 @@ export default function OrganizationSettingsPage() {
         body: JSON.stringify(formData),
       })
       
-      const result = await response.json()
+      const result = await response.json() as {
+        success: boolean
+        data?: OrganizationSettings
+        error?: string
+      }
       
       if (result.success) {
-        setSettings(result.data)
+        setSettings(result.data!)
         setSuccessMessage('Organization settings updated successfully!')
         setTimeout(() => setSuccessMessage(null), 3000)
       } else {
