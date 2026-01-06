@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { fundingInformationSchema } from 'lib/schemas/resident'
 import { residentService } from 'lib/supabase/services/residents'
+import { createClient } from 'lib/supabase/server'
 
 interface RouteParams {
   id: string
