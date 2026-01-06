@@ -119,42 +119,49 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       
       toast.success('Contract activated successfully!')
       
-      // Show resident readiness warnings if present
+      // Create persistent notifications for resident readiness warnings
       if (result.residentWarnings && result.residentWarnings.length > 0) {
-        console.log('[Frontend] Showing resident warnings:', result.residentWarnings)
+        console.log('[Frontend] Creating notifications for resident warnings:', result.residentWarnings)
         
-        // Show warnings after a brief delay
-        setTimeout(() => {
-          result.residentWarnings?.forEach((warning, index) => {
-            setTimeout(() => {
-              console.log('[Frontend] Displaying warning toast:', warning)
-              toast(warning, {
-                duration: 8000,
+        // Create a notification for each warning
+        result.residentWarnings.forEach(async (warning) => {
+          try {
+            const response = await fetch('/api/notifications', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                title: 'Action Required: Complete Resident Setup',
+                message: `${warning}\n\n💡 To enable billing, ensure the resident is Active and assigned to a house.`,
                 icon: '⚠️',
-                style: {
-                  background: '#FEF3C7',
-                  color: '#92400E',
-                  border: '1px solid #FCD34D',
-                  padding: '16px',
-                  borderRadius: '8px',
-                  maxWidth: '500px'
-                }
+                category: 'system',
+                priority: 'high',
+                actionUrl: `/residents/${residentId}`
               })
-              
-              // Show helper toast after each warning
-              setTimeout(() => {
-                toast('💡 To enable billing, ensure the resident is Active and assigned to a house.', {
-                  duration: 6000,
-                  style: {
-                    background: '#DBEAFE',
-                    color: '#1E40AF',
-                    border: '1px solid #93C5FD',
-                  }
-                })
-              }, 300)
-            }, index * 800) // Stagger multiple warnings
+            })
+            
+            if (!response.ok) {
+              console.error('[Frontend] Failed to create notification:', await response.text())
+            } else {
+              console.log('[Frontend] Notification created successfully')
+            }
+          } catch (error) {
+            console.error('[Frontend] Error creating notification:', error)
+          }
+        })
+        
+        // Also show a quick toast to alert the user
+        setTimeout(() => {
+          toast('⚠️ Check the notification panel for important next steps', {
+            duration: 5000,
+            style: {
+              background: '#FEF3C7',
+              color: '#92400E',
+              border: '1px solid #FCD34D',
+            }
           })
-        }, 1000) // Show after success message
+        }, 1000)
       }
       
     } catch (error) {
