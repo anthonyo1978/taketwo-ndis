@@ -121,34 +121,40 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       
       // Show resident readiness warnings if present
       if (result.residentWarnings && result.residentWarnings.length > 0) {
+        console.log('[Frontend] Showing resident warnings:', result.residentWarnings)
+        
+        // Show warnings after a brief delay
         setTimeout(() => {
           result.residentWarnings?.forEach((warning, index) => {
             setTimeout(() => {
-              toast(
-                <div className="space-y-2">
-                  <div className="font-semibold flex items-center">
-                    <span className="mr-2">🔔</span>
-                    Next Steps Required
-                  </div>
-                  <div className="text-sm">{warning}</div>
-                  <div className="text-xs text-gray-600 mt-2 pt-2 border-t border-gray-200">
-                    💡 To enable billing, ensure the resident is Active and assigned to a house.
-                  </div>
-                </div>,
-                {
-                  duration: 8000,
-                  position: 'top-right',
-                  icon: '⚠️',
-                  style: {
-                    background: '#FEF3C7',
-                    color: '#92400E',
-                    border: '1px solid #FCD34D',
-                  }
+              console.log('[Frontend] Displaying warning toast:', warning)
+              toast(warning, {
+                duration: 8000,
+                icon: '⚠️',
+                style: {
+                  background: '#FEF3C7',
+                  color: '#92400E',
+                  border: '1px solid #FCD34D',
+                  padding: '16px',
+                  borderRadius: '8px',
+                  maxWidth: '500px'
                 }
-              )
-            }, index * 500) // Stagger multiple warnings
+              })
+              
+              // Show helper toast after each warning
+              setTimeout(() => {
+                toast('💡 To enable billing, ensure the resident is Active and assigned to a house.', {
+                  duration: 6000,
+                  style: {
+                    background: '#DBEAFE',
+                    color: '#1E40AF',
+                    border: '1px solid #93C5FD',
+                  }
+                })
+              }, 300)
+            }, index * 800) // Stagger multiple warnings
           })
-        }, 500) // Show after success message
+        }, 1000) // Show after success message
       }
       
     } catch (error) {
