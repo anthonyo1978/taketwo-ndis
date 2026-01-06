@@ -11,7 +11,7 @@ const createNotificationSchema = z.object({
   icon: z.string().optional(),
   category: z.enum(['system', 'automation', 'billing', 'n8n', 'user', 'other']).default('system'),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  actionUrl: z.string().url().optional().or(z.literal('')),
+  actionUrl: z.string().optional().or(z.literal('')), // Accept any string (relative or absolute URLs)
   metadata: z.record(z.any()).optional()
 })
 
