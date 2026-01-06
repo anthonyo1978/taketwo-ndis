@@ -5,7 +5,7 @@ The Haven Landing Page Dashboard is the first screen users see after logging in.
 
 This dashboard acts as the command centre for all users, combining high-level metrics, trend summaries, and navigation shortcuts into the deeper modules of Haven (Properties, Residents, Transactions, Agreements, etc.).
 
-**Personalization**: The dashboard header displays the organization's name (e.g., "Welcome to your [Organization Name] Dashboard") which is fetched from organization_settings. This can be configured in Settings > Organization.
+**Personalization**: The dashboard header displays the organisation's name (e.g., "Welcome to your [Organisation Name] Dashboard") which is fetched from organization_settings. This can be configured in Settings > Organisation.
 
 2. Goals
 

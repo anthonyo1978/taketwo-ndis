@@ -414,7 +414,7 @@ export function AutomationSettingsPage() {
               <h1 className="text-3xl font-bold text-gray-900">Automation Settings</h1>
             </div>
           </div>
-          <p className="text-gray-600">Configure automated billing and transaction generation for your organization.</p>
+          <p className="text-gray-600">Configure automated billing and transaction generation for your organisation.</p>
         </div>
 
         {/* Status Messages */}
@@ -468,7 +468,7 @@ export function AutomationSettingsPage() {
                       ⏰ Automated Schedule
                     </p>
                     <p className="text-sm text-blue-800">
-                      Automation runs daily at <strong>2:00 AM ACST (Australian Central Standard Time)</strong> for all organizations. 
+                      Automation runs daily at <strong>2:00 AM ACST (Australian Central Standard Time)</strong> for all organisations. 
                       Eligible contracts are processed automatically and notifications are sent to admin emails.
                     </p>
                   </div>

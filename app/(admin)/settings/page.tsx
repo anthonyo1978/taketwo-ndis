@@ -25,8 +25,8 @@ export default function SettingsPage() {
                 </svg>
               </div>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Organization</h3>
-            <p className="text-gray-600 text-sm mb-4">Configure your organization's name, contact details, and branding.</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Organisation</h3>
+            <p className="text-gray-600 text-sm mb-4">Configure your organisation's name, contact details, and branding.</p>
             <div className="text-blue-600 text-sm font-medium hover:text-blue-800">
               Configure →
             </div>

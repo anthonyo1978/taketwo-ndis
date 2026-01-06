@@ -59,11 +59,11 @@ export default function OrganizationSettingsPage() {
           country: result.data.country || 'Australia',
         })
       } else {
-        setError(result.error || 'Failed to load organization settings')
+        setError(result.error || 'Failed to load organisation settings')
       }
     } catch (err) {
       console.error('Failed to fetch settings:', err)
-      setError('Failed to load organization settings')
+      setError('Failed to load organisation settings')
     } finally {
       setIsLoading(false)
     }
@@ -93,7 +93,7 @@ export default function OrganizationSettingsPage() {
       
       if (result.success) {
         setSettings(result.data!)
-        setSuccessMessage('Organization settings updated successfully!')
+        setSuccessMessage('Organisation settings updated successfully!')
         setTimeout(() => setSuccessMessage(null), 3000)
       } else {
         setError(result.error || 'Failed to update settings')
@@ -140,9 +140,9 @@ export default function OrganizationSettingsPage() {
           >
             ← Back to Settings
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Organization Settings</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Organisation Settings</h1>
           <p className="text-gray-600 mt-2">
-            Manage your organization's details and branding
+            Manage your organisation's details and branding
           </p>
         </div>
 
@@ -163,12 +163,12 @@ export default function OrganizationSettingsPage() {
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Organization Details */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Organization Details</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Organisation Details</h2>
             
             <div className="space-y-4">
               <div>
                 <label htmlFor="organizationName" className="block text-sm font-medium text-gray-700 mb-1">
-                  Organization Name *
+                  Organisation Name *
                 </label>
                 <input
                   type="text"
@@ -178,7 +178,7 @@ export default function OrganizationSettingsPage() {
                   onChange={handleChange}
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Your Organization Name"
+                  placeholder="Your Organisation Name"
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   This will be displayed on your dashboard and in reports

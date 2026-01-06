@@ -1,36 +1,36 @@
-# Feature PRD - Organization Settings
+# Feature PRD - Organisation Settings
 
 ## 1. Overview
 
-The Organization Settings page allows users to view and edit their organization's details, including name, contact information, address, and branding elements. This information is used throughout the application for personalization, reporting, and PDF generation.
+The Organisation Settings page allows users to view and edit their organisation's details, including name, contact information, address, and branding elements. This information is used throughout the application for personalization, reporting, and PDF generation.
 
 ## 2. Goals
 
-- **Personalization**: Display organization name on dashboard and throughout the app
-- **Branding**: Store organization details for use in generated documents (PDFs, contracts)
+- **Personalization**: Display organisation name on dashboard and throughout the app
+- **Branding**: Store organisation details for use in generated documents (PDFs, contracts)
 - **Contact Management**: Maintain current contact information and address
-- **User Control**: Allow organizations to manage their own details without admin intervention
+- **User Control**: Allow organisations to manage their own details without admin intervention
 
 ## 3. Problem Statement
 
 Users need a centralized location to:
-- View and update their organization's name and details
+- View and update their organisation's name and details
 - Ensure their information is correct for generated documents
 - Personalize their dashboard experience
 - Maintain accurate business records (ABN, address, contact info)
 
 ## 4. Audience
 
-- **Primary Users**: Organization Admins
+- **Primary Users**: Organisation Admins
 - **Secondary Users**: Finance Managers (view-only for context)
-- **Access Control**: Must be authenticated and belong to an organization
+- **Access Control**: Must be authenticated and belong to an organisation
 
 ## 5. Key Features
 
-### 5.1 Organization Details Section
+### 5.1 Organisation Details Section
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| Organization Name | Text | Yes | Legal or trading name of the organization |
+| Organisation Name | Text | Yes | Legal or trading name of the organisation |
 | ABN | Text | No | Australian Business Number |
 
 ### 5.2 Contact Information Section
@@ -38,7 +38,7 @@ Users need a centralized location to:
 |-------|------|----------|-------------|
 | Email | Email | No | Primary contact email |
 | Phone | Tel | No | Primary contact phone |
-| Website | URL | No | Organization website |
+| Website | URL | No | Organisation website |
 
 ### 5.3 Address Section
 | Field | Type | Required | Description |
@@ -65,14 +65,14 @@ Users need a centralized location to:
 - Automatically update dashboard after save
 
 ### 6.3 Dashboard Integration
-- Dashboard header displays: "Welcome to your [Organization Name] Dashboard"
-- Falls back to "Welcome to your Haven Dashboard" if organization name not set
-- Organization name fetches on dashboard load
+- Dashboard header displays: "Welcome to your [Organisation Name] Dashboard"
+- Falls back to "Welcome to your Haven Dashboard" if organisation name not set
+- Organisation name fetches on dashboard load
 
 ### 6.4 Settings Navigation
-- Organization tile appears FIRST in Settings grid
-- Icon: Building/Organization icon (sky-blue theme)
-- Description: "Configure your organization's name, contact details, and branding"
+- Organisation tile appears FIRST in Settings grid
+- Icon: Building/Organisation icon (sky-blue theme)
+- Description: "Configure your organisation's name, contact details, and branding"
 - Links to `/settings/organization`
 
 ## 7. Technical Specifications
@@ -86,14 +86,14 @@ Users need a centralized location to:
 ### 7.2 API Endpoints
 
 **GET /api/organization/settings**
-- Returns current organization settings for authenticated user's organization
-- Uses RLS to ensure users only see their own organization
+- Returns current organisation settings for authenticated user's organisation
+- Uses RLS to ensure users only see their own organisation
 - Response:
 ```json
 {
   "success": true,
   "data": {
-    "organizationName": "My Organization",
+    "organizationName": "My Organisation",
     "abn": "12 345 678 901",
     ...
   }
@@ -101,7 +101,7 @@ Users need a centralized location to:
 ```
 
 **PATCH /api/organization/settings**
-- Updates organization settings
+- Updates organisation settings
 - Validates input
 - Returns updated settings
 - Request body: Partial update object (only fields being changed)
@@ -119,7 +119,7 @@ Users need a centralized location to:
 
 ### 8.1 Layout
 - Max-width: 768px (centered)
-- Three sections: Organization Details, Contact Information, Address
+- Three sections: Organisation Details, Contact Information, Address
 - Each section in a white card with border
 - Clear section headers
 - Form fields in vertical layout with labels
@@ -137,22 +137,22 @@ Users need a centralized location to:
 - Save button submits form
 
 ### 8.4 Validation
-- Organization Name: Required field
+- Organisation Name: Required field
 - Email: Valid email format (if provided)
 - Website: Valid URL format (if provided)
 - Phone: Free text (various formats accepted)
 
 ## 9. Success Metrics
 
-- **Adoption**: % of organizations that update their organization name within first 7 days
-- **Accuracy**: Reduction in support requests for "wrong organization name"
-- **Completion**: % of organizations with complete contact information
-- **Usage**: Number of times organization settings are updated per month
+- **Adoption**: % of organisations that update their organisation name within first 7 days
+- **Accuracy**: Reduction in support requests for "wrong organisation name"
+- **Completion**: % of organisations with complete contact information
+- **Usage**: Number of times organisation settings are updated per month
 
 ## 10. Future Enhancements
 
 ### 10.1 Logo Upload
-- Upload organization logo
+- Upload organisation logo
 - Display in dashboard header
 - Use in generated PDFs
 
@@ -162,7 +162,7 @@ Users need a centralized location to:
 - Use in PDF templates
 
 ### 10.3 Multi-location Support
-- Multiple addresses per organization
+- Multiple addresses per organisation
 - Location-specific settings
 - Regional contact information
 
@@ -174,39 +174,39 @@ Users need a centralized location to:
 ## 11. Implementation Notes
 
 ### 11.1 Signup Integration
-- Organization name already captured during signup
+- Organisation name already captured during signup
 - Stored in both `organizations.name` and `organization_settings.organization_name`
 - Consider consolidating in future refactor
 
 ### 11.2 PDF Generation
-- Organization settings already used in Contract PDF generator
+- Organisation settings already used in Contract PDF generator
 - Ensure all generated documents pull from organization_settings table
-- Test PDF generation after organization name changes
+- Test PDF generation after organisation name changes
 
 ### 11.3 Security
-- RLS policies ensure users can only access their organization's settings
+- RLS policies ensure users can only access their organisation's settings
 - Service role NOT required (users are authenticated)
 - Input sanitization on server side
 
 ## 12. Testing Checklist
 
-- [ ] Create new organization via signup
-- [ ] Verify organization name appears on dashboard
-- [ ] Navigate to Organization Settings
-- [ ] Update organization name
+- [ ] Create new organisation via signup
+- [ ] Verify organisation name appears on dashboard
+- [ ] Navigate to Organisation Settings
+- [ ] Update organisation name
 - [ ] Verify dashboard updates immediately
-- [ ] Save all organization details
+- [ ] Save all organisation details
 - [ ] Verify changes persist after page reload
 - [ ] Test validation (required fields, email format, URL format)
 - [ ] Test error handling (network errors, server errors)
-- [ ] Test with empty organization name (should require it)
-- [ ] Generate PDF contract with updated organization details
+- [ ] Test with empty organisation name (should require it)
+- [ ] Generate PDF contract with updated organisation details
 - [ ] Test mobile responsiveness
 
 ## 13. Launch Plan
 
 ### Phase 1: Core Functionality ✅
-- Organization Settings page
+- Organisation Settings page
 - API endpoints
 - Dashboard integration
 - Settings navigation tile
@@ -218,8 +218,8 @@ Users need a centralized location to:
 - Tax settings
 
 ### Phase 3: Integration (Future)
-- Email signatures use organization details
-- Automated emails include organization branding
+- Email signatures use organisation details
+- Automated emails include organisation branding
 - Invoice generation
 - Customer portal branding
 

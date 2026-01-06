@@ -101,7 +101,7 @@ export default function DashboardPage() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              Welcome to your {organizationName} Dashboard
+              Welcome to your {organizationName} dashboard
             </h1>
             <p className="text-gray-600 mt-1">
               Here's your portfolio overview
