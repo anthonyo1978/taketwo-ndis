@@ -209,9 +209,12 @@ export class TransactionService {
         const bMatch = b.match(/^TXN-(?:[A-Z0-9]+-)?([A-Z])(\d+)$/)
         
         if (!aMatch || !bMatch) return 0
+        if (!aMatch[1] || !aMatch[2] || !bMatch[1] || !bMatch[2]) return 0
         
-        const [, aLetter, aNum] = aMatch
-        const [, bLetter, bNum] = bMatch
+        const aLetter = aMatch[1]
+        const aNum = aMatch[2]
+        const bLetter = bMatch[1]
+        const bNum = bMatch[2]
         
         if (aLetter !== bLetter) {
           return bLetter.localeCompare(aLetter) // Z comes before A
