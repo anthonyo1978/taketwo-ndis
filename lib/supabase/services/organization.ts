@@ -37,6 +37,46 @@ export class OrganizationService {
   }
 
   /**
+   * Get current user's organization ID from session
+   */
+  private async getCurrentOrganizationId(): Promise<string> {
+    const supabase = await this.getSupabase()
+    
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      throw new Error('Not authenticated')
+    }
+    
+    // Get user's organization_id from users table
+    const { data: userData, error: orgError } = await supabase
+      .from('users')
+      .select('organization_id')
+      .eq('auth_user_id', user.id)
+      .single()
+    
+    if (orgError || !userData) {
+      throw new Error('User organization not found')
+    }
+    
+    return userData.organization_id
+  }
+
+  /**
+   * Get organization settings for current user's organization
+   */
+  async getSettings(): Promise<OrganizationSettings | null> {
+    try {
+      const organizationId = await this.getCurrentOrganizationId()
+      return await this.getByOrganizationId(organizationId)
+    } catch (error) {
+      console.error('OrganizationService.getSettings error:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get organization settings by organization ID
    */
   async getByOrganizationId(organizationId: string = '00000000-0000-0000-0000-000000000000'): Promise<OrganizationSettings | null> {
@@ -59,6 +99,19 @@ export class OrganizationService {
       return this.convertDbToFrontend(data)
     } catch (error) {
       console.error('OrganizationService.getByOrganizationId error:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Update current user's organization settings
+   */
+  async updateSettings(updates: OrganizationSettingsUpdateInput): Promise<OrganizationSettings> {
+    try {
+      const organizationId = await this.getCurrentOrganizationId()
+      return await this.update(organizationId, updates)
+    } catch (error) {
+      console.error('OrganizationService.updateSettings error:', error)
       throw error
     }
   }
