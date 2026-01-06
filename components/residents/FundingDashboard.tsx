@@ -124,7 +124,7 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
         setTimeout(() => {
           result.residentWarnings?.forEach((warning, index) => {
             setTimeout(() => {
-              toast.warning(
+              toast(
                 <div className="space-y-2">
                   <div className="font-semibold flex items-center">
                     <span className="mr-2">🔔</span>
@@ -137,7 +137,13 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
                 </div>,
                 {
                   duration: 8000,
-                  position: 'top-right'
+                  position: 'top-right',
+                  icon: '⚠️',
+                  style: {
+                    background: '#FEF3C7',
+                    color: '#92400E',
+                    border: '1px solid #FCD34D',
+                  }
                 }
               )
             }, index * 500) // Stagger multiple warnings
