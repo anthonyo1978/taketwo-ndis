@@ -326,40 +326,72 @@ export async function sendPasswordResetEmail(email: string, firstName: string, r
   `
 
   try {
+    console.log('📧 [PASSWORD RESET] Starting password reset email send')
+    console.log('📧 [PASSWORD RESET] Recipient:', email.replace(/(.{2})(.*)(@.*)/, '$1***$3'))
+    
     const resend = getResendClient()
     
     if (!resend) {
-      console.error('[PASSWORD RESET] Resend API key not configured')
+      console.error('❌ [PASSWORD RESET] Resend API key not configured')
+      console.error('❌ [PASSWORD RESET] Check RESEND_API_KEY in environment variables')
       return {
         success: false,
         error: 'Email service not configured'
       }
     }
 
-    const result = await resend.emails.send({
-      from: process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>',
+    console.log('✅ [PASSWORD RESET] Resend client initialized')
+
+    const fromEmail = process.env.FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Haven <onboarding@resend.dev>'
+    console.log('📧 [PASSWORD RESET] FROM_EMAIL:', fromEmail)
+    
+    if (fromEmail.includes('onboarding@resend.dev')) {
+      console.warn('⚠️ [PASSWORD RESET] Using test domain - may only send to verified addresses')
+    }
+
+    const emailPayload = {
+      from: fromEmail,
       to: email,
       subject: 'Haven - Password Reset',
       html: htmlContent,
       replyTo: 'anthonyo1978@gmail.com',
-    })
+    }
+
+    console.log('📤 [PASSWORD RESET] Sending email via Resend...')
+
+    const result = await resend.emails.send(emailPayload)
 
     if (result.error) {
-      console.error('[PASSWORD RESET] Failed to send email:', result.error)
+      console.error('❌ [PASSWORD RESET] Failed to send email - Resend API error')
+      console.error('❌ [PASSWORD RESET] Error message:', result.error.message)
+      console.error('❌ [PASSWORD RESET] Error details:', JSON.stringify(result.error, null, 2))
       return {
         success: false,
         error: result.error.message
       }
     }
 
-    console.log('[PASSWORD RESET] Email sent to:', email)
+    if (!result.data) {
+      console.error('❌ [PASSWORD RESET] No data returned from Resend')
+      return {
+        success: false,
+        error: 'No response from email service'
+      }
+    }
+
+    console.log('✅ [PASSWORD RESET] Email sent successfully!')
+    console.log('✅ [PASSWORD RESET] Resend Email ID:', result.data.id)
+    console.log('✅ [PASSWORD RESET] Check Resend dashboard: https://resend.com/emails')
+    
     return {
       success: true,
-      messageId: result.data?.id
+      messageId: result.data.id
     }
 
   } catch (error) {
-    console.error('[PASSWORD RESET] Error sending email:', error)
+    console.error('❌ [PASSWORD RESET] Exception while sending email')
+    console.error('❌ [PASSWORD RESET] Error:', error)
+    console.error('❌ [PASSWORD RESET] Error type:', error instanceof Error ? error.constructor.name : typeof error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
