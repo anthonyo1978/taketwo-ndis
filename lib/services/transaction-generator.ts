@@ -217,7 +217,8 @@ export async function generateTransactionForContract(
     
     // Generate sequential ID (no suffix needed - pure sequential IDs)
     // Pass organizationId explicitly for cron context (no user session)
-    const transactionId = await transactionService.generateNextTxnId(organizationId)
+    // Pass service role client to bypass RLS for querying existing transaction IDs
+    const transactionId = await transactionService.generateNextTxnId(organizationId, 5, supabase)
     console.log(`[TRANSACTION] Generated transaction ID:`, transactionId)
     
     // Create transaction record in DRAFT status (requires manual approval)

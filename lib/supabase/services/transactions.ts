@@ -141,9 +141,10 @@ export class TransactionService {
   /**
    * Generate the next sequential TXN ID
    * @param organizationId - Optional organization ID. If not provided, fetches from current user session.
+   * @param supabaseClient - Optional Supabase client (for service role access in automation)
    */
-  async generateNextTxnId(organizationId?: string, maxRetries: number = 5): Promise<string> {
-    const supabase = await createClient()
+  async generateNextTxnId(organizationId?: string, maxRetries: number = 5, supabaseClient?: any): Promise<string> {
+    const supabase = supabaseClient || await createClient()
     
     // If organizationId not provided, try to get from session
     const orgId = organizationId || await getCurrentUserOrganizationId()
