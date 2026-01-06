@@ -105,6 +105,7 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
         success?: boolean
         data?: FundingInformation[]
         error?: string
+        residentWarnings?: string[]
       }
       
       if (!response.ok || !result.success) {
@@ -117,6 +118,32 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       }
       
       toast.success('Contract activated successfully!')
+      
+      // Show resident readiness warnings if present
+      if (result.residentWarnings && result.residentWarnings.length > 0) {
+        setTimeout(() => {
+          result.residentWarnings?.forEach((warning, index) => {
+            setTimeout(() => {
+              toast.warning(
+                <div className="space-y-2">
+                  <div className="font-semibold flex items-center">
+                    <span className="mr-2">🔔</span>
+                    Next Steps Required
+                  </div>
+                  <div className="text-sm">{warning}</div>
+                  <div className="text-xs text-gray-600 mt-2 pt-2 border-t border-gray-200">
+                    💡 To enable billing, ensure the resident is Active and assigned to a house.
+                  </div>
+                </div>,
+                {
+                  duration: 8000,
+                  position: 'top-right'
+                }
+              )
+            }, index * 500) // Stagger multiple warnings
+          })
+        }, 500) // Show after success message
+      }
       
     } catch (error) {
       console.error('Contract activation error:', error)

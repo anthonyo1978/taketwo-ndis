@@ -66,6 +66,33 @@ export async function PUT(
       )
     }
     
+    // If activating a contract, check resident status and house assignment
+    let residentWarnings: string[] | undefined
+    if (body.status === 'Active') {
+      const { data: resident, error: residentError } = await supabase
+        .from('residents')
+        .select('id, status, house_id, first_name, last_name')
+        .eq('id', residentId)
+        .single()
+      
+      if (!residentError && resident) {
+        const warnings: string[] = []
+        
+        if (resident.status !== 'Active') {
+          warnings.push(`Resident ${resident.first_name} ${resident.last_name} is not Active (current status: ${resident.status})`)
+        }
+        
+        if (!resident.house_id) {
+          warnings.push(`Resident ${resident.first_name} ${resident.last_name} is not assigned to a house`)
+        }
+        
+        if (warnings.length > 0) {
+          residentWarnings = warnings
+          console.log('[Contract Status] Resident readiness warnings:', warnings)
+        }
+      }
+    }
+    
     // Fetch updated funding information for the resident
     const { data: updatedContracts, error: contractsError } = await supabase
       .from('funding_contracts')
@@ -108,7 +135,8 @@ export async function PUT(
     
     return NextResponse.json({
       success: true,
-      data: fundingInfo
+      data: fundingInfo,
+      residentWarnings
     })
     
   } catch (error) {
