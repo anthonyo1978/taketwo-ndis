@@ -18,6 +18,8 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
   const [showAddForm, setShowAddForm] = useState(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
   const [isActivating, setIsActivating] = useState(false)
+  const [isDeactivating, setIsDeactivating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   
   const activeContract = fundingInfo.find(c => c.contractStatus === 'Active')
   const draftContract = fundingInfo.find(c => c.contractStatus === 'Draft')
@@ -169,6 +171,112 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       toast.error(error instanceof Error ? error.message : 'Failed to activate contract')
     } finally {
       setIsActivating(false)
+    }
+  }
+  
+  // Deactivate contract handler (Active → Draft)
+  const handleDeactivateContract = async () => {
+    if (!currentContract?.id) {
+      toast.error('No contract available to deactivate')
+      return
+    }
+    
+    if (currentContract.contractStatus !== 'Active') {
+      toast.error('Only active contracts can be deactivated')
+      return
+    }
+    
+    if (!window.confirm('Are you sure you want to deactivate this contract? This will set it back to Draft status.')) {
+      return
+    }
+    
+    setIsDeactivating(true)
+    
+    try {
+      const response = await fetch(`/api/residents/${residentId}/funding/${currentContract.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: 'Draft'
+        })
+      })
+      
+      const result = await response.json() as {
+        success?: boolean
+        data?: FundingInformation[]
+        error?: string
+      }
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to deactivate contract')
+      }
+      
+      // Update local state
+      if (result.data) {
+        onFundingChange(result.data)
+      }
+      
+      toast.success('Contract deactivated successfully!')
+      
+    } catch (error) {
+      console.error('Contract deactivation error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to deactivate contract')
+    } finally {
+      setIsDeactivating(false)
+    }
+  }
+  
+  // Delete contract handler
+  const handleDeleteContract = async () => {
+    if (!currentContract?.id) {
+      toast.error('No contract available to delete')
+      return
+    }
+    
+    // Check if any money has been drawn down
+    const drawnDown = (currentContract.originalAmount || 0) - (currentContract.currentBalance || 0)
+    
+    if (drawnDown > 0) {
+      toast.error(`Cannot delete contract: $${drawnDown.toFixed(2)} has been drawn down. Only contracts with no drawdowns can be deleted.`)
+      return
+    }
+    
+    if (!window.confirm(`⚠️ Are you sure you want to PERMANENTLY DELETE this contract?\n\nThis action cannot be undone.\n\nContract: ${currentContract.type}\nAmount: $${(currentContract.originalAmount || 0).toLocaleString()}`)) {
+      return
+    }
+    
+    setIsDeleting(true)
+    
+    try {
+      const response = await fetch(`/api/residents/${residentId}/funding?fundingId=${currentContract.id}`, {
+        method: 'DELETE'
+      })
+      
+      const result = await response.json() as {
+        success?: boolean
+        data?: FundingInformation[]
+        error?: string
+        drawnDown?: number
+      }
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to delete contract')
+      }
+      
+      // Update local state
+      if (result.data) {
+        onFundingChange(result.data)
+      }
+      
+      toast.success('Contract deleted successfully!')
+      
+    } catch (error) {
+      console.error('Contract deletion error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to delete contract')
+    } finally {
+      setIsDeleting(false)
     }
   }
   
@@ -437,6 +545,36 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
                   <span className="mr-2">💳</span>
                   View Transactions
                 </Button>
+                
+                {/* Danger Zone Actions */}
+                {currentContract && (
+                  <>
+                    {/* Deactivate button - only for Active contracts */}
+                    {currentContract.contractStatus === 'Active' && (
+                      <Button
+                        onClick={handleDeactivateContract}
+                        disabled={isDeactivating}
+                        className="w-full justify-start bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border border-yellow-300"
+                      >
+                        <span className="mr-2">⏸️</span>
+                        {isDeactivating ? 'Deactivating...' : 'Deactivate Contract'}
+                      </Button>
+                    )}
+                    
+                    {/* Delete button - for any contract with no drawdowns */}
+                    <Button
+                      onClick={handleDeleteContract}
+                      disabled={isDeleting || getSpentAmount() > 0}
+                      className="w-full justify-start bg-red-50 text-red-700 hover:bg-red-100 border border-red-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={getSpentAmount() > 0 ? `Cannot delete: $${getSpentAmount().toFixed(2)} has been drawn down` : 'Permanently delete this contract'}
+                    >
+                      <span className="mr-2">🗑️</span>
+                      {isDeleting ? 'Deleting...' : 'Delete Contract'}
+                      {getSpentAmount() > 0 && <span className="ml-2 text-xs">(Has drawdowns)</span>}
+                    </Button>
+                  </>
+                )}
+                
                 <Button
                   onClick={() => window.open(`/transactions?residentId=${residentId}&action=create`, '_blank')}
                   className="w-full justify-start bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200"

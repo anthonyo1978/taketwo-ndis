@@ -342,6 +342,40 @@ export async function DELETE(
       )
     }
     
+    // Fetch the contract to validate it can be deleted
+    const supabase = await createClient()
+    const { data: contract, error: fetchError } = await supabase
+      .from('funding_contracts')
+      .select('id, original_amount, current_balance, contract_status')
+      .eq('id', fundingId)
+      .eq('resident_id', id)
+      .single()
+    
+    if (fetchError || !contract) {
+      return NextResponse.json(
+        { success: false, error: 'Contract not found' },
+        { status: 404 }
+      )
+    }
+    
+    // Validation: Only allow deletion if no money has been drawn down
+    const originalAmount = Number(contract.original_amount)
+    const currentBalance = Number(contract.current_balance)
+    const drawnDown = originalAmount - currentBalance
+    
+    if (drawnDown > 0) {
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Cannot delete contract: $${drawnDown.toFixed(2)} has been drawn down. Only contracts with no drawdowns can be deleted.`,
+          drawnDown: drawnDown
+        },
+        { status: 400 }
+      )
+    }
+    
+    console.log(`[Contract Delete] Deleting contract ${fundingId} - No drawdowns detected`)
+    
     // Simulate realistic delay for loading states
     await new Promise(resolve => setTimeout(resolve, 300))
     
