@@ -109,6 +109,33 @@ export function useProductTour() {
           }
         },
         {
+          element: '[data-tour="notifications-nav"]',
+          popover: {
+            title: '🔔 Notifications Module',
+            description: 'View and manage all system notifications here. This is your central hub for alerts from contract activations, automated billing, and system events.',
+            side: 'right',
+            align: 'start'
+          }
+        },
+        {
+          element: '[data-tour="notifications-panel-bell"]',
+          popover: {
+            title: '🔔 Notifications Panel',
+            description: 'The notification bell on the right shows real-time alerts as they happen. Click it to see notifications instantly without leaving your current page. This complements the Notifications module on the left!',
+            side: 'left',
+            align: 'start'
+          }
+        },
+        {
+          element: '[data-tour="todos-panel-icon"]',
+          popover: {
+            title: '✅ To-Do List',
+            description: 'Your simple to-do list is always accessible here. Create tasks from notifications or add your own reminders to stay organized.',
+            side: 'left',
+            align: 'start'
+          }
+        },
+        {
           element: '[data-tour="help-nav"]',
           popover: {
             title: '📚 Help Center',

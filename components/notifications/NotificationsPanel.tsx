@@ -291,6 +291,7 @@ export function NotificationsPanel() {
             <>
               {/* Notifications Icon */}
               <button
+                data-tour="notifications-panel-bell"
                 onClick={() => {
                   setActiveTab('notifications')
                   setIsCollapsed(false)
@@ -308,6 +309,7 @@ export function NotificationsPanel() {
 
               {/* To-do Icon */}
               <button
+                data-tour="todos-panel-icon"
                 onClick={() => {
                   setActiveTab('todos')
                   setIsCollapsed(false)
@@ -325,7 +327,7 @@ export function NotificationsPanel() {
             </>
           ) : (
             <>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2" data-tour={activeTab === 'notifications' ? 'notifications-panel-expanded' : 'todos-panel-expanded'}>
                 {activeTab === 'notifications' ? (
                   <>
                     <Bell className={`size-5 ${havenMode ? 'text-white' : 'text-gray-700'}`} />
