@@ -121,49 +121,47 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       
       toast.success('Contract activated successfully!')
       
-      // Create persistent notifications for resident readiness warnings
+      // Create persistent notification for resident readiness warnings
       if (result.residentWarnings && result.residentWarnings.length > 0) {
-        console.log('[Frontend] Creating notifications for resident warnings:', result.residentWarnings)
+        console.log('[Frontend] Creating notification for resident warnings:', result.residentWarnings)
         
-        // Create a notification for each warning
-        result.residentWarnings.forEach(async (warning) => {
-          try {
-            const response = await fetch('/api/notifications', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                title: 'Action Required: Complete Resident Setup',
-                message: `${warning}\n\n💡 To enable billing, ensure the resident is Active and assigned to a house.`,
-                icon: '⚠️',
-                category: 'system',
-                priority: 'high',
-                actionUrl: `/residents/${residentId}`
-              })
+        // Create a single notification
+        try {
+          const response = await fetch('/api/notifications', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              title: 'Contract Activated',
+              message: 'Please activate the resident and assign to a house to begin billing.',
+              icon: '✅',
+              category: 'system',
+              priority: 'high',
+              actionUrl: `/residents/${residentId}`
             })
-            
-            if (!response.ok) {
-              console.error('[Frontend] Failed to create notification:', await response.text())
-            } else {
-              console.log('[Frontend] Notification created successfully')
-            }
-          } catch (error) {
-            console.error('[Frontend] Error creating notification:', error)
-          }
-        })
-        
-        // Also show a quick toast to alert the user
-        setTimeout(() => {
-          toast('⚠️ Check the notification panel for important next steps', {
-            duration: 5000,
-            style: {
-              background: '#FEF3C7',
-              color: '#92400E',
-              border: '1px solid #FCD34D',
-            }
           })
-        }, 1000)
+          
+          if (!response.ok) {
+            console.error('[Frontend] Failed to create notification:', await response.text())
+          } else {
+            console.log('[Frontend] Notification created successfully')
+            
+            // Show a quick toast to alert the user
+            setTimeout(() => {
+              toast('✅ Contract activated! Check notification panel for next steps', {
+                duration: 5000,
+                style: {
+                  background: '#DBEAFE',
+                  color: '#1E40AF',
+                  border: '1px solid #93C5FD',
+                }
+              })
+            }, 500)
+          }
+        } catch (error) {
+          console.error('[Frontend] Error creating notification:', error)
+        }
       }
       
     } catch (error) {
