@@ -57,6 +57,7 @@ export class OrganizationService {
 
   /**
    * Get organization settings by organization ID
+   * Creates default settings if they don't exist
    */
   async getByOrganizationId(organizationId: string = '00000000-0000-0000-0000-000000000000'): Promise<OrganizationSettings | null> {
     try {
@@ -65,14 +66,43 @@ export class OrganizationService {
         .from('organization_settings')
         .select('*')
         .eq('organization_id', organizationId)
-        .single()
+        .maybeSingle()
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return null // Not found
-        }
         console.error('Error fetching organization settings:', error)
         throw new Error(`Failed to fetch organization settings: ${error.message}`)
+      }
+
+      // If settings don't exist, create default ones
+      if (!data) {
+        console.log('[ORG SERVICE] No settings found, creating defaults for org:', organizationId)
+        
+        // Get organization name from organizations table
+        const { data: org } = await supabase
+          .from('organizations')
+          .select('name')
+          .eq('id', organizationId)
+          .single()
+        
+        const defaultSettings = {
+          organization_id: organizationId,
+          organization_name: org?.name || 'My Organization',
+          country: 'Australia',
+          primary_color: '#4f46e5'
+        }
+        
+        const { data: newSettings, error: insertError } = await supabase
+          .from('organization_settings')
+          .insert(defaultSettings)
+          .select()
+          .single()
+        
+        if (insertError || !newSettings) {
+          console.error('Error creating default settings:', insertError)
+          return null
+        }
+        
+        return this.convertDbToFrontend(newSettings)
       }
 
       return this.convertDbToFrontend(data)
@@ -101,11 +131,21 @@ export class OrganizationService {
   }
 
   /**
-   * Update organization settings
+   * Update organization settings (uses UPSERT to create if doesn't exist)
    */
   async update(organizationId: string, updates: OrganizationSettingsUpdateInput): Promise<OrganizationSettings> {
     try {
+      const supabase = await this.getSupabase()
+      
+      // Check if settings exist
+      const { data: existing } = await supabase
+        .from('organization_settings')
+        .select('id')
+        .eq('organization_id', organizationId)
+        .maybeSingle()
+      
       const dbUpdates: any = {
+        organization_id: organizationId,
         updated_at: new Date().toISOString(),
         updated_by: 'system' // TODO: Get from auth context
       }
@@ -124,17 +164,47 @@ export class OrganizationService {
       if (updates.logoUrl !== undefined) dbUpdates.logo_url = updates.logoUrl
       if (updates.primaryColor !== undefined) dbUpdates.primary_color = updates.primaryColor
 
-      const supabase = await this.getSupabase()
-      const { data, error } = await supabase
-        .from('organization_settings')
-        .update(dbUpdates)
-        .eq('organization_id', organizationId)
-        .select()
-        .single()
+      let data, error
 
-      if (error) {
-        console.error('Error updating organization settings:', error)
-        throw new Error(`Failed to update organization settings: ${error.message}`)
+      if (existing) {
+        // Update existing record
+        const result = await supabase
+          .from('organization_settings')
+          .update(dbUpdates)
+          .eq('organization_id', organizationId)
+          .select()
+          .single()
+        
+        data = result.data
+        error = result.error
+      } else {
+        // Insert new record (for orgs created before this feature)
+        // Get organization name from organizations table if not provided
+        if (!dbUpdates.organization_name) {
+          const { data: org } = await supabase
+            .from('organizations')
+            .select('name')
+            .eq('id', organizationId)
+            .single()
+          
+          if (org) {
+            dbUpdates.organization_name = org.name
+          }
+        }
+        
+        const result = await supabase
+          .from('organization_settings')
+          .insert(dbUpdates)
+          .select()
+          .single()
+        
+        data = result.data
+        error = result.error
+      }
+
+      if (error || !data) {
+        console.error('Error upserting organization settings:', error)
+        throw new Error(`Failed to update organization settings: ${error?.message || 'Unknown error'}`)
       }
 
       return this.convertDbToFrontend(data)
