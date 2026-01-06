@@ -47,7 +47,12 @@ export default function DashboardPage() {
   const fetchOrganizationName = async () => {
     try {
       const response = await fetch('/api/organization/settings')
-      const result = await response.json()
+      const result = await response.json() as {
+        success: boolean
+        data?: {
+          organizationName?: string
+        }
+      }
       
       if (result.success && result.data?.organizationName) {
         setOrganizationName(result.data.organizationName)
