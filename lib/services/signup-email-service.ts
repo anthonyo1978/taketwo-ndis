@@ -83,11 +83,11 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
                       Welcome to Haven, ${firstName}!
                     </h2>
                     <p style="color: #4b5563; font-size: 16px; line-height: 1.6; margin: 0 0 16px 0;">
-                      Your organization <strong>${organizationName}</strong> has been created successfully. You're all set to start managing your SDA business with Haven!
+                      Your organisation <strong>${organizationName}</strong> has been created successfully. You're all set to start managing your SDA business with Haven!
                     </p>
                     <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
                       <p style="color: #111827; font-size: 14px; font-weight: 600; margin: 0 0 8px 0;">Your Account Details:</p>
-                      <p style="color: #4b5563; font-size: 14px; margin: 4px 0;"><strong>Organization:</strong> ${organizationName}</p>
+                      <p style="color: #4b5563; font-size: 14px; margin: 4px 0;"><strong>Organisation:</strong> ${organizationName}</p>
                       <p style="color: #4b5563; font-size: 14px; margin: 4px 0;"><strong>Role:</strong> Administrator</p>
                       <p style="color: #4b5563; font-size: 14px; margin: 4px 0;"><strong>Email:</strong> ${email}</p>
                     </div>
@@ -123,21 +123,6 @@ export async function sendSignupWelcomeEmail(data: SignupEmailData) {
                       <li>Reconcile payments and track performance</li>
                       <li>Generate reports and export data</li>
                       <li>Manage team members and permissions</li>
-                    </ul>
-                  </td>
-                </tr>
-
-                <!-- Free tier info -->
-                <tr>
-                  <td style="padding: 0 40px 30px 40px; background-color: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
-                    <p style="color: #0369a1; font-size: 15px; font-weight: 600; margin: 0 0 8px 0;">
-                      📦 Your Free Plan Includes:
-                    </p>
-                    <ul style="color: #075985; font-size: 14px; line-height: 1.6; margin: 0; padding-left: 20px;">
-                      <li>Up to 5 houses</li>
-                      <li>Up to 20 residents</li>
-                      <li>Up to 2 team members</li>
-                      <li>All core features and automation</li>
                     </ul>
                   </td>
                 </tr>
