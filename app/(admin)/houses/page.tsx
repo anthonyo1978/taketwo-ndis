@@ -104,7 +104,14 @@ function HousesPageContent() {
     const fetchOccupancy = async () => {
       try {
         const response = await fetch('/api/houses/occupancy')
-        const result = await response.json()
+        const result = await response.json() as { 
+          success: boolean
+          data?: Record<string, {
+            occupied_bedrooms: number
+            total_bedrooms: number
+            occupancy_rate: number
+          }>
+        }
         
         if (result.success && result.data) {
           setOccupancyData(result.data)
