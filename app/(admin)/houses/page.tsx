@@ -413,13 +413,12 @@ function HousesPageContent() {
                           ? (occupancy.occupied_bedrooms / occupancy.total_bedrooms) * 100 
                           : 0
                         
-                        // Determine ring color based on occupancy
+                        // Simple binary color scheme: Green = 100%, Red = anything else
                         const getRingColor = () => {
-                          if (!occupancy) return 'ring-gray-200'
-                          if (occupancyRate === 100) return 'ring-emerald-500 ring-2'
-                          if (occupancyRate >= 50) return 'ring-amber-400 ring-2'
-                          if (occupancyRate > 0) return 'ring-orange-400 ring-2'
-                          return 'ring-gray-300 ring-2'
+                          if (!occupancy) return 'ring-gray-200 ring-2'
+                          return occupancyRate === 100 
+                            ? 'ring-green-500 ring-4' // Thick green ring for fully occupied
+                            : 'ring-red-500 ring-4'   // Thick red ring for not fully occupied
                         }
                         
                         const tooltipText = occupancy 
@@ -429,7 +428,7 @@ function HousesPageContent() {
                         return (
                           <div className="flex items-center">
                             <div 
-                              className={`relative rounded-full ${getRingColor()} ring-offset-2`}
+                              className={`relative rounded-full ${getRingColor()} ring-offset-2 cursor-help transition-all hover:ring-offset-3`}
                               title={tooltipText}
                             >
                               {house.imageUrl ? (
