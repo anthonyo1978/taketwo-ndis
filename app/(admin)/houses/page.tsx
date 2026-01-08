@@ -407,22 +407,49 @@ function HousesPageContent() {
                   houses.map((house) => (
                     <tr key={house.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        {house.imageUrl ? (
-                          <img
-                            src={house.imageUrl}
-                            alt={house.descriptor || `${house.address1}, ${house.suburb}`}
-                            className="w-10 h-10 rounded-full object-cover border border-gray-200"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">
-                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21l4-7 4 7" />
-                            </svg>
+                      {(() => {
+                        const occupancy = occupancyData[house.id]
+                        const occupancyRate = occupancy 
+                          ? (occupancy.occupied_bedrooms / occupancy.total_bedrooms) * 100 
+                          : 0
+                        
+                        // Determine ring color based on occupancy
+                        const getRingColor = () => {
+                          if (!occupancy) return 'ring-gray-200'
+                          if (occupancyRate === 100) return 'ring-emerald-500 ring-2'
+                          if (occupancyRate >= 50) return 'ring-amber-400 ring-2'
+                          if (occupancyRate > 0) return 'ring-orange-400 ring-2'
+                          return 'ring-gray-300 ring-2'
+                        }
+                        
+                        const tooltipText = occupancy 
+                          ? `${occupancy.occupied_bedrooms}/${occupancy.total_bedrooms} bedrooms occupied (${occupancyRate.toFixed(0)}%)`
+                          : 'Occupancy loading...'
+                        
+                        return (
+                          <div className="flex items-center">
+                            <div 
+                              className={`relative rounded-full ${getRingColor()} ring-offset-2`}
+                              title={tooltipText}
+                            >
+                              {house.imageUrl ? (
+                                <img
+                                  src={house.imageUrl}
+                                  alt={house.descriptor || `${house.address1}, ${house.suburb}`}
+                                  className="w-10 h-10 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21l4-7 4 7" />
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
+                        )
+                      })()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link 
