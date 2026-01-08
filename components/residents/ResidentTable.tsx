@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import type { Resident } from "types/resident"
 import { getResidentBillingStatus, getBillingStatusRingClass } from "lib/utils/billing-status"
 
@@ -18,6 +19,7 @@ interface ResidentTableProps {
 }
 
 export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onResidentRemoved }: ResidentTableProps) {
+  const router = useRouter()
   const [residents, setResidents] = useState<Resident[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -237,28 +239,34 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
               return (
               <tr key={resident.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex-shrink-0 h-10 w-10 relative group">
+                  <div 
+                    className="flex-shrink-0 h-10 w-10 relative group cursor-pointer"
+                    onClick={() => router.push(`/residents/${resident.id}`)}
+                  >
                     {resident.photoBase64 ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        className={`h-10 w-10 rounded-full object-cover ${ringClass}`}
+                        className={`h-10 w-10 rounded-full object-cover ${ringClass} hover:scale-110 transition-transform`}
                         src={resident.photoBase64}
                         alt={`${resident.firstName} ${resident.lastName}`}
                       />
                     ) : (
-                      <div className={`h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center ${ringClass}`}>
+                      <div className={`h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center ${ringClass} hover:scale-110 transition-transform`}>
                         <span className="text-gray-600 text-sm font-medium">
                           {resident.firstName.charAt(0)}{resident.lastName.charAt(0)}
                         </span>
                       </div>
                     )}
-                    {/* Tooltip showing billing status */}
-                    {billingStatus.status === 'not-ready' && billingStatus.reasons.length > 0 && (
-                      <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
-                        Not billing-ready: {billingStatus.reasons.join(', ')}
-                        <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
-                      </div>
-                    )}
+                    {/* Tooltip showing billing status - always visible on hover */}
+                    <div className="absolute left-full top-1/2 transform -translate-y-1/2 ml-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                      <span className={billingStatus.status === 'ready' ? 'text-green-400' : 'text-orange-400'}>
+                        {billingStatus.status === 'ready' ? 'Currently billing' : 'Not billing'}
+                      </span>
+                      {billingStatus.status === 'not-ready' && billingStatus.reasons.length > 0 && (
+                        <span className="text-gray-300"> • {billingStatus.reasons.join(', ')}</span>
+                      )}
+                      <div className="absolute right-full top-1/2 transform -translate-y-1/2 border-4 border-transparent border-r-gray-900"></div>
+                    </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
