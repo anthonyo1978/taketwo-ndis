@@ -462,16 +462,19 @@ function HousesPageContent() {
                         <ResidentAvatars houseId={house.id} maxDisplay={4} />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {occupancyData[house.id] ? (
-                          <OccupancyBadge
-                            occupiedBedrooms={occupancyData[house.id].occupied_bedrooms}
-                            totalBedrooms={occupancyData[house.id].total_bedrooms}
-                            size="sm"
-                            showDetails={false}
-                          />
-                        ) : (
-                          <div className="text-xs text-gray-400">Loading...</div>
-                        )}
+                        {(() => {
+                          const occupancy = occupancyData[house.id]
+                          return occupancy ? (
+                            <OccupancyBadge
+                              occupiedBedrooms={occupancy.occupied_bedrooms}
+                              totalBedrooms={occupancy.total_bedrooms}
+                              size="sm"
+                              showDetails={false}
+                            />
+                          ) : (
+                            <div className="text-xs text-gray-400">Loading...</div>
+                          )
+                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(house.createdAt).toLocaleDateString()}
