@@ -189,6 +189,30 @@ export function HouseForm({ onSubmit, isLoading = false, className, initialData,
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
+              <label htmlFor="bedroomCount" className="block text-sm font-medium text-gray-700 mb-1">
+                Number of Bedrooms <span className="text-gray-500">(Optional)</span>
+              </label>
+              <Input
+                id="bedroomCount"
+                type="number"
+                min="1"
+                max="20"
+                {...register("bedroomCount", { valueAsNumber: true })}
+                placeholder="e.g., 3"
+                className={errors.bedroomCount ? "border-red-500" : ""}
+                disabled={submitDisabled}
+              />
+              {errors.bedroomCount && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.bedroomCount.message}
+                </p>
+              )}
+              <p className="mt-1 text-sm text-gray-500">
+                Used for occupancy tracking and analytics
+              </p>
+            </div>
+            
+            <div>
               <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
                 Status <span className="text-red-500">*</span>
               </label>
@@ -212,24 +236,24 @@ export function HouseForm({ onSubmit, isLoading = false, className, initialData,
                 </p>
               )}
             </div>
-            
-            <div>
-              <label htmlFor="goLiveDate" className="block text-sm font-medium text-gray-700 mb-1">
-                Go-Live Date <span className="text-red-500">*</span>
-              </label>
-              <Input
-                id="goLiveDate"
-                type="date"
-                {...register("goLiveDate")}
-                className={errors.goLiveDate ? "border-red-500" : ""}
-                disabled={submitDisabled}
-              />
-              {errors.goLiveDate && (
-                <p className="mt-1 text-sm text-red-600" role="alert">
-                  {errors.goLiveDate.message}
-                </p>
-              )}
-            </div>
+          </div>
+          
+          <div>
+            <label htmlFor="goLiveDate" className="block text-sm font-medium text-gray-700 mb-1">
+              Go-Live Date <span className="text-red-500">*</span>
+            </label>
+            <Input
+              id="goLiveDate"
+              type="date"
+              {...register("goLiveDate")}
+              className={errors.goLiveDate ? "border-red-500" : ""}
+              disabled={submitDisabled}
+            />
+            {errors.goLiveDate && (
+              <p className="mt-1 text-sm text-red-600" role="alert">
+                {errors.goLiveDate.message}
+              </p>
+            )}
           </div>
         </div>
 

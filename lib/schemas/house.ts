@@ -31,6 +31,12 @@ export const houseCreateSchema = z.object({
     errorMap: () => ({ message: "Please select a valid status" })
   }),
   
+  bedroomCount: z.number()
+    .int("Bedroom count must be a whole number")
+    .min(1, "Bedroom count must be at least 1")
+    .max(20, "Bedroom count must be no more than 20")
+    .optional(),
+  
   notes: z.string().optional(),
   
   goLiveDate: z.coerce.date({

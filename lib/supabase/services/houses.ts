@@ -25,6 +25,7 @@ export class HouseService {
       postcode: dbHouse.postcode,
       country: dbHouse.country || 'AU', // Default to AU if not provided
       status: dbHouse.status,
+      bedroomCount: dbHouse.bedroom_count || undefined, // Map bedroom_count from DB
       notes: dbHouse.notes,
       goLiveDate: dbHouse.go_live_date, // Convert snake_case to camelCase
       resident: dbHouse.resident,
@@ -196,6 +197,7 @@ export class HouseService {
         postcode: house.postcode,
         country: house.country || 'AU', // Default to AU if not provided
         status: house.status,
+        bedroom_count: house.bedroomCount, // Map bedroomCount to bedroom_count
         notes: house.notes,
         go_live_date: house.goLiveDate, // Convert camelCase to snake_case
         resident: house.resident,
@@ -250,6 +252,7 @@ export class HouseService {
       if (updates.postcode !== undefined) dbUpdates.postcode = updates.postcode
       if (updates.country !== undefined) dbUpdates.country = updates.country
       if (updates.status !== undefined) dbUpdates.status = updates.status
+      if (updates.bedroomCount !== undefined) dbUpdates.bedroom_count = updates.bedroomCount
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes
       if (updates.goLiveDate !== undefined) dbUpdates.go_live_date = updates.goLiveDate
       if (updates.resident !== undefined) dbUpdates.resident = updates.resident

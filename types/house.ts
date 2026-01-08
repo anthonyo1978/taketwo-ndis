@@ -17,6 +17,7 @@ export interface House {
   postcode: string
   country: string
   status: HouseStatus
+  bedroomCount?: number
   notes?: string
   goLiveDate: Date
   resident?: string
@@ -39,6 +40,7 @@ export interface HouseCreateInput {
   postcode: string
   country: string
   status: HouseStatus
+  bedroomCount?: number
   notes?: string
   goLiveDate: Date
   resident?: string

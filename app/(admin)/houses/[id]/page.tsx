@@ -329,6 +329,12 @@ export default function HouseDetailPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Property Details</h3>
               <dl className="space-y-3">
                 <div>
+                  <dt className="text-sm font-medium text-gray-600">Bedrooms</dt>
+                  <dd className="text-gray-900">
+                    {house.bedroomCount || 'Not set'}
+                  </dd>
+                </div>
+                <div>
                   <dt className="text-sm font-medium text-gray-600">Go-Live Date</dt>
                   <dd className="text-gray-900">
                     {new Date(house.goLiveDate).toLocaleDateString()}
