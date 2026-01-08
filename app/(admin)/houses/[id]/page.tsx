@@ -7,8 +7,25 @@ import { useEffect, useState } from "react"
 import { ResidentSelectionModal } from "components/residents/ResidentSelectionModal"
 import { ResidentTable } from "components/residents/ResidentTable"
 import { HouseImageUpload } from "components/houses/HouseImageUpload"
+import { OccupancyBadge } from "components/houses/OccupancyBadge"
+import { OccupancyHeatmap } from "components/houses/OccupancyHeatmap"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
+
+interface OccupancyData {
+  current: {
+    occupied_bedrooms: number
+    total_bedrooms: number
+    occupancy_rate: number
+  }
+  history: Array<{
+    month_start: string
+    month_name: string
+    occupied_bedrooms: number
+    total_bedrooms: number
+    occupancy_rate: number
+  }>
+}
 
 interface ApiResponse {
   success: boolean
@@ -26,6 +43,8 @@ export default function HouseDetailPage() {
   const [showResidentSelection, setShowResidentSelection] = useState(false)
   const [residentRefreshTrigger, setResidentRefreshTrigger] = useState(0)
   const [currentResidents, setCurrentResidents] = useState<Resident[]>([])
+  const [occupancyData, setOccupancyData] = useState<OccupancyData | null>(null)
+  const [occupancyLoading, setOccupancyLoading] = useState(true)
 
   useEffect(() => {
     const fetchHouse = async () => {
@@ -50,6 +69,28 @@ export default function HouseDetailPage() {
 
     fetchHouse()
   }, [id])
+
+  // Fetch occupancy data
+  useEffect(() => {
+    const fetchOccupancy = async () => {
+      if (!id) return
+      
+      try {
+        const response = await fetch(`/api/houses/${id}/occupancy`)
+        const result = await response.json() as { success: boolean; data?: OccupancyData }
+        
+        if (result.success && result.data) {
+          setOccupancyData(result.data)
+        }
+      } catch (err) {
+        console.error('Error fetching occupancy:', err)
+      } finally {
+        setOccupancyLoading(false)
+      }
+    }
+
+    fetchOccupancy()
+  }, [id, residentRefreshTrigger])
 
   const handleResidentAssigned = async (resident: Resident) => {
     try {
@@ -328,6 +369,36 @@ export default function HouseDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Occupancy Analytics Section */}
+        {occupancyData && (
+          <div className="mt-12">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Occupancy Analytics</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  Track bedroom utilization and performance over time
+                </p>
+              </div>
+              
+              {/* Current Occupancy Badge */}
+              <OccupancyBadge
+                occupiedBedrooms={occupancyData.current.occupied_bedrooms}
+                totalBedrooms={occupancyData.current.total_bedrooms}
+                size="lg"
+                showDetails={true}
+              />
+            </div>
+            
+            {/* 12-Month Heatmap */}
+            {occupancyData.history && occupancyData.history.length > 0 && (
+              <OccupancyHeatmap 
+                data={occupancyData.history}
+                totalBedrooms={occupancyData.current.total_bedrooms}
+              />
+            )}
+          </div>
+        )}
 
         {/* Residents Section */}
         <div className="mt-12">

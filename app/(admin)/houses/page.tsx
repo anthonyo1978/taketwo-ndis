@@ -9,6 +9,7 @@ import { Pagination } from "components/ui/Pagination"
 import { SearchAndFilter } from "components/ui/SearchAndFilter"
 import { StandardizedFilters } from "components/ui/StandardizedFilters"
 import { LoadingSpinner } from "components/ui/LoadingSpinner"
+import { OccupancyBadge } from "components/houses/OccupancyBadge"
 import type { House } from "types/house"
 
 interface ApiResponse {
@@ -32,6 +33,11 @@ function HousesPageContent() {
   const [houses, setHouses] = useState<House[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [occupancyData, setOccupancyData] = useState<Record<string, {
+    occupied_bedrooms: number
+    total_bedrooms: number
+    occupancy_rate: number
+  }>>({})
   
   // Initialize pagination from URL params
   const [pagination, setPagination] = useState({
@@ -92,6 +98,26 @@ function HousesPageContent() {
   useEffect(() => {
     fetchHouses()
   }, [fetchHouses])
+
+  // Fetch occupancy data for all houses
+  useEffect(() => {
+    const fetchOccupancy = async () => {
+      try {
+        const response = await fetch('/api/houses/occupancy')
+        const result = await response.json()
+        
+        if (result.success && result.data) {
+          setOccupancyData(result.data)
+        }
+      } catch (err) {
+        console.error('Error fetching occupancy:', err)
+      }
+    }
+
+    if (houses.length > 0) {
+      fetchOccupancy()
+    }
+  }, [houses.length])
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -330,6 +356,9 @@ function HousesPageContent() {
                     Resident(s)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Occupancy
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -340,7 +369,7 @@ function HousesPageContent() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {isEmpty ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center">
+                    <td colSpan={8} className="px-6 py-12 text-center">
                       <div className="text-gray-500">
                         <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -424,6 +453,18 @@ function HousesPageContent() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <ResidentAvatars houseId={house.id} maxDisplay={4} />
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {occupancyData[house.id] ? (
+                          <OccupancyBadge
+                            occupiedBedrooms={occupancyData[house.id].occupied_bedrooms}
+                            totalBedrooms={occupancyData[house.id].total_bedrooms}
+                            size="sm"
+                            showDetails={false}
+                          />
+                        ) : (
+                          <div className="text-xs text-gray-400">Loading...</div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {new Date(house.createdAt).toLocaleDateString()}
