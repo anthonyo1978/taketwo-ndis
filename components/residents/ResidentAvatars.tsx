@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import type { Resident } from "types/resident"
 import { getResidentBillingStatus, getBillingStatusRingClass } from "lib/utils/billing-status"
 
@@ -16,6 +17,7 @@ interface ApiResponse {
 }
 
 export function ResidentAvatars({ houseId, maxDisplay = 4 }: ResidentAvatarsProps) {
+  const router = useRouter()
   const [residents, setResidents] = useState<Resident[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -86,14 +88,22 @@ export function ResidentAvatars({ houseId, maxDisplay = 4 }: ResidentAvatarsProp
         const billingStatus = getResidentBillingStatus(resident)
         const borderColor = billingStatus.color === 'green' ? 'border-green-500' : 'border-orange-500'
         
+        // Determine billing status message for tooltip
+        const billingStatusMessage = billingStatus.status === 'ready' 
+          ? 'Currently billing' 
+          : 'Not billing'
+        
         return (
         <div 
           key={resident.id}
           className="relative group"
           style={{ zIndex: displayResidents.length - index }}
         >
-          {/* Avatar with billing status border */}
-          <div className={`h-8 w-8 rounded-full border-2 ${borderColor} shadow-sm overflow-hidden bg-gray-100 hover:scale-110 transition-transform`}>
+          {/* Avatar with billing status border - clickable */}
+          <div 
+            className={`h-8 w-8 rounded-full border-2 ${borderColor} shadow-sm overflow-hidden bg-gray-100 hover:scale-110 transition-transform cursor-pointer`}
+            onClick={() => router.push(`/residents/${resident.id}`)}
+          >
             {resident.photoBase64 ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -110,12 +120,13 @@ export function ResidentAvatars({ houseId, maxDisplay = 4 }: ResidentAvatarsProp
             )}
           </div>
           
-          {/* Simple tooltip with name only (no billing details) */}
+          {/* Tooltip showing billing status */}
           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
             {resident.firstName} {resident.lastName}
-            {resident.dateOfBirth && (
-              <span className="text-gray-300"> • {new Date().getFullYear() - new Date(resident.dateOfBirth).getFullYear()}y</span>
-            )}
+            <span className="text-gray-300"> • </span>
+            <span className={billingStatus.status === 'ready' ? 'text-green-400' : 'text-orange-400'}>
+              {billingStatusMessage}
+            </span>
             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
           </div>
         </div>

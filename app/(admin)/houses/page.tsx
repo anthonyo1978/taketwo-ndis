@@ -413,12 +413,12 @@ function HousesPageContent() {
                           ? (occupancy.occupied_bedrooms / occupancy.total_bedrooms) * 100 
                           : 0
                         
-                        // Simple binary color scheme: Green = 100%, Red = anything else
+                        // Simple binary color scheme: Green = 100%, Rose/Pink = anything else
                         const getRingColor = () => {
                           if (!occupancy) return 'ring-gray-200 ring-2'
                           return occupancyRate === 100 
                             ? 'ring-green-500 ring-4' // Thick green ring for fully occupied
-                            : 'ring-red-500 ring-4'   // Thick red ring for not fully occupied
+                            : 'ring-rose-400 ring-4'  // Thick rose/pink ring for not fully occupied (softer than red)
                         }
                         
                         const tooltipText = occupancy 
