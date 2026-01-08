@@ -9,6 +9,7 @@ import { ResidentTable } from "components/residents/ResidentTable"
 import { HouseImageUpload } from "components/houses/HouseImageUpload"
 import { OccupancyBadge } from "components/houses/OccupancyBadge"
 import { OccupancyHeatmap } from "components/houses/OccupancyHeatmap"
+import { OccupancyHistoryGrid } from "components/houses/OccupancyHistoryGrid"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 
@@ -353,6 +354,27 @@ export default function HouseDetailPage() {
                   </div>
                 )}
               </dl>
+            </div>
+
+            {/* Occupancy History */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Occupancy History</h3>
+              {!occupancyLoading && occupancyData ? (
+                <OccupancyHistoryGrid
+                  houseId={house.id}
+                  currentOccupiedBedrooms={occupancyData.current.occupied_bedrooms}
+                  totalBedrooms={occupancyData.current.total_bedrooms}
+                />
+              ) : occupancyLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <p className="ml-3 text-gray-600">Loading history...</p>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500 italic">
+                  Unable to load occupancy history
+                </div>
+              )}
             </div>
 
             {/* Audit Information */}
