@@ -118,7 +118,7 @@ export default function HouseDetailPage() {
     setLeaseLoading(true)
     try {
       const response = await fetch(`/api/head-leases?houseId=${id}`)
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; data?: HeadLease[] }
       if (result.success && result.data && result.data.length > 0) {
         setCurrentLease(result.data[0]) // Get the first lease (active or most recent)
       } else {
