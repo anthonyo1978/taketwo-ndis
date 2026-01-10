@@ -28,6 +28,7 @@ export async function GET(
     }
     
     // Get current occupancy
+    console.log('[OCCUPANCY API] Fetching occupancy for house:', houseId, 'org:', organizationId)
     const { data: currentOccupancy, error: currentError } = await supabase
       .rpc('get_current_house_occupancy', {
         p_house_id: houseId,
@@ -36,14 +37,27 @@ export async function GET(
       .single()
     
     if (currentError) {
-      console.error('[OCCUPANCY API] Error fetching current occupancy:', currentError)
+      console.error('[OCCUPANCY API] Error fetching current occupancy:', {
+        error: currentError,
+        message: currentError.message,
+        details: currentError.details,
+        hint: currentError.hint,
+        code: currentError.code
+      })
       return NextResponse.json(
-        { success: false, error: 'Failed to fetch current occupancy' },
+        { 
+          success: false, 
+          error: 'Failed to fetch current occupancy',
+          details: currentError.message 
+        },
         { status: 500 }
       )
     }
     
+    console.log('[OCCUPANCY API] Current occupancy data:', currentOccupancy)
+    
     // Get 12-month history
+    console.log('[OCCUPANCY API] Fetching history for house:', houseId)
     const { data: history, error: historyError } = await supabase
       .rpc('get_house_occupancy_history', {
         p_house_id: houseId,
@@ -51,12 +65,24 @@ export async function GET(
       })
     
     if (historyError) {
-      console.error('[OCCUPANCY API] Error fetching occupancy history:', historyError)
+      console.error('[OCCUPANCY API] Error fetching occupancy history:', {
+        error: historyError,
+        message: historyError.message,
+        details: historyError.details,
+        hint: historyError.hint,
+        code: historyError.code
+      })
       return NextResponse.json(
-        { success: false, error: 'Failed to fetch occupancy history' },
+        { 
+          success: false, 
+          error: 'Failed to fetch occupancy history',
+          details: historyError.message 
+        },
         { status: 500 }
       )
     }
+    
+    console.log('[OCCUPANCY API] History data:', history)
     
     return NextResponse.json({
       success: true,
