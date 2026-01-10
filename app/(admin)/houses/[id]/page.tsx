@@ -364,29 +364,47 @@ export default function HouseDetailPage() {
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   <p className="ml-3 text-gray-600">Loading history...</p>
                 </div>
-              ) : !house.bedroomCount ? (
+              ) : !house.bedroomCount || house.bedroomCount === 0 ? (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <svg className="size-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <div>
-                      <p className="text-sm font-medium text-blue-900">Bedroom count not set</p>
+                      <p className="text-sm font-medium text-blue-900">Setup Required</p>
                       <p className="text-sm text-blue-700 mt-1">
-                        Please set the number of bedrooms in the Property Details section below to enable occupancy tracking.
+                        To view occupancy history, please:
                       </p>
+                      <ol className="text-sm text-blue-700 mt-2 ml-4 list-decimal space-y-1">
+                        <li>Click "Edit House" above</li>
+                        <li>Set the "Number of Bedrooms" field</li>
+                        <li>Save and return to this page</li>
+                      </ol>
                     </div>
                   </div>
                 </div>
-              ) : occupancyData ? (
+              ) : occupancyData && occupancyData.current ? (
                 <OccupancyHistoryGrid
                   houseId={house.id}
                   currentOccupiedBedrooms={occupancyData.current.occupied_bedrooms}
                   totalBedrooms={occupancyData.current.total_bedrooms}
                 />
               ) : (
-                <div className="text-sm text-gray-500 italic">
-                  Unable to load occupancy history. Please refresh the page.
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <svg className="size-5 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-medium text-amber-900">Data Not Available</p>
+                      <p className="text-sm text-amber-700 mt-1">
+                        Occupancy tracking requires the bedroom count to be set. Current value: {house.bedroomCount || 'Not set'}
+                      </p>
+                      <p className="text-sm text-amber-700 mt-2">
+                        If you just set the bedroom count, please refresh the page.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
