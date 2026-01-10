@@ -83,7 +83,7 @@ BEGIN
   ),
   occupancy_data AS (
     SELECT 
-      date_trunc('month', d.check_date)::DATE AS month_start,
+      date_trunc('month', d.check_date)::DATE AS data_month,
       COUNT(DISTINCT r.id) AS occupied_count
     FROM months m
     CROSS JOIN LATERAL (
@@ -104,7 +104,7 @@ BEGIN
           AND (fc.start_date IS NULL OR fc.start_date <= d.check_date)
           AND (fc.end_date IS NULL OR fc.end_date >= d.check_date)
       )
-    GROUP BY month_start
+    GROUP BY data_month
   )
   SELECT 
     m.month_start,
@@ -116,7 +116,7 @@ BEGIN
       2
     ) AS occupancy_rate
   FROM months m
-  LEFT JOIN occupancy_data o ON o.month_start = m.month_start
+  LEFT JOIN occupancy_data o ON o.data_month = m.month_start
   ORDER BY m.month_start;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
