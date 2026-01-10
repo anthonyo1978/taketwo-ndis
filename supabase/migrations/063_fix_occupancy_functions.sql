@@ -124,4 +124,3 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Comment
 COMMENT ON FUNCTION get_current_house_occupancy IS 'Get current occupancy snapshot - always returns one row even if empty';
 COMMENT ON FUNCTION get_house_occupancy_history IS 'Get 12-month historical occupancy - returns 12 rows (one per month)';
-
