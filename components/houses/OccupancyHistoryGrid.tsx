@@ -137,14 +137,19 @@ export function OccupancyHistoryGrid({
                   <td className="text-xs font-medium text-gray-700 py-1 pr-3">
                     Bed {bedroomIdx + 1}
                   </td>
-                  {bedroomData.map((isOccupied, monthIdx) => (
-                    <td key={monthIdx} className="p-1">
-                      <div
-                        className={`h-8 rounded transition-all duration-150 hover:ring-2 hover:ring-gray-400 hover:ring-offset-1 cursor-help ${getCellColor(isOccupied)}`}
-                        title={getCellTooltip(bedroomIdx, months[monthIdx].fullLabel, isOccupied)}
-                      />
-                    </td>
-                  ))}
+                  {bedroomData.map((isOccupied, monthIdx) => {
+                    const monthData = months[monthIdx];
+                    if (!monthData) return null;
+                    
+                    return (
+                      <td key={monthIdx} className="p-1">
+                        <div
+                          className={`h-8 rounded transition-all duration-150 hover:ring-2 hover:ring-gray-400 hover:ring-offset-1 cursor-help ${getCellColor(isOccupied)}`}
+                          title={getCellTooltip(bedroomIdx, monthData.fullLabel, isOccupied)}
+                        />
+                      </td>
+                    );
+                  })}
                 </tr>
               ))}
             </tbody>
