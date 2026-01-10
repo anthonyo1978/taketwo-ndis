@@ -225,6 +225,7 @@ export default function EditHousePage() {
                   postcode: house.postcode,
                   country: house.country,
                   status: house.status,
+                  bedroomCount: house.bedroomCount,
                   goLiveDate: house.goLiveDate ? new Date(house.goLiveDate) : undefined,
                   notes: house.notes || '',
                   imageUrl: house.imageUrl || ''
