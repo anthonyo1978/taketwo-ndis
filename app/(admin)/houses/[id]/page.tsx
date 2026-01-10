@@ -10,8 +10,13 @@ import { HouseImageUpload } from "components/houses/HouseImageUpload"
 import { OccupancyBadge } from "components/houses/OccupancyBadge"
 import { OccupancyHeatmap } from "components/houses/OccupancyHeatmap"
 import { OccupancyHistoryGrid } from "components/houses/OccupancyHistoryGrid"
+import { OwnerSummaryCard } from "components/owners/OwnerSummaryCard"
+import { OwnerModal } from "components/owners/OwnerModal"
+import { HeadLeaseCard } from "components/head-leases/HeadLeaseCard"
+import { HeadLeaseModal } from "components/head-leases/HeadLeaseModal"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
+import type { HeadLease } from "types/head-lease"
 
 interface OccupancyData {
   current: {
@@ -46,6 +51,15 @@ export default function HouseDetailPage() {
   const [currentResidents, setCurrentResidents] = useState<Resident[]>([])
   const [occupancyData, setOccupancyData] = useState<OccupancyData | null>(null)
   const [occupancyLoading, setOccupancyLoading] = useState(true)
+  
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'details' | 'ownership'>('details')
+  
+  // Ownership & Lease state
+  const [currentLease, setCurrentLease] = useState<HeadLease | null>(null)
+  const [leaseLoading, setLeaseLoading] = useState(false)
+  const [showOwnerModal, setShowOwnerModal] = useState(false)
+  const [showLeaseModal, setShowLeaseModal] = useState(false)
 
   useEffect(() => {
     const fetchHouse = async () => {
@@ -92,6 +106,30 @@ export default function HouseDetailPage() {
 
     fetchOccupancy()
   }, [id, residentRefreshTrigger])
+
+  // Fetch lease data when ownership tab is active
+  useEffect(() => {
+    if (activeTab === 'ownership' && id) {
+      fetchLeaseData()
+    }
+  }, [activeTab, id])
+
+  const fetchLeaseData = async () => {
+    setLeaseLoading(true)
+    try {
+      const response = await fetch(`/api/head-leases?houseId=${id}`)
+      const result = await response.json()
+      if (result.success && result.data && result.data.length > 0) {
+        setCurrentLease(result.data[0]) // Get the first lease (active or most recent)
+      } else {
+        setCurrentLease(null)
+      }
+    } catch (error) {
+      console.error('Error fetching lease:', error)
+    } finally {
+      setLeaseLoading(false)
+    }
+  }
 
   const handleResidentAssigned = async (resident: Resident) => {
     try {
@@ -254,6 +292,35 @@ export default function HouseDetailPage() {
           </div>
         </div>
 
+        {/* Tab Navigation */}
+        <div className="border-b border-gray-200 mb-8">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'details'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Details & Residents
+            </button>
+            <button
+              onClick={() => setActiveTab('ownership')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'ownership'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Ownership & Lease
+            </button>
+          </nav>
+        </div>
+
+        {/* Details Tab */}
+        {activeTab === 'details' && (
+          <>
         {/* House Details */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Basic Information */}
@@ -502,6 +569,54 @@ export default function HouseDetailPage() {
             View History
           </button>
         </div>
+          </>
+        )}
+
+        {/* Ownership & Lease Tab */}
+        {activeTab === 'ownership' && (
+          <div className="space-y-8">
+            {leaseLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p className="ml-3 text-gray-600">Loading lease information...</p>
+              </div>
+            ) : currentLease ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Owner Summary */}
+                {currentLease.owner && (
+                  <OwnerSummaryCard owner={currentLease.owner} onUpdate={fetchLeaseData} />
+                )}
+                
+                {/* Head Lease */}
+                <HeadLeaseCard lease={currentLease} onUpdate={fetchLeaseData} />
+              </div>
+            ) : (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 className="mt-4 text-lg font-medium text-gray-900">No Head Lease</h3>
+                <p className="mt-2 text-sm text-gray-500">
+                  This property doesn't have a head lease yet. Create one to track ownership and lease details.
+                </p>
+                <div className="mt-6 flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setShowOwnerModal(true)}
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Add Owner First
+                  </button>
+                  <button
+                    onClick={() => setShowLeaseModal(true)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Create Head Lease
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Resident Selection Modal */}
         <ResidentSelectionModal
@@ -511,6 +626,23 @@ export default function HouseDetailPage() {
           houseId={id}
           excludeResidentIds={currentResidents.map(r => r.id)}
           key={`modal-${residentRefreshTrigger}`}
+        />
+
+        {/* Owner Modal */}
+        <OwnerModal
+          isOpen={showOwnerModal}
+          onClose={() => setShowOwnerModal(false)}
+          onSuccess={fetchLeaseData}
+          mode="create"
+        />
+
+        {/* Head Lease Modal */}
+        <HeadLeaseModal
+          isOpen={showLeaseModal}
+          onClose={() => setShowLeaseModal(false)}
+          onSuccess={fetchLeaseData}
+          houseId={id}
+          mode="create"
         />
       </div>
     </div>
