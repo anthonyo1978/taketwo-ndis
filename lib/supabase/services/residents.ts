@@ -33,6 +33,15 @@ export class ResidentService {
       moveInDate: dbResident.move_in_date ? new Date(dbResident.move_in_date) : undefined,
       participantFundingLevelLabel: dbResident.participant_funding_level_label || undefined,
       participantFundingLevelNotes: dbResident.participant_funding_level_notes || undefined,
+      fundingManagementType: dbResident.funding_management_type || undefined,
+      planManagerId: dbResident.plan_manager_id || undefined,
+      planManager: dbResident.plan_managers ? {
+        id: dbResident.plan_managers.id,
+        name: dbResident.plan_managers.name,
+        email: dbResident.plan_managers.email || undefined,
+        phone: dbResident.plan_managers.phone || undefined,
+        billingEmail: dbResident.plan_managers.billing_email || undefined
+      } : undefined,
       detailedNotes: dbResident.detailed_notes || undefined,
       preferences: dbResident.preferences || {},
       emergencyContact: dbResident.emergency_contact || undefined,
@@ -90,6 +99,13 @@ export class ResidentService {
             id,
             contract_status,
             current_balance
+          ),
+          plan_managers (
+            id,
+            name,
+            email,
+            phone,
+            billing_email
           )
         `)
         .order('created_at', { ascending: false })
@@ -118,7 +134,16 @@ export class ResidentService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('residents')
-        .select('*')
+        .select(`
+          *,
+          plan_managers (
+            id,
+            name,
+            email,
+            phone,
+            billing_email
+          )
+        `)
         .eq('id', id)
         .single()
 
@@ -155,6 +180,13 @@ export class ResidentService {
             id,
             contract_status,
             current_balance
+          ),
+          plan_managers (
+            id,
+            name,
+            email,
+            phone,
+            billing_email
           )
         `)
         .eq('house_id', houseId)
@@ -241,6 +273,8 @@ export class ResidentService {
       if (updates.moveInDate !== undefined) dbUpdates.move_in_date = updates.moveInDate || null
       if (updates.participantFundingLevelLabel !== undefined) dbUpdates.participant_funding_level_label = updates.participantFundingLevelLabel || null
       if (updates.participantFundingLevelNotes !== undefined) dbUpdates.participant_funding_level_notes = updates.participantFundingLevelNotes || null
+      if (updates.fundingManagementType !== undefined) dbUpdates.funding_management_type = updates.fundingManagementType || null
+      if (updates.planManagerId !== undefined) dbUpdates.plan_manager_id = updates.planManagerId || null
       if (updates.detailedNotes !== undefined) dbUpdates.detailed_notes = updates.detailedNotes || null
       if (updates.preferences !== undefined) dbUpdates.preferences = updates.preferences || null
       if (updates.emergencyContact !== undefined) dbUpdates.emergency_contact = updates.emergencyContact || null

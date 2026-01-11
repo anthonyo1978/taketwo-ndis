@@ -3,7 +3,9 @@
 import { format } from "date-fns"
 import { useState, useEffect } from "react"
 import toast from 'react-hot-toast'
-import type { FundingInformation, Resident } from "types/resident"
+import type { FundingInformation, Resident, FundingManagementType } from "types/resident"
+import type { PlanManager } from "types/plan-manager"
+import { FUNDING_MANAGEMENT_TYPE_LABELS } from "types/plan-manager"
 import { ContractStatusManager } from "./ContractStatusManager"
 import { FundingManager } from "./FundingManager"
 import { Button } from "components/Button/Button"
@@ -27,11 +29,18 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
   const [isEditingFundingLevel, setIsEditingFundingLevel] = useState(false)
   const [isSavingFundingLevel, setIsSavingFundingLevel] = useState(false)
   
+  // Funding management type and plan manager state
+  const [fundingManagementType, setFundingManagementType] = useState<FundingManagementType | ''>('')
+  const [selectedPlanManagerId, setSelectedPlanManagerId] = useState<string>('')
+  const [planManagers, setPlanManagers] = useState<PlanManager[]>([])
+  const [showAddPlanManagerModal, setShowAddPlanManagerModal] = useState(false)
+  const [isSavingFundingManagement, setIsSavingFundingManagement] = useState(false)
+  
   const activeContract = fundingInfo.find(c => c.contractStatus === 'Active')
   const draftContract = fundingInfo.find(c => c.contractStatus === 'Draft')
   const currentContract = activeContract || draftContract
   
-  // Load resident data to get funding level
+  // Load resident data to get funding level and funding management
   useEffect(() => {
     const fetchResident = async () => {
       try {
@@ -40,6 +49,8 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
         if (result.success && result.data) {
           setFundingLevelLabel(result.data.participantFundingLevelLabel || '')
           setFundingLevelNotes(result.data.participantFundingLevelNotes || '')
+          setFundingManagementType(result.data.fundingManagementType || '')
+          setSelectedPlanManagerId(result.data.planManagerId || '')
         }
       } catch (error) {
         console.error('Failed to fetch resident:', error)
@@ -47,6 +58,22 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
     }
     fetchResident()
   }, [residentId])
+  
+  // Load plan managers list
+  useEffect(() => {
+    const fetchPlanManagers = async () => {
+      try {
+        const response = await fetch('/api/plan-managers')
+        const result = await response.json() as { success: boolean; data?: PlanManager[] }
+        if (result.success && result.data) {
+          setPlanManagers(result.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch plan managers:', error)
+      }
+    }
+    fetchPlanManagers()
+  }, [])
   
   // Save funding level
   const handleSaveFundingLevel = async () => {
@@ -73,6 +100,33 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       toast.error(error instanceof Error ? error.message : 'Failed to save')
     } finally {
       setIsSavingFundingLevel(false)
+    }
+  }
+  
+  // Save funding management type and plan manager
+  const handleSaveFundingManagement = async () => {
+    setIsSavingFundingManagement(true)
+    try {
+      const response = await fetch(`/api/residents/${residentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fundingManagementType: fundingManagementType || null,
+          planManagerId: fundingManagementType === 'plan_managed' ? (selectedPlanManagerId || null) : null
+        })
+      })
+      
+      const result = await response.json() as { success: boolean; error?: string }
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to update funding management')
+      }
+      
+      toast.success('Funding management updated!')
+    } catch (error) {
+      console.error('Save funding management error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to save')
+    } finally {
+      setIsSavingFundingManagement(false)
     }
   }
   
@@ -520,6 +574,108 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
         )}
       </div>
 
+      {/* Funding Management Type & Plan Manager */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">💼</span>
+            <div>
+              <h3 className="text-sm font-semibold text-blue-900">Funding Management</h3>
+              <p className="text-xs text-blue-700 mt-0.5">How the participant's NDIS funding is managed</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="space-y-3">
+          <div>
+            <label htmlFor="fundingManagementType" className="block text-sm font-medium text-blue-900 mb-1">
+              Funding Management Type
+            </label>
+            <select
+              id="fundingManagementType"
+              value={fundingManagementType}
+              onChange={(e) => {
+                setFundingManagementType(e.target.value as FundingManagementType | '')
+                if (e.target.value !== 'plan_managed') {
+                  setSelectedPlanManagerId('')
+                }
+                // Auto-save on change
+                setTimeout(() => handleSaveFundingManagement(), 100)
+              }}
+              className="w-full px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            >
+              <option value="">Select...</option>
+              <option value="ndia">NDIA Managed</option>
+              <option value="plan_managed">Plan Managed</option>
+              <option value="self_managed">Self Managed</option>
+              <option value="unknown">Unknown</option>
+            </select>
+          </div>
+          
+          {fundingManagementType === 'plan_managed' && (
+            <div className="space-y-3 pl-4 border-l-2 border-blue-300">
+              <div>
+                <label htmlFor="planManager" className="block text-sm font-medium text-blue-900 mb-1">
+                  Plan Manager
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    id="planManager"
+                    value={selectedPlanManagerId}
+                    onChange={(e) => {
+                      setSelectedPlanManagerId(e.target.value)
+                      setTimeout(() => handleSaveFundingManagement(), 100)
+                    }}
+                    className="flex-1 px-3 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+                  >
+                    <option value="">Select Plan Manager...</option>
+                    {planManagers.map(pm => (
+                      <option key={pm.id} value={pm.id}>{pm.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => setShowAddPlanManagerModal(true)}
+                    className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium whitespace-nowrap"
+                  >
+                    + Add New
+                  </button>
+                </div>
+              </div>
+              
+              {selectedPlanManagerId && planManagers.find(pm => pm.id === selectedPlanManagerId) && (() => {
+                const pm = planManagers.find(pm => pm.id === selectedPlanManagerId)!
+                return (
+                  <div className="bg-white border border-blue-200 rounded-md p-3">
+                    <div className="text-sm font-semibold text-blue-900 mb-2">{pm.name}</div>
+                    <div className="space-y-1 text-xs text-blue-800">
+                      {pm.email && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-600">📧</span>
+                          <a href={`mailto:${pm.email}`} className="hover:underline">{pm.email}</a>
+                        </div>
+                      )}
+                      {pm.phone && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-600">📞</span>
+                          <a href={`tel:${pm.phone}`} className="hover:underline">{pm.phone}</a>
+                        </div>
+                      )}
+                      {pm.billingEmail && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-600">💳</span>
+                          <span className="text-blue-600 text-xs">Billing:</span>
+                          <a href={`mailto:${pm.billingEmail}`} className="hover:underline">{pm.billingEmail}</a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+        </div>
+      </div>
+
       {currentContract ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Contract Card */}
@@ -810,6 +966,154 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
                 Close
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Plan Manager Modal */}
+      {showAddPlanManagerModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-900">Add Plan Manager</h2>
+              <button
+                onClick={() => setShowAddPlanManagerModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+                type="button"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={async (e) => {
+              e.preventDefault()
+              const formData = new FormData(e.currentTarget)
+              const data = {
+                name: formData.get('name') as string,
+                email: formData.get('email') as string || undefined,
+                phone: formData.get('phone') as string || undefined,
+                billingEmail: formData.get('billingEmail') as string || undefined,
+                notes: formData.get('notes') as string || undefined
+              }
+              
+              try {
+                const response = await fetch('/api/plan-managers', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(data)
+                })
+                
+                const result = await response.json() as { success: boolean; data?: PlanManager; error?: string }
+                if (!response.ok || !result.success) {
+                  throw new Error(result.error || 'Failed to create plan manager')
+                }
+                
+                // Add to list and select it
+                if (result.data) {
+                  setPlanManagers(prev => [...prev, result.data!])
+                  setSelectedPlanManagerId(result.data.id)
+                  setTimeout(() => handleSaveFundingManagement(), 100)
+                }
+                
+                toast.success('Plan Manager added!')
+                setShowAddPlanManagerModal(false)
+              } catch (error) {
+                console.error('Create plan manager error:', error)
+                toast.error(error instanceof Error ? error.message : 'Failed to add plan manager')
+              }
+            }} className="p-6 space-y-4">
+              <div>
+                <label htmlFor="pmName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="pmName"
+                  name="name"
+                  type="text"
+                  required
+                  maxLength={100}
+                  placeholder="e.g., ABC Plan Management"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="pmEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  id="pmEmail"
+                  name="email"
+                  type="email"
+                  maxLength={100}
+                  placeholder="contact@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="pmPhone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
+                <input
+                  id="pmPhone"
+                  name="phone"
+                  type="tel"
+                  maxLength={50}
+                  placeholder="0400 000 000"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="pmBillingEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                  Billing Email
+                </label>
+                <input
+                  id="pmBillingEmail"
+                  name="billingEmail"
+                  type="email"
+                  maxLength={100}
+                  placeholder="billing@example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="pmNotes" className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  id="pmNotes"
+                  name="notes"
+                  maxLength={500}
+                  rows={2}
+                  placeholder="Optional notes..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="flex justify-end gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddPlanManagerModal(false)}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Add Plan Manager
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

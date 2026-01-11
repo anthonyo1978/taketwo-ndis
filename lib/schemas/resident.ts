@@ -236,6 +236,14 @@ export const residentUpdateSchema = z.object({
     .optional()
     .or(z.literal('')),
   
+  fundingManagementType: z.enum(['ndia', 'plan_managed', 'self_managed', 'unknown'] as const)
+    .optional(),
+  
+  planManagerId: z.string()
+    .uuid("Invalid Plan Manager ID")
+    .optional()
+    .nullable(),
+  
   detailedNotes: z.string()
     .max(5000, "Detailed notes must be no more than 5000 characters")
     .optional()

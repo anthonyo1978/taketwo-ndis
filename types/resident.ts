@@ -7,6 +7,9 @@ export type ResidentStatus = 'Prospect' | 'Active' | 'Deactivated'
 /** Funding model types for residents. */
 export type FundingModel = 'Draw Down' | 'Capture & Invoice' | 'Hybrid'
 
+/** Funding management types for residents. */
+export type FundingManagementType = 'ndia' | 'plan_managed' | 'self_managed' | 'unknown'
+
 /** Status options for funding contracts. */
 export type ContractStatus = 'Draft' | 'Active' | 'Expired' | 'Cancelled' | 'Renewed'
 
@@ -116,6 +119,15 @@ export interface Resident {
   moveInDate?: Date
   participantFundingLevelLabel?: string
   participantFundingLevelNotes?: string
+  fundingManagementType?: FundingManagementType
+  planManagerId?: string
+  planManager?: {
+    id: string
+    name: string
+    email?: string
+    phone?: string
+    billingEmail?: string
+  }
   fundingInformation: FundingInformation[]
   preferences: ResidentPreferences
   detailedNotes?: string
@@ -167,6 +179,8 @@ export interface ResidentUpdateInput {
   moveInDate?: Date
   participantFundingLevelLabel?: string
   participantFundingLevelNotes?: string
+  fundingManagementType?: FundingManagementType
+  planManagerId?: string | null
   detailedNotes?: string
   preferences?: ResidentPreferences
   emergencyContact?: EmergencyContact
