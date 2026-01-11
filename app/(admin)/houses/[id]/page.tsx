@@ -612,38 +612,40 @@ export default function HouseDetailPage() {
         )}
 
         {/* Utilities / On-Charge Section */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Utilities / On-Charge</h3>
-          
-          {/* Electricity Section */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-md font-semibold text-gray-800">Electricity</h4>
-              {house.electricityNmi && (
-                <span className="text-sm text-gray-600">
-                  NMI: {house.electricityNmi}
-                </span>
-              )}
+        {house && house.id && (
+          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-6">Utilities / On-Charge</h3>
+            
+            {/* Electricity Section */}
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-md font-semibold text-gray-800">Electricity</h4>
+                {house.electricityNmi && (
+                  <span className="text-sm text-gray-600">
+                    NMI: {house.electricityNmi}
+                  </span>
+                )}
+              </div>
+              <UtilitySnapshotsList
+                propertyId={house.id}
+                utilityType="electricity"
+                onAddSnapshot={() => setShowElectricityModal(true)}
+                refreshTrigger={electricityRefreshTrigger}
+              />
             </div>
-            <UtilitySnapshotsList
-              propertyId={house.id}
-              utilityType="electricity"
-              onAddSnapshot={() => setShowElectricityModal(true)}
-              refreshTrigger={electricityRefreshTrigger}
-            />
+            
+            {/* Water Section */}
+            <div>
+              <h4 className="text-md font-semibold text-gray-800 mb-4">Water</h4>
+              <UtilitySnapshotsList
+                propertyId={house.id}
+                utilityType="water"
+                onAddSnapshot={() => setShowWaterModal(true)}
+                refreshTrigger={waterRefreshTrigger}
+              />
+            </div>
           </div>
-          
-          {/* Water Section */}
-          <div>
-            <h4 className="text-md font-semibold text-gray-800 mb-4">Water</h4>
-            <UtilitySnapshotsList
-              propertyId={house.id}
-              utilityType="water"
-              onAddSnapshot={() => setShowWaterModal(true)}
-              refreshTrigger={waterRefreshTrigger}
-            />
-          </div>
-        </div>
+        )}
 
         {/* Residents Section */}
         <div className="mt-12">
