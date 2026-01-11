@@ -9,7 +9,7 @@ import type { House } from "types/house"
 interface ResidentSelectionModalProps {
   open: boolean
   onClose: () => void
-  onSelect: (resident: Resident) => void
+  onSelect: (resident: Resident, roomLabel?: string) => void
   houseId: string
   excludeResidentIds?: string[] // Residents already in this house
 }
@@ -39,6 +39,7 @@ export function ResidentSelectionModal({
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [roomLabel, setRoomLabel] = useState("")
 
   // Fetch residents and houses data
   useEffect(() => {
@@ -123,8 +124,9 @@ export function ResidentSelectionModal({
 
   // Handle resident selection
   const handleSelect = (resident: Resident) => {
-    onSelect(resident)
+    onSelect(resident, roomLabel.trim() || undefined)
     onClose()
+    setRoomLabel("") // Reset for next use
   }
 
   if (!open) return null
@@ -149,7 +151,7 @@ export function ResidentSelectionModal({
         </div>
 
         {/* Search and Filters */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-gray-200 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">
@@ -178,6 +180,25 @@ export function ResidentSelectionModal({
                 <option value="Deactivated">Deactivated</option>
               </select>
             </div>
+          </div>
+
+          {/* Room Input */}
+          <div>
+            <label htmlFor="roomLabel" className="block text-sm font-medium text-gray-700 mb-1">
+              Room / Unit <span className="text-gray-500">(Optional)</span>
+            </label>
+            <input
+              id="roomLabel"
+              type="text"
+              placeholder="e.g., Room 1, Bedroom A, Studio 2"
+              value={roomLabel}
+              onChange={(e) => setRoomLabel(e.target.value)}
+              maxLength={50}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Optional: Specify which room this resident will occupy in the property
+            </p>
           </div>
         </div>
 

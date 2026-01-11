@@ -11,7 +11,8 @@ interface RouteParams {
 
 // Validation schema for assignment
 const assignResidentSchema = z.object({
-  residentId: z.string().min(1, "Resident ID is required")
+  residentId: z.string().min(1, "Resident ID is required"),
+  roomLabel: z.string().max(50, "Room label must be less than 50 characters").optional()
 })
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    const { residentId } = validation.data
+    const { residentId, roomLabel } = validation.data
 
     // Verify house exists
     const house = await houseService.getById(houseId)
@@ -71,7 +72,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     // Assign resident to house
     const updatedResident = await residentService.update(residentId, { 
-      houseId: houseId 
+      houseId: houseId,
+      roomLabel: roomLabel 
     })
 
     return NextResponse.json(

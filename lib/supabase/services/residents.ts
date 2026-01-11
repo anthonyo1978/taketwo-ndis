@@ -29,6 +29,7 @@ export class ResidentService {
       photoBase64: dbResident.photo_base64 || undefined,
       notes: dbResident.notes || undefined,
       status: dbResident.status === 'Draft' ? 'Prospect' : dbResident.status,
+      roomLabel: dbResident.room_label || undefined,
       detailedNotes: dbResident.detailed_notes || undefined,
       preferences: dbResident.preferences || {},
       emergencyContact: dbResident.emergency_contact || undefined,
@@ -59,6 +60,7 @@ export class ResidentService {
       photo_base64: frontendResident.photoBase64 || null,
       notes: frontendResident.notes || null,
       status: frontendResident.status === 'Prospect' ? 'Draft' : frontendResident.status || 'Draft',
+      room_label: frontendResident.roomLabel || null,
       detailed_notes: frontendResident.detailedNotes || null,
       preferences: frontendResident.preferences || null,
       emergency_contact: frontendResident.emergencyContact || null,
@@ -232,6 +234,7 @@ export class ResidentService {
       if (updates.status !== undefined) {
         dbUpdates.status = updates.status === 'Prospect' ? 'Draft' : updates.status
       }
+      if (updates.roomLabel !== undefined) dbUpdates.room_label = updates.roomLabel || null
       if (updates.detailedNotes !== undefined) dbUpdates.detailed_notes = updates.detailedNotes || null
       if (updates.preferences !== undefined) dbUpdates.preferences = updates.preferences || null
       if (updates.emergencyContact !== undefined) dbUpdates.emergency_contact = updates.emergencyContact || null

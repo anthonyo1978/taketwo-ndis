@@ -112,6 +112,7 @@ export interface Resident {
   photoBase64?: string
   notes?: string
   status: ResidentStatus
+  roomLabel?: string
   fundingInformation: FundingInformation[]
   preferences: ResidentPreferences
   detailedNotes?: string
@@ -159,6 +160,7 @@ export interface ResidentUpdateInput {
   ndisId?: string
   photoBase64?: string
   status?: ResidentStatus
+  roomLabel?: string
   detailedNotes?: string
   preferences?: ResidentPreferences
   emergencyContact?: EmergencyContact
