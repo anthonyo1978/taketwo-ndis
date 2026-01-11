@@ -59,8 +59,8 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
           setFundingManagementType(result.data.fundingManagementType || '')
           setSelectedPlanManagerId(result.data.planManagerId || '')
           setGtaReference(result.data.gtaReference || '')
-          setGtaStartDate(result.data.gtaStartDate ? new Date(result.data.gtaStartDate).toISOString().split('T')[0] : '')
-          setGtaEndDate(result.data.gtaEndDate ? new Date(result.data.gtaEndDate).toISOString().split('T')[0] : '')
+          setGtaStartDate(result.data.gtaStartDate ? String(new Date(result.data.gtaStartDate).toISOString().split('T')[0]) : '')
+          setGtaEndDate(result.data.gtaEndDate ? String(new Date(result.data.gtaEndDate).toISOString().split('T')[0]) : '')
         }
       } catch (error) {
         console.error('Failed to fetch resident:', error)
