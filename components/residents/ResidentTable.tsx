@@ -159,12 +159,15 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Room
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Move-in Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
-                </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Move-in Date
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Funding Level
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Contact
+              </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   NDIS ID
                 </th>
@@ -343,6 +346,15 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                   {resident.moveInDate ? new Date(resident.moveInDate).toLocaleDateString() : <span className="text-gray-400">—</span>}
+                </td>
+                <td className="px-6 py-4 text-sm">
+                  {resident.participantFundingLevelLabel ? (
+                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200">
+                      {resident.participantFundingLevelLabel}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">

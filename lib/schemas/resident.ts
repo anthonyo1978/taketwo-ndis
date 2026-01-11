@@ -226,6 +226,16 @@ export const residentUpdateSchema = z.object({
   
   status: residentStatusSchema.optional(),
   
+  participantFundingLevelLabel: z.string()
+    .max(100, "Participant funding level label must be no more than 100 characters")
+    .optional()
+    .or(z.literal('')),
+  
+  participantFundingLevelNotes: z.string()
+    .max(500, "Participant funding level notes must be no more than 500 characters")
+    .optional()
+    .or(z.literal('')),
+  
   detailedNotes: z.string()
     .max(5000, "Detailed notes must be no more than 5000 characters")
     .optional()

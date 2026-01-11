@@ -1,9 +1,9 @@
 "use client"
 
 import { format } from "date-fns"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import toast from 'react-hot-toast'
-import type { FundingInformation } from "types/resident"
+import type { FundingInformation, Resident } from "types/resident"
 import { ContractStatusManager } from "./ContractStatusManager"
 import { FundingManager } from "./FundingManager"
 import { Button } from "components/Button/Button"
@@ -21,9 +21,60 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
   const [isDeactivating, setIsDeactivating] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   
+  // Participant funding level state
+  const [fundingLevelLabel, setFundingLevelLabel] = useState('')
+  const [fundingLevelNotes, setFundingLevelNotes] = useState('')
+  const [isEditingFundingLevel, setIsEditingFundingLevel] = useState(false)
+  const [isSavingFundingLevel, setIsSavingFundingLevel] = useState(false)
+  
   const activeContract = fundingInfo.find(c => c.contractStatus === 'Active')
   const draftContract = fundingInfo.find(c => c.contractStatus === 'Draft')
   const currentContract = activeContract || draftContract
+  
+  // Load resident data to get funding level
+  useEffect(() => {
+    const fetchResident = async () => {
+      try {
+        const response = await fetch(`/api/residents/${residentId}`)
+        const result = await response.json() as { success: boolean; data?: Resident }
+        if (result.success && result.data) {
+          setFundingLevelLabel(result.data.participantFundingLevelLabel || '')
+          setFundingLevelNotes(result.data.participantFundingLevelNotes || '')
+        }
+      } catch (error) {
+        console.error('Failed to fetch resident:', error)
+      }
+    }
+    fetchResident()
+  }, [residentId])
+  
+  // Save funding level
+  const handleSaveFundingLevel = async () => {
+    setIsSavingFundingLevel(true)
+    try {
+      const response = await fetch(`/api/residents/${residentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          participantFundingLevelLabel: fundingLevelLabel || '',
+          participantFundingLevelNotes: fundingLevelNotes || ''
+        })
+      })
+      
+      const result = await response.json() as { success: boolean; error?: string }
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to update funding level')
+      }
+      
+      toast.success('Participant funding level updated!')
+      setIsEditingFundingLevel(false)
+    } catch (error) {
+      console.error('Save funding level error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to save')
+    } finally {
+      setIsSavingFundingLevel(false)
+    }
+  }
   
   // Generate PDF handler
   const handleGeneratePdf = async () => {
@@ -359,6 +410,114 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
             <span>{currentContract ? 'Edit Contract' : 'New Contract'}</span>
           </Button>
         </div>
+      </div>
+
+      {/* Participant Funding Level (Reference Only) */}
+      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">🏷️</span>
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900">Participant Funding Level</h3>
+              <p className="text-xs text-amber-700 mt-0.5">Reference only – does not drive billing or pricing</p>
+            </div>
+          </div>
+          {!isEditingFundingLevel && (
+            <button
+              onClick={() => setIsEditingFundingLevel(true)}
+              className="text-amber-700 hover:text-amber-900 text-sm font-medium"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+        
+        {isEditingFundingLevel ? (
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="fundingLevelLabel" className="block text-sm font-medium text-amber-900 mb-1">
+                Funding Level Label
+              </label>
+              <input
+                id="fundingLevelLabel"
+                type="text"
+                value={fundingLevelLabel}
+                onChange={(e) => setFundingLevelLabel(e.target.value)}
+                placeholder="e.g., Robust – 2 residents"
+                maxLength={100}
+                className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
+              />
+              <p className="text-xs text-amber-700 mt-1">Optional label for the participant's SDA arrangement</p>
+            </div>
+            
+            <div>
+              <label htmlFor="fundingLevelNotes" className="block text-sm font-medium text-amber-900 mb-1">
+                Notes <span className="text-amber-600 font-normal">(Optional)</span>
+              </label>
+              <textarea
+                id="fundingLevelNotes"
+                value={fundingLevelNotes}
+                onChange={(e) => setFundingLevelNotes(e.target.value)}
+                placeholder="Additional notes about the funding arrangement..."
+                maxLength={500}
+                rows={2}
+                className="w-full px-3 py-2 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white resize-none"
+              />
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveFundingLevel}
+                disabled={isSavingFundingLevel}
+                className="px-4 py-2 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                {isSavingFundingLevel ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditingFundingLevel(false)
+                  // Reset to original values
+                  const fetchResident = async () => {
+                    try {
+                      const response = await fetch(`/api/residents/${residentId}`)
+                      const result = await response.json() as { success: boolean; data?: Resident }
+                      if (result.success && result.data) {
+                        setFundingLevelLabel(result.data.participantFundingLevelLabel || '')
+                        setFundingLevelNotes(result.data.participantFundingLevelNotes || '')
+                      }
+                    } catch (error) {
+                      console.error('Failed to fetch resident:', error)
+                    }
+                  }
+                  fetchResident()
+                }}
+                className="px-4 py-2 bg-white border border-amber-300 text-amber-900 rounded-lg hover:bg-amber-50 text-sm font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {fundingLevelLabel ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-amber-900">Label:</span>
+                  <span className="px-3 py-1 bg-white border border-amber-300 rounded-md text-sm text-amber-900 font-medium">
+                    {fundingLevelLabel}
+                  </span>
+                </div>
+                {fundingLevelNotes && (
+                  <div className="text-sm text-amber-800 bg-white border border-amber-200 rounded-md p-2">
+                    <span className="font-medium">Notes:</span> {fundingLevelNotes}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-amber-700 italic">No funding level label set</p>
+            )}
+          </div>
+        )}
       </div>
 
       {currentContract ? (

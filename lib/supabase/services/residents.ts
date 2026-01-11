@@ -31,6 +31,8 @@ export class ResidentService {
       status: dbResident.status === 'Draft' ? 'Prospect' : dbResident.status,
       roomLabel: dbResident.room_label || undefined,
       moveInDate: dbResident.move_in_date ? new Date(dbResident.move_in_date) : undefined,
+      participantFundingLevelLabel: dbResident.participant_funding_level_label || undefined,
+      participantFundingLevelNotes: dbResident.participant_funding_level_notes || undefined,
       detailedNotes: dbResident.detailed_notes || undefined,
       preferences: dbResident.preferences || {},
       emergencyContact: dbResident.emergency_contact || undefined,
@@ -237,6 +239,8 @@ export class ResidentService {
       }
       if (updates.roomLabel !== undefined) dbUpdates.room_label = updates.roomLabel || null
       if (updates.moveInDate !== undefined) dbUpdates.move_in_date = updates.moveInDate || null
+      if (updates.participantFundingLevelLabel !== undefined) dbUpdates.participant_funding_level_label = updates.participantFundingLevelLabel || null
+      if (updates.participantFundingLevelNotes !== undefined) dbUpdates.participant_funding_level_notes = updates.participantFundingLevelNotes || null
       if (updates.detailedNotes !== undefined) dbUpdates.detailed_notes = updates.detailedNotes || null
       if (updates.preferences !== undefined) dbUpdates.preferences = updates.preferences || null
       if (updates.emergencyContact !== undefined) dbUpdates.emergency_contact = updates.emergencyContact || null
