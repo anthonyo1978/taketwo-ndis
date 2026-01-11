@@ -1,15 +1,16 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { Bell, ChevronRight, CheckCheck, Clipboard } from 'lucide-react'
+import { Bell, ChevronRight, CheckCheck, Clipboard, Calendar } from 'lucide-react'
 import { Notification, generateMockNotifications } from './mockNotifications'
 import { NotificationItem } from './NotificationItem'
 import { TodoList } from './TodoList'
+import { RemindersPanel } from './RemindersPanel'
 import { useTodos } from 'lib/contexts/TodoContext'
 
 const STORAGE_KEY = "notifications-panel-collapsed"
 
-type TabType = 'notifications' | 'todos'
+type TabType = 'notifications' | 'todos' | 'reminders'
 
 /**
  * NotificationsPanel - Right-side collapsible panel with Notifications and To-do list
@@ -325,10 +326,23 @@ export function NotificationsPanel() {
                   </span>
                 )}
               </button>
+
+              {/* Reminders Icon */}
+              <button
+                data-tour="reminders-panel-icon"
+                onClick={() => {
+                  setActiveTab('reminders')
+                  setIsCollapsed(false)
+                }}
+                className={`relative p-2 ${havenMode ? 'text-gray-300 hover:text-white hover:bg-gray-800' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'} rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2`}
+                aria-label="Expand reminders"
+              >
+                <Calendar className="size-5" />
+              </button>
             </>
           ) : (
             <>
-              <div className="flex items-center gap-2" data-tour={activeTab === 'notifications' ? 'notifications-panel-expanded' : 'todos-panel-expanded'}>
+              <div className="flex items-center gap-2" data-tour={activeTab === 'notifications' ? 'notifications-panel-expanded' : activeTab === 'todos' ? 'todos-panel-expanded' : 'reminders-panel-expanded'}>
                 {activeTab === 'notifications' ? (
                   <>
                     <Bell className={`size-5 ${havenMode ? 'text-white' : 'text-gray-700'}`} />
@@ -339,7 +353,7 @@ export function NotificationsPanel() {
                       </span>
                     )}
                   </>
-                ) : (
+                ) : activeTab === 'todos' ? (
                   <>
                     <Clipboard className={`size-5 ${havenMode ? 'text-white' : 'text-gray-700'}`} />
                     <h2 className={`text-lg font-semibold ${havenMode ? 'text-white' : 'text-gray-900'}`}>To-dos</h2>
@@ -348,6 +362,11 @@ export function NotificationsPanel() {
                         {todayCount}
                       </span>
                     )}
+                  </>
+                ) : (
+                  <>
+                    <Calendar className={`size-5 ${havenMode ? 'text-white' : 'text-gray-700'}`} />
+                    <h2 className={`text-lg font-semibold ${havenMode ? 'text-white' : 'text-gray-900'}`}>Reminders</h2>
                   </>
                 )}
               </div>
@@ -408,11 +427,28 @@ export function NotificationsPanel() {
                     </span>
                   )}
                 </button>
+                <button
+                  onClick={() => setActiveTab('reminders')}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
+                    activeTab === 'reminders'
+                      ? havenMode
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-blue-100 text-blue-700'
+                      : havenMode
+                        ? 'text-gray-300 hover:bg-gray-800'
+                        : 'text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  <Calendar className="size-4" />
+                  Reminders
+                </button>
               </div>
             </div>
 
             {/* Tab Content */}
-            {activeTab === 'notifications' ? (
+            {activeTab === 'reminders' ? (
+              <RemindersPanel />
+            ) : activeTab === 'notifications' ? (
               <>
                 {/* Filter tabs */}
                 <div className={`px-4 py-3 border-b ${havenMode ? 'border-gray-700' : 'border-gray-200'} flex-shrink-0`}>
