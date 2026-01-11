@@ -1,4 +1,4 @@
-import { BarChart3, Home, TrendingUp, DollarSign, FileCheck } from 'lucide-react'
+import { BarChart3, Home, TrendingUp, DollarSign, FileCheck, Activity, Boxes } from 'lucide-react'
 
 export default function ReportingPage() {
   return (
@@ -19,26 +19,30 @@ export default function ReportingPage() {
         {/* Main Content Card */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
           <p className="text-lg text-gray-700 leading-relaxed mb-6">
-            Reporting in Haven will provide a central, read-only view across houses, residents, billing, and compliance.
+            Reporting in Haven will provide central, portfolio-level snapshots across houses, residents, billing, and compliance.
+          </p>
+          
+          <p className="text-base text-gray-600 leading-relaxed mb-6">
+            This includes overview-style reporting such as <strong className="text-gray-800">vacancy visibility across properties and rooms</strong>, helping teams quickly understand where capacity exists.
           </p>
           
           <p className="text-base text-gray-600 leading-relaxed mb-8">
-            This area is intentionally being introduced after the core data model is validated, to ensure reports are accurate, meaningful, and trustworthy.
+            We're intentionally validating the underlying data first (occupancy, rooms, enrolment, classifications) so reporting is accurate and trusted when introduced.
           </p>
 
           <div className="border-t border-gray-200 pt-6">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              When available, Reporting will include:
+              Planned reporting capabilities:
             </h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex-shrink-0 p-2 bg-blue-100 rounded-lg">
-                  <Home className="size-5 text-blue-600" />
+              <div className="flex items-start gap-3 p-4 bg-rose-50 rounded-lg border border-rose-200">
+                <div className="flex-shrink-0 p-2 bg-rose-100 rounded-lg">
+                  <Boxes className="size-5 text-rose-600" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-1">Portfolio-level views</h3>
-                  <p className="text-sm text-gray-600">View across all houses</p>
+                  <h3 className="font-medium text-gray-900 mb-1">Vacancy snapshots</h3>
+                  <p className="text-sm text-gray-600">Vacant houses and rooms across portfolio</p>
                 </div>
               </div>
 
@@ -47,8 +51,8 @@ export default function ReportingPage() {
                   <TrendingUp className="size-5 text-emerald-600" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-1">Occupancy summaries</h3>
-                  <p className="text-sm text-gray-600">Occupancy and vacancy tracking</p>
+                  <h3 className="font-medium text-gray-900 mb-1">Portfolio occupancy summaries</h3>
+                  <p className="text-sm text-gray-600">Overall occupancy rates and trends</p>
                 </div>
               </div>
 
@@ -57,8 +61,8 @@ export default function ReportingPage() {
                   <DollarSign className="size-5 text-amber-600" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-1">Billing visibility</h3>
-                  <p className="text-sm text-gray-600">Billing and payment insights</p>
+                  <h3 className="font-medium text-gray-900 mb-1">Billing and claim visibility</h3>
+                  <p className="text-sm text-gray-600">Revenue insights and claim status</p>
                 </div>
               </div>
 
@@ -67,11 +71,37 @@ export default function ReportingPage() {
                   <FileCheck className="size-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-900 mb-1">Compliance milestones</h3>
-                  <p className="text-sm text-gray-600">Key compliance and lease dates</p>
+                  <h3 className="font-medium text-gray-900 mb-1">Property and compliance milestones</h3>
+                  <p className="text-sm text-gray-600">Key dates and compliance tracking</p>
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Forecasting Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-indigo-100 rounded-lg">
+              <Activity className="size-6 text-indigo-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Forecasting <span className="text-gray-500 text-lg font-normal">(Coming Soon)</span>
+            </h2>
+          </div>
+          
+          <p className="text-base text-gray-700 leading-relaxed mb-4">
+            Forecasting in Haven will project future spend and revenue based on current occupancy patterns, historical growth trends, and planned capacity changes.
+          </p>
+          
+          <p className="text-sm text-gray-600 leading-relaxed">
+            This will help teams model scenarios like "What if we fill 2 more rooms?" or "How will revenue trend if current growth continues?" — providing confidence for capacity planning and budget forecasting.
+          </p>
+          
+          <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+            <p className="text-sm text-indigo-800">
+              <strong className="font-semibold">Note:</strong> Forecasting will leverage validated occupancy, billing, and transaction data to produce reliable projections once the core data model is proven stable.
+            </p>
           </div>
         </div>
 
@@ -85,4 +115,5 @@ export default function ReportingPage() {
     </div>
   )
 }
+
 
