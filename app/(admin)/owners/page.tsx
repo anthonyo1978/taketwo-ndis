@@ -20,9 +20,9 @@ export default function OwnersPage() {
     setLoading(true)
     try {
       const response = await fetch('/api/owners')
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; data?: Owner[] }
       if (result.success) {
-        setOwners(result.data)
+        setOwners(result.data || [])
       }
     } catch (error) {
       console.error('Error fetching owners:', error)
@@ -42,7 +42,7 @@ export default function OwnersPage() {
         method: 'DELETE'
       })
 
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; error?: string }
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to delete owner')

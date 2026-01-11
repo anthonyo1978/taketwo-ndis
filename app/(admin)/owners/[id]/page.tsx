@@ -26,7 +26,7 @@ export default function OwnerDetailPage() {
     setLoading(true)
     try {
       const response = await fetch(`/api/owners/${id}`)
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; data?: Owner; error?: string }
       
       if (result.success && result.data) {
         setOwner(result.data)
