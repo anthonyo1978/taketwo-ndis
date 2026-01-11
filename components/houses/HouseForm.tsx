@@ -32,7 +32,7 @@ export function HouseForm({ onSubmit, isLoading = false, className, initialData,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-  } = useForm<HouseCreateSchemaType>({
+  } = useForm({
     resolver: zodResolver(houseCreateSchema),
     defaultValues: initialData || {
       status: 'Active',
