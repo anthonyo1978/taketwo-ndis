@@ -47,7 +47,8 @@ export const houseCreateSchema = z.object({
     .optional(),
   
   hasOoa: z.boolean()
-    .default(false),
+    .optional()
+    .transform(val => val ?? false),
   
   ooaNotes: z.string()
     .max(500, "OOA notes must be no more than 500 characters")
