@@ -8,9 +8,10 @@ interface UtilitySnapshotsListProps {
   propertyId: string
   utilityType: UtilityType
   onAddSnapshot: () => void
+  refreshTrigger?: number
 }
 
-export function UtilitySnapshotsList({ propertyId, utilityType, onAddSnapshot }: UtilitySnapshotsListProps) {
+export function UtilitySnapshotsList({ propertyId, utilityType, onAddSnapshot, refreshTrigger }: UtilitySnapshotsListProps) {
   const [snapshots, setSnapshots] = useState<UtilitySnapshot[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +37,7 @@ export function UtilitySnapshotsList({ propertyId, utilityType, onAddSnapshot }:
 
   useEffect(() => {
     fetchSnapshots()
-  }, [propertyId, utilityType])
+  }, [propertyId, utilityType, refreshTrigger])
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this snapshot?')) return

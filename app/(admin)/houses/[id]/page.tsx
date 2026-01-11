@@ -72,6 +72,8 @@ export default function HouseDetailPage() {
   // Utilities state
   const [showElectricityModal, setShowElectricityModal] = useState(false)
   const [showWaterModal, setShowWaterModal] = useState(false)
+  const [electricityRefreshTrigger, setElectricityRefreshTrigger] = useState(0)
+  const [waterRefreshTrigger, setWaterRefreshTrigger] = useState(0)
 
   useEffect(() => {
     const fetchHouse = async () => {
@@ -627,6 +629,7 @@ export default function HouseDetailPage() {
               propertyId={house.id}
               utilityType="electricity"
               onAddSnapshot={() => setShowElectricityModal(true)}
+              refreshTrigger={electricityRefreshTrigger}
             />
           </div>
           
@@ -637,6 +640,7 @@ export default function HouseDetailPage() {
               propertyId={house.id}
               utilityType="water"
               onAddSnapshot={() => setShowWaterModal(true)}
+              refreshTrigger={waterRefreshTrigger}
             />
           </div>
         </div>
@@ -801,7 +805,10 @@ export default function HouseDetailPage() {
         <AddUtilitySnapshotModal
           isOpen={showElectricityModal}
           onClose={() => setShowElectricityModal(false)}
-          onSuccess={() => setShowElectricityModal(false)}
+          onSuccess={() => {
+            setShowElectricityModal(false)
+            setElectricityRefreshTrigger(prev => prev + 1)
+          }}
           propertyId={id}
           utilityType="electricity"
         />
@@ -809,7 +816,10 @@ export default function HouseDetailPage() {
         <AddUtilitySnapshotModal
           isOpen={showWaterModal}
           onClose={() => setShowWaterModal(false)}
-          onSuccess={() => setShowWaterModal(false)}
+          onSuccess={() => {
+            setShowWaterModal(false)
+            setWaterRefreshTrigger(prev => prev + 1)
+          }}
           propertyId={id}
           utilityType="water"
         />
