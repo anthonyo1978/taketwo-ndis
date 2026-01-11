@@ -37,6 +37,7 @@ export function HouseForm({ onSubmit, isLoading = false, className, initialData,
     defaultValues: initialData || {
       status: 'Active',
       goLiveDate: new Date(),
+      hasOoa: false,
     },
   })
 
