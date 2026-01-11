@@ -57,7 +57,7 @@ export default function HouseDetailPage() {
   const [occupancyLoading, setOccupancyLoading] = useState(true)
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'details' | 'ownership' | 'suppliers'>('details')
+  const [activeTab, setActiveTab] = useState<'details' | 'ownership' | 'suppliers' | 'utilities'>('details')
   
   // Ownership & Lease state
   const [currentLease, setCurrentLease] = useState<HeadLease | null>(null)
@@ -343,6 +343,16 @@ export default function HouseDetailPage() {
             >
               Suppliers
             </button>
+            <button
+              onClick={() => setActiveTab('utilities')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'utilities'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Utilities & Charges
+            </button>
           </nav>
         </div>
 
@@ -611,42 +621,6 @@ export default function HouseDetailPage() {
           </div>
         )}
 
-        {/* Utilities / On-Charge Section */}
-        {house && house.id && (
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Utilities / On-Charge</h3>
-            
-            {/* Electricity Section */}
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-md font-semibold text-gray-800">Electricity</h4>
-                {house.electricityNmi && (
-                  <span className="text-sm text-gray-600">
-                    NMI: {house.electricityNmi}
-                  </span>
-                )}
-              </div>
-              <UtilitySnapshotsList
-                propertyId={house.id}
-                utilityType="electricity"
-                onAddSnapshot={() => setShowElectricityModal(true)}
-                refreshTrigger={electricityRefreshTrigger}
-              />
-            </div>
-            
-            {/* Water Section */}
-            <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4">Water</h4>
-              <UtilitySnapshotsList
-                propertyId={house.id}
-                utilityType="water"
-                onAddSnapshot={() => setShowWaterModal(true)}
-                refreshTrigger={waterRefreshTrigger}
-              />
-            </div>
-          </div>
-        )}
-
         {/* Residents Section */}
         <div className="mt-12">
           <div className="flex items-center justify-between mb-6">
@@ -762,6 +736,42 @@ export default function HouseDetailPage() {
               refreshTrigger={supplierRefreshTrigger}
               onUpdate={() => setSupplierRefreshTrigger(prev => prev + 1)}
             />
+          </div>
+        )}
+
+        {/* Utilities & Charges Tab */}
+        {activeTab === 'utilities' && house && house.id && (
+          <div className="space-y-6">
+            {/* Electricity Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">Electricity</h2>
+                  {house.electricityNmi && (
+                    <p className="text-sm text-gray-600 mt-1">NMI: {house.electricityNmi}</p>
+                  )}
+                </div>
+              </div>
+              <UtilitySnapshotsList
+                propertyId={house.id}
+                utilityType="electricity"
+                onAddSnapshot={() => setShowElectricityModal(true)}
+                refreshTrigger={electricityRefreshTrigger}
+              />
+            </div>
+
+            {/* Water Section */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Water</h2>
+              </div>
+              <UtilitySnapshotsList
+                propertyId={house.id}
+                utilityType="water"
+                onAddSnapshot={() => setShowWaterModal(true)}
+                refreshTrigger={waterRefreshTrigger}
+              />
+            </div>
           </div>
         )}
 
