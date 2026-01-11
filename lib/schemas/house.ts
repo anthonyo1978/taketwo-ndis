@@ -47,7 +47,6 @@ export const houseCreateSchema = z.object({
     .optional(),
   
   hasOoa: z.boolean()
-    .optional()
     .default(false),
   
   ooaNotes: z.string()
