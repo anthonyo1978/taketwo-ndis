@@ -45,8 +45,8 @@ CREATE POLICY "Users can view plan managers from their organization"
   USING (
     provider_id IN (
       SELECT organization_id 
-      FROM organization_members 
-      WHERE user_id = auth.uid()
+      FROM users 
+      WHERE auth_user_id = auth.uid()
     )
   );
 
@@ -57,8 +57,8 @@ CREATE POLICY "Users can create plan managers for their organization"
   WITH CHECK (
     provider_id IN (
       SELECT organization_id 
-      FROM organization_members 
-      WHERE user_id = auth.uid()
+      FROM users 
+      WHERE auth_user_id = auth.uid()
     )
   );
 
@@ -69,15 +69,15 @@ CREATE POLICY "Users can update plan managers from their organization"
   USING (
     provider_id IN (
       SELECT organization_id 
-      FROM organization_members 
-      WHERE user_id = auth.uid()
+      FROM users 
+      WHERE auth_user_id = auth.uid()
     )
   )
   WITH CHECK (
     provider_id IN (
       SELECT organization_id 
-      FROM organization_members 
-      WHERE user_id = auth.uid()
+      FROM users 
+      WHERE auth_user_id = auth.uid()
     )
   );
 
@@ -88,8 +88,8 @@ CREATE POLICY "Users can delete plan managers from their organization"
   USING (
     provider_id IN (
       SELECT organization_id 
-      FROM organization_members 
-      WHERE user_id = auth.uid()
+      FROM users 
+      WHERE auth_user_id = auth.uid()
     )
   );
 
