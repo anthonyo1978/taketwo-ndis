@@ -26,6 +26,9 @@ export class HouseService {
       country: dbHouse.country || 'AU', // Default to AU if not provided
       status: dbHouse.status,
       bedroomCount: dbHouse.bedroom_count || undefined, // Map bedroom_count from DB
+      dwellingType: dbHouse.dwelling_type || undefined, // Map dwelling_type from DB
+      sdaDesignCategory: dbHouse.sda_design_category || undefined, // Map sda_design_category from DB
+      sdaRegistrationStatus: dbHouse.sda_registration_status || undefined, // Map sda_registration_status from DB
       notes: dbHouse.notes,
       goLiveDate: dbHouse.go_live_date, // Convert snake_case to camelCase
       resident: dbHouse.resident,
@@ -198,6 +201,9 @@ export class HouseService {
         country: house.country || 'AU', // Default to AU if not provided
         status: house.status,
         bedroom_count: house.bedroomCount, // Map bedroomCount to bedroom_count
+        dwelling_type: house.dwellingType, // Map dwellingType to dwelling_type
+        sda_design_category: house.sdaDesignCategory, // Map sdaDesignCategory to sda_design_category
+        sda_registration_status: house.sdaRegistrationStatus, // Map sdaRegistrationStatus to sda_registration_status
         notes: house.notes,
         go_live_date: house.goLiveDate, // Convert camelCase to snake_case
         resident: house.resident,
@@ -253,6 +259,9 @@ export class HouseService {
       if (updates.country !== undefined) dbUpdates.country = updates.country
       if (updates.status !== undefined) dbUpdates.status = updates.status
       if (updates.bedroomCount !== undefined) dbUpdates.bedroom_count = updates.bedroomCount
+      if (updates.dwellingType !== undefined) dbUpdates.dwelling_type = updates.dwellingType
+      if (updates.sdaDesignCategory !== undefined) dbUpdates.sda_design_category = updates.sdaDesignCategory
+      if (updates.sdaRegistrationStatus !== undefined) dbUpdates.sda_registration_status = updates.sdaRegistrationStatus
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes
       if (updates.goLiveDate !== undefined) dbUpdates.go_live_date = updates.goLiveDate
       if (updates.resident !== undefined) dbUpdates.resident = updates.resident

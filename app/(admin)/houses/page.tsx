@@ -360,6 +360,9 @@ function HousesPageContent() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type/Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Resident(s)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -483,6 +486,26 @@ function HousesPageContent() {
                         }`}>
                           {house.status}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {(() => {
+                          const parts = []
+                          if (house.dwellingType) parts.push(house.dwellingType)
+                          if (house.sdaDesignCategory) parts.push(house.sdaDesignCategory)
+                          if (house.sdaRegistrationStatus) parts.push(house.sdaRegistrationStatus)
+                          
+                          if (parts.length === 0) return <span className="text-gray-400 text-sm">—</span>
+                          
+                          return (
+                            <div className="flex flex-wrap gap-1.5">
+                              {parts.map((part, idx) => (
+                                <span key={idx} className="inline-flex px-2 py-0.5 text-xs font-medium rounded bg-blue-50 text-blue-700 border border-blue-200">
+                                  {part}
+                                </span>
+                              ))}
+                            </div>
+                          )
+                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <ResidentAvatars houseId={house.id} maxDisplay={4} />

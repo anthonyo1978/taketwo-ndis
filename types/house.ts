@@ -4,6 +4,15 @@ export type AustralianState = 'ACT' | 'NSW' | 'NT' | 'QLD' | 'SA' | 'TAS' | 'VIC
 /** Status options for houses. */
 export type HouseStatus = 'Active' | 'Vacant' | 'Maintenance'
 
+/** SDA dwelling type options */
+export type DwellingType = 'House' | 'Villa' | 'Apartment' | 'Townhouse' | 'Duplex' | 'Other'
+
+/** SDA design category options */
+export type SDADesignCategory = 'Improved Liveability' | 'Fully Accessible' | 'Robust' | 'High Physical Support' | 'Other/Unknown'
+
+/** SDA registration status options */
+export type SDARegistrationStatus = 'Registered' | 'In Progress' | 'Unknown'
+
 /**
  * Complete house information including address and status.
  */
@@ -18,6 +27,9 @@ export interface House {
   country: string
   status: HouseStatus
   bedroomCount?: number
+  dwellingType?: DwellingType
+  sdaDesignCategory?: SDADesignCategory
+  sdaRegistrationStatus?: SDARegistrationStatus
   notes?: string
   goLiveDate: Date
   resident?: string
@@ -41,6 +53,9 @@ export interface HouseCreateInput {
   country: string
   status: HouseStatus
   bedroomCount?: number
+  dwellingType?: DwellingType
+  sdaDesignCategory?: SDADesignCategory
+  sdaRegistrationStatus?: SDARegistrationStatus
   notes?: string
   goLiveDate: Date
   resident?: string

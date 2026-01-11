@@ -421,6 +421,33 @@ export default function HouseDetailPage() {
                     {house.bedroomCount || 'Not set'}
                   </dd>
                 </div>
+                
+                {/* SDA Classification */}
+                {(house.dwellingType || house.sdaDesignCategory || house.sdaRegistrationStatus) && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-600">SDA Classification</dt>
+                    <dd className="text-gray-900">
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {house.dwellingType && (
+                          <span className="inline-flex px-2.5 py-1 text-sm font-medium rounded bg-blue-50 text-blue-700 border border-blue-200">
+                            {house.dwellingType}
+                          </span>
+                        )}
+                        {house.sdaDesignCategory && (
+                          <span className="inline-flex px-2.5 py-1 text-sm font-medium rounded bg-purple-50 text-purple-700 border border-purple-200">
+                            {house.sdaDesignCategory}
+                          </span>
+                        )}
+                        {house.sdaRegistrationStatus && (
+                          <span className="inline-flex px-2.5 py-1 text-sm font-medium rounded bg-green-50 text-green-700 border border-green-200">
+                            {house.sdaRegistrationStatus}
+                          </span>
+                        )}
+                      </div>
+                    </dd>
+                  </div>
+                )}
+                
                 <div>
                   <dt className="text-sm font-medium text-gray-600">Go-Live Date</dt>
                   <dd className="text-gray-900">

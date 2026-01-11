@@ -37,6 +37,15 @@ export const houseCreateSchema = z.object({
     .max(20, "Bedroom count must be no more than 20")
     .optional(),
   
+  dwellingType: z.enum(['House', 'Villa', 'Apartment', 'Townhouse', 'Duplex', 'Other'] as const)
+    .optional(),
+  
+  sdaDesignCategory: z.enum(['Improved Liveability', 'Fully Accessible', 'Robust', 'High Physical Support', 'Other/Unknown'] as const)
+    .optional(),
+  
+  sdaRegistrationStatus: z.enum(['Registered', 'In Progress', 'Unknown'] as const)
+    .optional(),
+  
   notes: z.string().optional(),
   
   goLiveDate: z.coerce.date({

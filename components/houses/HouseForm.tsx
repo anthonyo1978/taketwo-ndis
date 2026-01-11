@@ -238,6 +238,74 @@ export function HouseForm({ onSubmit, isLoading = false, className, initialData,
             </div>
           </div>
           
+          {/* SDA Classification */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="dwellingType" className="block text-sm font-medium text-gray-700 mb-1">
+                Dwelling Type <span className="text-gray-500">(Optional)</span>
+              </label>
+              <select
+                id="dwellingType"
+                {...register("dwellingType")}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={submitDisabled}
+              >
+                <option value="">Select Type</option>
+                <option value="House">House</option>
+                <option value="Villa">Villa</option>
+                <option value="Apartment">Apartment</option>
+                <option value="Townhouse">Townhouse</option>
+                <option value="Duplex">Duplex</option>
+                <option value="Other">Other</option>
+              </select>
+              <p className="mt-1 text-sm text-gray-500">
+                SDA property type
+              </p>
+            </div>
+            
+            <div>
+              <label htmlFor="sdaDesignCategory" className="block text-sm font-medium text-gray-700 mb-1">
+                SDA Design Category <span className="text-gray-500">(Optional)</span>
+              </label>
+              <select
+                id="sdaDesignCategory"
+                {...register("sdaDesignCategory")}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={submitDisabled}
+              >
+                <option value="">Select Category</option>
+                <option value="Improved Liveability">Improved Liveability</option>
+                <option value="Fully Accessible">Fully Accessible</option>
+                <option value="Robust">Robust</option>
+                <option value="High Physical Support">High Physical Support</option>
+                <option value="Other/Unknown">Other/Unknown</option>
+              </select>
+              <p className="mt-1 text-sm text-gray-500">
+                Design category
+              </p>
+            </div>
+            
+            <div>
+              <label htmlFor="sdaRegistrationStatus" className="block text-sm font-medium text-gray-700 mb-1">
+                Registration Status <span className="text-gray-500">(Optional)</span>
+              </label>
+              <select
+                id="sdaRegistrationStatus"
+                {...register("sdaRegistrationStatus")}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={submitDisabled}
+              >
+                <option value="">Select Status</option>
+                <option value="Registered">Registered</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+              <p className="mt-1 text-sm text-gray-500">
+                SDA registration status
+              </p>
+            </div>
+          </div>
+          
           <div>
             <label htmlFor="goLiveDate" className="block text-sm font-medium text-gray-700 mb-1">
               Go-Live Date <span className="text-red-500">*</span>

@@ -226,6 +226,9 @@ export default function EditHousePage() {
                   country: house.country,
                   status: house.status,
                   bedroomCount: house.bedroomCount,
+                  dwellingType: house.dwellingType,
+                  sdaDesignCategory: house.sdaDesignCategory,
+                  sdaRegistrationStatus: house.sdaRegistrationStatus,
                   goLiveDate: house.goLiveDate ? new Date(house.goLiveDate) : undefined,
                   notes: house.notes || '',
                   imageUrl: house.imageUrl || ''
