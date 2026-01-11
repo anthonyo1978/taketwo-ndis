@@ -713,7 +713,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Quantity */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -759,41 +759,45 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
                 Unit Price *
               </label>
               <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  step="10"
-                  min="0"
-                  {...form.register('unitPrice', { valueAsNumber: true })}
-                  error={form.formState.errors.unitPrice?.message}
-                  className="flex-1"
-                />
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">$</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    {...form.register('unitPrice', { valueAsNumber: true })}
+                    error={form.formState.errors.unitPrice?.message}
+                    className="pl-7"
+                    placeholder="0.00"
+                  />
+                </div>
                 <div className="flex flex-col gap-1">
                   <button
                     type="button"
                     onClick={() => {
                       const currentValue = form.getValues('unitPrice') || 0
-                      form.setValue('unitPrice', currentValue + 10)
+                      form.setValue('unitPrice', Math.round((currentValue + 1) * 100) / 100)
                     }}
                     className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    title="Increase by $10"
+                    title="Increase by $1"
                   >
-                    +$10
+                    +$1
                   </button>
                   <button
                     type="button"
                     onClick={() => {
                       const currentValue = form.getValues('unitPrice') || 0
-                      form.setValue('unitPrice', Math.max(0, currentValue - 10))
+                      form.setValue('unitPrice', Math.max(0, Math.round((currentValue - 1) * 100) / 100))
                     }}
                     className="px-2 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    title="Decrease by $10"
+                    title="Decrease by $1"
                   >
-                    -$10
+                    -$1
                   </button>
                 </div>
               </div>
               <p className="text-xs text-gray-500">
-                Use +/- buttons for $10 increments
+                Supports cents (e.g., $123.45). Use +/- for $1 increments
               </p>
             </div>
 
