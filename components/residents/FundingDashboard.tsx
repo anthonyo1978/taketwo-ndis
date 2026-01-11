@@ -36,11 +36,18 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
   const [showAddPlanManagerModal, setShowAddPlanManagerModal] = useState(false)
   const [isSavingFundingManagement, setIsSavingFundingManagement] = useState(false)
   
+  // GTA state
+  const [gtaReference, setGtaReference] = useState('')
+  const [gtaStartDate, setGtaStartDate] = useState('')
+  const [gtaEndDate, setGtaEndDate] = useState('')
+  const [isEditingGta, setIsEditingGta] = useState(false)
+  const [isSavingGta, setIsSavingGta] = useState(false)
+  
   const activeContract = fundingInfo.find(c => c.contractStatus === 'Active')
   const draftContract = fundingInfo.find(c => c.contractStatus === 'Draft')
   const currentContract = activeContract || draftContract
   
-  // Load resident data to get funding level and funding management
+  // Load resident data to get funding level, funding management, and GTA
   useEffect(() => {
     const fetchResident = async () => {
       try {
@@ -51,6 +58,9 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
           setFundingLevelNotes(result.data.participantFundingLevelNotes || '')
           setFundingManagementType(result.data.fundingManagementType || '')
           setSelectedPlanManagerId(result.data.planManagerId || '')
+          setGtaReference(result.data.gtaReference || '')
+          setGtaStartDate(result.data.gtaStartDate ? new Date(result.data.gtaStartDate).toISOString().split('T')[0] : '')
+          setGtaEndDate(result.data.gtaEndDate ? new Date(result.data.gtaEndDate).toISOString().split('T')[0] : '')
         }
       } catch (error) {
         console.error('Failed to fetch resident:', error)
@@ -127,6 +137,56 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       toast.error(error instanceof Error ? error.message : 'Failed to save')
     } finally {
       setIsSavingFundingManagement(false)
+    }
+  }
+  
+  // Save GTA details
+  const handleSaveGta = async () => {
+    setIsSavingGta(true)
+    try {
+      const response = await fetch(`/api/residents/${residentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gtaReference: gtaReference || '',
+          gtaStartDate: gtaStartDate ? new Date(gtaStartDate) : null,
+          gtaEndDate: gtaEndDate ? new Date(gtaEndDate) : null
+        })
+      })
+      
+      const result = await response.json() as { success: boolean; error?: string }
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to update GTA')
+      }
+      
+      toast.success('General Tenancy Agreement updated!')
+      setIsEditingGta(false)
+      
+      // If GTA end date is set, suggest creating a reminder
+      if (gtaEndDate) {
+        const endDate = new Date(gtaEndDate)
+        const reminderDate = new Date(endDate)
+        reminderDate.setMonth(reminderDate.getMonth() - 2) // 2 months before expiry
+        
+        if (reminderDate > new Date()) {
+          // Only suggest if reminder date is in the future
+          const shouldCreate = window.confirm(
+            `Create a reminder to renew the GTA?\n\n` +
+            `Due date: ${reminderDate.toLocaleDateString()}\n` +
+            `(2 months before GTA expiry: ${endDate.toLocaleDateString()})`
+          )
+          
+          if (shouldCreate) {
+            // Navigate to create reminder (or implement inline creation)
+            toast.success('Reminder feature coming soon! You can manually create a reminder in the Reminders section.')
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Save GTA error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to save')
+    } finally {
+      setIsSavingGta(false)
     }
   }
   
@@ -674,6 +734,165 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
             </div>
           )}
         </div>
+      </div>
+
+      {/* General Tenancy Agreement (GTA) */}
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">📄</span>
+            <div>
+              <h3 className="text-sm font-semibold text-green-900">General Tenancy Agreement</h3>
+              <p className="text-xs text-green-700 mt-0.5">Reference only. Used for reminders and reporting.</p>
+            </div>
+          </div>
+          {!isEditingGta && (
+            <button
+              onClick={() => setIsEditingGta(true)}
+              className="text-green-700 hover:text-green-900 text-sm font-medium"
+            >
+              Edit
+            </button>
+          )}
+        </div>
+        
+        {isEditingGta ? (
+          <div className="space-y-3">
+            <div>
+              <label htmlFor="gtaReference" className="block text-sm font-medium text-green-900 mb-1">
+                GTA Reference
+              </label>
+              <input
+                id="gtaReference"
+                type="text"
+                value={gtaReference}
+                onChange={(e) => setGtaReference(e.target.value)}
+                placeholder="e.g., GTA-2024-001"
+                maxLength={100}
+                className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="gtaStartDate" className="block text-sm font-medium text-green-900 mb-1">
+                  Start Date
+                </label>
+                <input
+                  id="gtaStartDate"
+                  type="date"
+                  value={gtaStartDate}
+                  onChange={(e) => setGtaStartDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="gtaEndDate" className="block text-sm font-medium text-green-900 mb-1">
+                  End Date
+                </label>
+                <input
+                  id="gtaEndDate"
+                  type="date"
+                  value={gtaEndDate}
+                  onChange={(e) => setGtaEndDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 bg-white"
+                />
+                {gtaEndDate && (() => {
+                  const endDate = new Date(gtaEndDate)
+                  const reminderDate = new Date(endDate)
+                  reminderDate.setMonth(reminderDate.getMonth() - 2)
+                  const today = new Date()
+                  today.setHours(0, 0, 0, 0)
+                  
+                  if (reminderDate > today) {
+                    return (
+                      <p className="text-xs text-green-700 mt-1">
+                        💡 Reminder suggested: {reminderDate.toLocaleDateString()} (2 months before expiry)
+                      </p>
+                    )
+                  }
+                  return null
+                })()}
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <button
+                onClick={handleSaveGta}
+                disabled={isSavingGta}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                {isSavingGta ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditingGta(false)
+                  // Reset to original values
+                  const fetchResident = async () => {
+                    try {
+                      const response = await fetch(`/api/residents/${residentId}`)
+                      const result = await response.json() as { success: boolean; data?: Resident }
+                      if (result.success && result.data) {
+                        setGtaReference(result.data.gtaReference || '')
+                        setGtaStartDate(result.data.gtaStartDate ? new Date(result.data.gtaStartDate).toISOString().split('T')[0] : '')
+                        setGtaEndDate(result.data.gtaEndDate ? new Date(result.data.gtaEndDate).toISOString().split('T')[0] : '')
+                      }
+                    } catch (error) {
+                      console.error('Failed to fetch resident:', error)
+                    }
+                  }
+                  fetchResident()
+                }}
+                className="px-4 py-2 bg-white border border-green-300 text-green-900 rounded-lg hover:bg-green-50 text-sm font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {gtaReference || gtaStartDate || gtaEndDate ? (
+              <>
+                {gtaReference && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-green-900">Reference:</span>
+                    <span className="px-3 py-1 bg-white border border-green-300 rounded-md text-sm text-green-900 font-medium">
+                      {gtaReference}
+                    </span>
+                  </div>
+                )}
+                <div className="flex gap-4 text-sm text-green-800">
+                  {gtaStartDate && (
+                    <div>
+                      <span className="font-medium">Start:</span> {new Date(gtaStartDate).toLocaleDateString()}
+                    </div>
+                  )}
+                  {gtaEndDate && (
+                    <div>
+                      <span className="font-medium">End:</span> {new Date(gtaEndDate).toLocaleDateString()}
+                      {(() => {
+                        const endDate = new Date(gtaEndDate)
+                        const today = new Date()
+                        today.setHours(0, 0, 0, 0)
+                        const daysUntilExpiry = Math.ceil((endDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                        
+                        if (daysUntilExpiry < 0) {
+                          return <span className="ml-2 text-xs text-red-600 font-medium">⚠️ Expired</span>
+                        } else if (daysUntilExpiry <= 60) {
+                          return <span className="ml-2 text-xs text-orange-600 font-medium">⚠️ Expiring soon ({daysUntilExpiry} days)</span>
+                        }
+                        return null
+                      })()}
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-green-700 italic">No GTA details set</p>
+            )}
+          </div>
+        )}
       </div>
 
       {currentContract ? (

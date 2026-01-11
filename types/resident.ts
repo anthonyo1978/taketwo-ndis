@@ -128,6 +128,9 @@ export interface Resident {
     phone?: string
     billingEmail?: string
   } | null
+  gtaReference?: string
+  gtaStartDate?: Date
+  gtaEndDate?: Date
   fundingInformation: FundingInformation[]
   preferences: ResidentPreferences
   detailedNotes?: string
@@ -181,6 +184,9 @@ export interface ResidentUpdateInput {
   participantFundingLevelNotes?: string
   fundingManagementType?: FundingManagementType
   planManagerId?: string | null
+  gtaReference?: string
+  gtaStartDate?: Date
+  gtaEndDate?: Date
   detailedNotes?: string
   preferences?: ResidentPreferences
   emergencyContact?: EmergencyContact

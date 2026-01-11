@@ -244,6 +244,17 @@ export const residentUpdateSchema = z.object({
     .optional()
     .nullable(),
   
+  gtaReference: z.string()
+    .max(100, "GTA reference must be no more than 100 characters")
+    .optional()
+    .or(z.literal('')),
+  
+  gtaStartDate: z.coerce.date()
+    .optional(),
+  
+  gtaEndDate: z.coerce.date()
+    .optional(),
+  
   detailedNotes: z.string()
     .max(5000, "Detailed notes must be no more than 5000 characters")
     .optional()

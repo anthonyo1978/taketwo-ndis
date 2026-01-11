@@ -42,6 +42,9 @@ export class ResidentService {
         phone: dbResident.plan_managers.phone || undefined,
         billingEmail: dbResident.plan_managers.billing_email || undefined
       } : undefined,
+      gtaReference: dbResident.gta_reference || undefined,
+      gtaStartDate: dbResident.gta_start_date ? new Date(dbResident.gta_start_date) : undefined,
+      gtaEndDate: dbResident.gta_end_date ? new Date(dbResident.gta_end_date) : undefined,
       detailedNotes: dbResident.detailed_notes || undefined,
       preferences: dbResident.preferences || {},
       emergencyContact: dbResident.emergency_contact || undefined,
@@ -275,6 +278,9 @@ export class ResidentService {
       if (updates.participantFundingLevelNotes !== undefined) dbUpdates.participant_funding_level_notes = updates.participantFundingLevelNotes || null
       if (updates.fundingManagementType !== undefined) dbUpdates.funding_management_type = updates.fundingManagementType || null
       if (updates.planManagerId !== undefined) dbUpdates.plan_manager_id = updates.planManagerId || null
+      if (updates.gtaReference !== undefined) dbUpdates.gta_reference = updates.gtaReference || null
+      if (updates.gtaStartDate !== undefined) dbUpdates.gta_start_date = updates.gtaStartDate || null
+      if (updates.gtaEndDate !== undefined) dbUpdates.gta_end_date = updates.gtaEndDate || null
       if (updates.detailedNotes !== undefined) dbUpdates.detailed_notes = updates.detailedNotes || null
       if (updates.preferences !== undefined) dbUpdates.preferences = updates.preferences || null
       if (updates.emergencyContact !== undefined) dbUpdates.emergency_contact = updates.emergencyContact || null
