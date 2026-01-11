@@ -39,6 +39,7 @@ export function ResidentSelectionModal({
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [selectedResident, setSelectedResident] = useState<Resident | null>(null)
   const [roomLabel, setRoomLabel] = useState("")
 
   // Fetch residents and houses data
@@ -122,11 +123,26 @@ export function ResidentSelectionModal({
     )
   }
 
-  // Handle resident selection
-  const handleSelect = (resident: Resident) => {
-    onSelect(resident, roomLabel.trim() || undefined)
+  // Handle resident selection (first step)
+  const handleSelectResident = (resident: Resident) => {
+    setSelectedResident(resident)
+    setRoomLabel("") // Reset room label when selecting a new resident
+  }
+
+  // Handle confirmation (second step - with optional room)
+  const handleConfirmAssignment = () => {
+    if (!selectedResident) return
+    onSelect(selectedResident, roomLabel.trim() || undefined)
     onClose()
-    setRoomLabel("") // Reset for next use
+    // Reset state
+    setSelectedResident(null)
+    setRoomLabel("")
+  }
+
+  // Handle canceling the selection
+  const handleCancelSelection = () => {
+    setSelectedResident(null)
+    setRoomLabel("")
   }
 
   if (!open) return null
@@ -151,7 +167,7 @@ export function ResidentSelectionModal({
         </div>
 
         {/* Search and Filters */}
-        <div className="p-6 border-b border-gray-200 space-y-4">
+        <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
             <div className="flex-1">
@@ -181,30 +197,85 @@ export function ResidentSelectionModal({
               </select>
             </div>
           </div>
-
-          {/* Room Input */}
-          <div>
-            <label htmlFor="roomLabel" className="block text-sm font-medium text-gray-700 mb-1">
-              Room / Unit <span className="text-gray-500">(Optional)</span>
-            </label>
-            <input
-              id="roomLabel"
-              type="text"
-              placeholder="e.g., Room 1, Bedroom A, Studio 2"
-              value={roomLabel}
-              onChange={(e) => setRoomLabel(e.target.value)}
-              maxLength={50}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Optional: Specify which room this resident will occupy in the property
-            </p>
-          </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-hidden">
-          {loading ? (
+          {selectedResident ? (
+            /* Confirmation Step - Show selected resident and room input */
+            <div className="p-6 space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirm Assignment</h3>
+                <p className="text-sm text-gray-600">Review details and optionally specify a room</p>
+              </div>
+
+              {/* Selected Resident Card */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0 h-16 w-16">
+                    {selectedResident.photoBase64 ? (
+                      <img
+                        className="h-16 w-16 rounded-full object-cover"
+                        src={selectedResident.photoBase64}
+                        alt={`${selectedResident.firstName} ${selectedResident.lastName}`}
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-full bg-blue-300 flex items-center justify-center">
+                        <span className="text-white text-lg font-medium">
+                          {selectedResident.firstName.charAt(0)}{selectedResident.lastName.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-lg font-semibold text-gray-900">
+                      {selectedResident.firstName} {selectedResident.lastName}
+                    </p>
+                    <p className="text-sm text-gray-600">ID: {selectedResident.id}</p>
+                    {selectedResident.phone && (
+                      <p className="text-sm text-gray-600 mt-1">📞 {selectedResident.phone}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Room Input */}
+              <div>
+                <label htmlFor="roomLabel" className="block text-sm font-medium text-gray-700 mb-2">
+                  Room / Unit <span className="text-gray-500">(Optional)</span>
+                </label>
+                <input
+                  id="roomLabel"
+                  type="text"
+                  placeholder="e.g., Room 1, Bedroom A, Studio 2"
+                  value={roomLabel}
+                  onChange={(e) => setRoomLabel(e.target.value)}
+                  maxLength={50}
+                  autoFocus
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Optional: Specify which room this resident will occupy in the property
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <button
+                  onClick={handleCancelSelection}
+                  className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={handleConfirmAssignment}
+                  className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Confirm Assignment
+                </button>
+              </div>
+            </div>
+          ) : loading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
             </div>
@@ -234,7 +305,7 @@ export function ResidentSelectionModal({
                   <div
                     key={resident.id}
                     className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                    onClick={() => handleSelect(resident)}
+                    onClick={() => handleSelectResident(resident)}
                   >
                     <div className="flex items-center space-x-4">
                       {/* Avatar */}
