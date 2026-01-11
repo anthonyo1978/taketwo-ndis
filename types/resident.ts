@@ -120,14 +120,14 @@ export interface Resident {
   participantFundingLevelLabel?: string
   participantFundingLevelNotes?: string
   fundingManagementType?: FundingManagementType
-  planManagerId?: string
+  planManagerId?: string | null
   planManager?: {
     id: string
     name: string
     email?: string
     phone?: string
     billingEmail?: string
-  }
+  } | null
   fundingInformation: FundingInformation[]
   preferences: ResidentPreferences
   detailedNotes?: string
