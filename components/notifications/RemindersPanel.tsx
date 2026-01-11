@@ -1,6 +1,6 @@
 "use client"
 
-import { Bell, Calendar, Clock, FileText, Home, UserCheck, AlertCircle } from 'lucide-react'
+import { Bell, Clock, FileText, Home, UserCheck, AlertCircle } from 'lucide-react'
 
 /**
  * RemindersPanel - Contextual reminders for SDA compliance and property management
@@ -135,22 +135,6 @@ export function RemindersPanel() {
           </div>
         )
       })}
-
-      {/* Coming Soon Footer */}
-      <div className="mt-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
-        <div className="flex gap-3">
-          <Calendar className="size-5 text-purple-600 flex-shrink-0" />
-          <div>
-            <h4 className="text-sm font-semibold text-purple-900 mb-1">More Features Coming Soon</h4>
-            <ul className="text-xs text-purple-700 space-y-1">
-              <li>• Customizable reminder schedules</li>
-              <li>• Automated compliance tracking</li>
-              <li>• Email and SMS notifications</li>
-              <li>• Integration with property workflows</li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
