@@ -2,6 +2,7 @@
 
 import * as Tooltip from "@radix-ui/react-tooltip"
 import { 
+  BarChart3,
   Bell,
   ChevronLeft,
   CreditCard, 
@@ -57,6 +58,12 @@ const NAVIGATION_ITEMS = [
     href: "/notifications",
     icon: Bell,
     tourId: "notifications-nav",
+  },
+  {
+    label: "Reporting",
+    href: "/reporting",
+    icon: BarChart3,
+    tourId: "reporting-nav",
   },
   {
     label: "Settings",
