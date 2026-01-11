@@ -835,8 +835,8 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
                       const result = await response.json() as { success: boolean; data?: Resident }
                       if (result.success && result.data) {
                         setGtaReference(result.data.gtaReference || '')
-                        setGtaStartDate(result.data.gtaStartDate ? new Date(result.data.gtaStartDate).toISOString().split('T')[0] : '')
-                        setGtaEndDate(result.data.gtaEndDate ? new Date(result.data.gtaEndDate).toISOString().split('T')[0] : '')
+                        setGtaStartDate(result.data.gtaStartDate ? String(new Date(result.data.gtaStartDate).toISOString().split('T')[0]) : '')
+                        setGtaEndDate(result.data.gtaEndDate ? String(new Date(result.data.gtaEndDate).toISOString().split('T')[0]) : '')
                       }
                     } catch (error) {
                       console.error('Failed to fetch resident:', error)
