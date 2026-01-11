@@ -135,9 +135,9 @@ export function UtilitySnapshotsList({ propertyId, utilityType, onAddSnapshot, r
             {snapshots.map((snapshot) => (
               <tr key={snapshot.id} className="hover:bg-gray-50">
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                  {(snapshot.readingAt || snapshot.createdAt).toLocaleDateString()}
+                  {new Date(snapshot.readingAt || snapshot.createdAt).toLocaleDateString()}
                   <span className="block text-xs text-gray-500">
-                    {(snapshot.readingAt || snapshot.createdAt).toLocaleTimeString()}
+                    {new Date(snapshot.readingAt || snapshot.createdAt).toLocaleTimeString()}
                   </span>
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
