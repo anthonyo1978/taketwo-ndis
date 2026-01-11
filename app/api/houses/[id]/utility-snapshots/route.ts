@@ -43,7 +43,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const { id: propertyId } = await params
-    const body = await request.json()
+    const body = await request.json() as Record<string, any>
     
     // Add propertyId from URL to body
     const dataWithPropertyId = {
