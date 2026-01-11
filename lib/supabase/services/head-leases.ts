@@ -124,7 +124,7 @@ export class HeadLeaseService {
     try {
       const leases = await this.getByHouseId(houseId)
       // Return the first lease (which will be active if one exists, otherwise most recent)
-      return leases.length > 0 ? leases[0] : null
+      return leases.length > 0 ? (leases[0] || null) : null
     } catch (error) {
       console.error('HeadLeaseService.getCurrentForHouse error:', error)
       throw error
