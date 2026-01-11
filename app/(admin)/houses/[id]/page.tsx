@@ -16,6 +16,8 @@ import { HeadLeaseCard } from "components/head-leases/HeadLeaseCard"
 import { HeadLeaseModal } from "components/head-leases/HeadLeaseModal"
 import { HouseSuppliersList } from "components/suppliers/HouseSuppliersList"
 import { LinkSupplierModal } from "components/suppliers/LinkSupplierModal"
+import { UtilitySnapshotsList } from "components/utilities/UtilitySnapshotsList"
+import { AddUtilitySnapshotModal } from "components/utilities/AddUtilitySnapshotModal"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 import type { HeadLease } from "types/head-lease"
@@ -66,6 +68,10 @@ export default function HouseDetailPage() {
   // Suppliers state
   const [showLinkSupplierModal, setShowLinkSupplierModal] = useState(false)
   const [supplierRefreshTrigger, setSupplierRefreshTrigger] = useState(0)
+  
+  // Utilities state
+  const [showElectricityModal, setShowElectricityModal] = useState(false)
+  const [showWaterModal, setShowWaterModal] = useState(false)
 
   useEffect(() => {
     const fetchHouse = async () => {
@@ -603,6 +609,38 @@ export default function HouseDetailPage() {
           </div>
         )}
 
+        {/* Utilities / On-Charge Section */}
+        <div className="bg-white rounded-lg border border-gray-200 p-6 mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Utilities / On-Charge</h3>
+          
+          {/* Electricity Section */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h4 className="text-md font-semibold text-gray-800">Electricity</h4>
+              {house.electricityNmi && (
+                <span className="text-sm text-gray-600">
+                  NMI: {house.electricityNmi}
+                </span>
+              )}
+            </div>
+            <UtilitySnapshotsList
+              propertyId={house.id}
+              utilityType="electricity"
+              onAddSnapshot={() => setShowElectricityModal(true)}
+            />
+          </div>
+          
+          {/* Water Section */}
+          <div>
+            <h4 className="text-md font-semibold text-gray-800 mb-4">Water</h4>
+            <UtilitySnapshotsList
+              propertyId={house.id}
+              utilityType="water"
+              onAddSnapshot={() => setShowWaterModal(true)}
+            />
+          </div>
+        </div>
+
         {/* Residents Section */}
         <div className="mt-12">
           <div className="flex items-center justify-between mb-6">
@@ -757,6 +795,23 @@ export default function HouseDetailPage() {
             setSupplierRefreshTrigger(prev => prev + 1)
           }}
           houseId={id}
+        />
+
+        {/* Utility Snapshot Modals */}
+        <AddUtilitySnapshotModal
+          isOpen={showElectricityModal}
+          onClose={() => setShowElectricityModal(false)}
+          onSuccess={() => setShowElectricityModal(false)}
+          propertyId={id}
+          utilityType="electricity"
+        />
+
+        <AddUtilitySnapshotModal
+          isOpen={showWaterModal}
+          onClose={() => setShowWaterModal(false)}
+          onSuccess={() => setShowWaterModal(false)}
+          propertyId={id}
+          utilityType="water"
         />
       </div>
     </div>
