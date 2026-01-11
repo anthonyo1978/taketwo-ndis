@@ -23,6 +23,9 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
   const [residents, setResidents] = useState<Resident[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editingRoom, setEditingRoom] = useState<{ residentId: string; residentName: string; currentRoom?: string } | null>(null)
+  const [roomValue, setRoomValue] = useState("")
+  const [savingRoom, setSavingRoom] = useState(false)
 
   const fetchResidents = async () => {
     try {
@@ -85,6 +88,49 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
       console.error('Error removing resident:', error)
       alert('Error removing resident. Please try again.')
     }
+  }
+
+  const handleEditRoom = (residentId: string, residentName: string, currentRoom?: string) => {
+    setEditingRoom({ residentId, residentName, currentRoom })
+    setRoomValue(currentRoom || "")
+  }
+
+  const handleSaveRoom = async () => {
+    if (!editingRoom) return
+
+    setSavingRoom(true)
+    try {
+      const response = await fetch(`/api/residents/${editingRoom.residentId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ roomLabel: roomValue.trim() || null })
+      })
+
+      const result = await response.json() as { success: boolean; error?: string }
+
+      if (result.success) {
+        // Refresh the resident table
+        fetchResidents()
+        // Close the modal
+        setEditingRoom(null)
+        setRoomValue("")
+      } else {
+        console.error('Failed to update room:', result.error)
+        alert(`Failed to update room: ${result.error}`)
+      }
+    } catch (error) {
+      console.error('Error updating room:', error)
+      alert('Error updating room. Please try again.')
+    } finally {
+      setSavingRoom(false)
+    }
+  }
+
+  const handleCancelEditRoom = () => {
+    setEditingRoom(null)
+    setRoomValue("")
   }
 
   // Loading state with skeleton table
@@ -306,7 +352,14 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {new Date(resident.createdAt).toLocaleDateString()}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-4">
+                  <button
+                    onClick={() => handleEditRoom(resident.id, `${resident.firstName} ${resident.lastName}`, resident.roomLabel)}
+                    className="text-blue-600 hover:text-blue-900 transition-colors"
+                    title="Edit room assignment"
+                  >
+                    Edit Room
+                  </button>
                   <button
                     onClick={() => handleRemoveResident(resident.id, `${resident.firstName} ${resident.lastName}`)}
                     className="text-red-600 hover:text-red-900 transition-colors"
@@ -321,6 +374,76 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
           </tbody>
         </table>
       </div>
+
+      {/* Edit Room Modal */}
+      {editingRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-bold text-gray-900">Edit Room Assignment</h2>
+              <button
+                onClick={handleCancelEditRoom}
+                className="text-gray-400 hover:text-gray-600"
+                type="button"
+              >
+                <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6">
+              <p className="text-sm text-gray-600 mb-4">
+                Update room assignment for <span className="font-semibold text-gray-900">{editingRoom.residentName}</span>
+              </p>
+
+              <div>
+                <label htmlFor="editRoomLabel" className="block text-sm font-medium text-gray-700 mb-2">
+                  Room / Unit
+                </label>
+                <input
+                  id="editRoomLabel"
+                  type="text"
+                  placeholder="e.g., Room 1, Bedroom A, Studio 2"
+                  value={roomValue}
+                  onChange={(e) => setRoomValue(e.target.value)}
+                  maxLength={50}
+                  autoFocus
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !savingRoom) {
+                      handleSaveRoom()
+                    }
+                  }}
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Leave blank to remove room assignment
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 px-6 py-4 border-t bg-gray-50">
+              <button
+                onClick={handleCancelEditRoom}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                disabled={savingRoom}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveRoom}
+                className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                disabled={savingRoom}
+              >
+                {savingRoom ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
