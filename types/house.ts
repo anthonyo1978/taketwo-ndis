@@ -30,7 +30,7 @@ export interface House {
   dwellingType?: DwellingType
   sdaDesignCategory?: SDADesignCategory
   sdaRegistrationStatus?: SDARegistrationStatus
-  hasOoa?: boolean
+  hasOoa: boolean
   ooaNotes?: string
   notes?: string
   goLiveDate: Date
@@ -58,7 +58,7 @@ export interface HouseCreateInput {
   dwellingType?: DwellingType
   sdaDesignCategory?: SDADesignCategory
   sdaRegistrationStatus?: SDARegistrationStatus
-  hasOoa?: boolean
+  hasOoa: boolean
   ooaNotes?: string
   notes?: string
   goLiveDate: Date
