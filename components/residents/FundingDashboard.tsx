@@ -43,6 +43,12 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
   const [isEditingGta, setIsEditingGta] = useState(false)
   const [isSavingGta, setIsSavingGta] = useState(false)
   
+  // Contract Adjuster state
+  const [showContractAdjuster, setShowContractAdjuster] = useState(false)
+  const [adjustmentAmount, setAdjustmentAmount] = useState('')
+  const [adjustmentNotes, setAdjustmentNotes] = useState('')
+  const [isAdjusting, setIsAdjusting] = useState(false)
+  
   const activeContract = fundingInfo.find(c => c.contractStatus === 'Active')
   const draftContract = fundingInfo.find(c => c.contractStatus === 'Draft')
   const currentContract = activeContract || draftContract
@@ -388,6 +394,77 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
       toast.error(error instanceof Error ? error.message : 'Failed to deactivate contract')
     } finally {
       setIsDeactivating(false)
+    }
+  }
+  
+  // Contract Adjuster handler
+  const handleContractAdjustment = async () => {
+    if (!currentContract?.id) {
+      toast.error('No contract available')
+      return
+    }
+    
+    const amount = parseFloat(adjustmentAmount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount')
+      return
+    }
+    
+    if (amount > getCurrentBalance()) {
+      toast.error('Adjustment amount cannot exceed current balance')
+      return
+    }
+    
+    if (!window.confirm(
+      `⚠️ Contract Adjuster\n\n` +
+      `This will reduce the contract balance by $${amount.toFixed(2)} to account for historical spending.\n\n` +
+      `❗ This will NOT create a transaction or billing record.\n\n` +
+      `Current Balance: $${getCurrentBalance().toLocaleString()}\n` +
+      `After Adjustment: $${(getCurrentBalance() - amount).toLocaleString()}\n\n` +
+      `Continue?`
+    )) {
+      return
+    }
+    
+    setIsAdjusting(true)
+    
+    try {
+      const newBalance = getCurrentBalance() - amount
+      
+      const response = await fetch(`/api/residents/${residentId}/funding?fundingId=${currentContract.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentBalance: newBalance,
+          notes: adjustmentNotes ? `Contract Adjustment: ${adjustmentNotes}` : 'Contract Adjustment: Historical spending'
+        })
+      })
+      
+      const result = await response.json() as {
+        success?: boolean
+        data?: FundingInformation[]
+        error?: string
+      }
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Failed to adjust contract')
+      }
+      
+      // Update local state
+      if (result.data) {
+        onFundingChange(result.data)
+      }
+      
+      toast.success(`Contract adjusted! Balance reduced by $${amount.toFixed(2)}`)
+      setShowContractAdjuster(false)
+      setAdjustmentAmount('')
+      setAdjustmentNotes('')
+      
+    } catch (error) {
+      console.error('Contract adjustment error:', error)
+      toast.error(error instanceof Error ? error.message : 'Failed to adjust contract')
+    } finally {
+      setIsAdjusting(false)
     }
   }
   
@@ -1114,6 +1191,17 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
                   <span className="mr-2">➕</span>
                   New Transaction
                 </Button>
+                
+                {/* Contract Adjuster - Historical Spending */}
+                {currentContract && (
+                  <Button
+                    onClick={() => setShowContractAdjuster(true)}
+                    className="w-full justify-start bg-gray-900 text-white hover:bg-gray-800 border-2 border-gray-900 shadow-md hover:shadow-lg transition-all font-semibold"
+                  >
+                    <span className="mr-2">⚖️</span>
+                    Contract Adjuster
+                  </Button>
+                )}
               </div>
             </div>
           </div>
@@ -1333,6 +1421,150 @@ export function FundingDashboard({ residentId, fundingInfo, onFundingChange }: F
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Contract Adjuster Modal */}
+      {showContractAdjuster && currentContract && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b bg-gray-900">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <span>⚖️</span>
+                  Contract Adjuster
+                </h2>
+                <p className="text-sm text-gray-300 mt-1">Adjust for historical spending</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowContractAdjuster(false)
+                  setAdjustmentAmount('')
+                  setAdjustmentNotes('')
+                }}
+                className="text-gray-300 hover:text-white"
+                type="button"
+              >
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Warning Banner */}
+            <div className="bg-amber-50 border-l-4 border-amber-400 p-4">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <span className="text-amber-400 text-xl">⚠️</span>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-amber-800 font-medium">
+                    This will reduce the contract balance without creating a transaction.
+                  </p>
+                  <p className="text-xs text-amber-700 mt-1">
+                    Use this to account for spending that occurred before migrating to Haven.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Form */}
+            <div className="p-6 space-y-4">
+              {/* Current Balance Info */}
+              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-600">Current Balance:</span>
+                  <span className="text-lg font-bold text-gray-900">${getCurrentBalance().toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600">Amount Spent:</span>
+                  <span className="text-sm text-gray-700">${getSpentAmount().toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Amount Input */}
+              <div>
+                <label htmlFor="adjustmentAmount" className="block text-sm font-medium text-gray-700 mb-1">
+                  Adjustment Amount <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                  <input
+                    id="adjustmentAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max={getCurrentBalance()}
+                    value={adjustmentAmount}
+                    onChange={(e) => setAdjustmentAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500"
+                    autoFocus
+                  />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Amount to reduce from balance (max: ${getCurrentBalance().toLocaleString()})
+                </p>
+              </div>
+
+              {/* Notes Input */}
+              <div>
+                <label htmlFor="adjustmentNotes" className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes <span className="text-gray-500">(Optional)</span>
+                </label>
+                <textarea
+                  id="adjustmentNotes"
+                  value={adjustmentNotes}
+                  onChange={(e) => setAdjustmentNotes(e.target.value)}
+                  placeholder="e.g., Pre-Haven spending from Jan-Mar 2024..."
+                  rows={3}
+                  maxLength={500}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-500 focus:border-gray-500 resize-none"
+                />
+              </div>
+
+              {/* Preview */}
+              {adjustmentAmount && parseFloat(adjustmentAmount) > 0 && (
+                <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                  <p className="text-sm font-medium text-blue-900 mb-2">After Adjustment:</p>
+                  <div className="space-y-1 text-sm text-blue-800">
+                    <div className="flex justify-between">
+                      <span>New Balance:</span>
+                      <span className="font-semibold">${(getCurrentBalance() - parseFloat(adjustmentAmount)).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Total Spent:</span>
+                      <span className="font-semibold">${(getSpentAmount() + parseFloat(adjustmentAmount)).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowContractAdjuster(false)
+                    setAdjustmentAmount('')
+                    setAdjustmentNotes('')
+                  }}
+                  className="flex-1 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleContractAdjustment}
+                  disabled={isAdjusting || !adjustmentAmount || parseFloat(adjustmentAmount) <= 0}
+                  className="flex-1 px-4 py-2 text-white bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
+                >
+                  {isAdjusting ? 'Adjusting...' : 'Apply Adjustment'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
