@@ -9,6 +9,7 @@ interface MetricCardProps {
   isLoading?: boolean
   color?: 'blue' | 'purple' | 'green' | 'orange'
   compact?: boolean
+  onClick?: () => void
 }
 
 export function MetricCard({ 
@@ -19,7 +20,8 @@ export function MetricCard({
   subtitle, 
   isLoading = false,
   color = 'blue',
-  compact = false
+  compact = false,
+  onClick
 }: MetricCardProps) {
   
   const colorClasses = {
@@ -57,7 +59,15 @@ export function MetricCard({
   }
   
   return (
-    <div className={`bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-6'}`}>
+    <div 
+      onClick={onClick}
+      className={`
+        bg-white rounded-xl border border-gray-200 shadow-sm 
+        transition-all duration-200
+        ${compact ? 'p-4' : 'p-6'}
+        ${onClick ? 'cursor-pointer hover:shadow-lg hover:scale-105 hover:-translate-y-1 active:scale-100' : 'hover:shadow-md'}
+      `}
+    >
       <div className={`flex items-center justify-between ${compact ? 'mb-3' : 'mb-4'}`}>
         <p className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-600`}>{title}</p>
         <div className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} rounded-lg flex items-center justify-center ${colorClasses[color]}`}>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Metadata } from 'next'
 import { MetricCard } from 'components/dashboard/MetricCard'
 import { RecentActivityFeed } from 'components/dashboard/RecentActivityFeed'
@@ -9,6 +10,7 @@ import { SystemStatusBadges } from 'components/dashboard/SystemStatusBadges'
 import type { DashboardStats } from 'app/api/dashboard/stats/route'
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [organizationName, setOrganizationName] = useState<string>('Haven')
   const [isLoading, setIsLoading] = useState(true)
@@ -122,6 +124,7 @@ export default function DashboardPage() {
             color="blue"
             isLoading={isLoading}
             compact
+            onClick={() => router.push('/houses')}
           />
           <MetricCard
             title="Active Residents"
