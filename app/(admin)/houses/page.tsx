@@ -363,6 +363,9 @@ function HousesPageContent() {
                     Type/Category
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    OOA
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Resident(s)
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -506,6 +509,15 @@ function HousesPageContent() {
                             </div>
                           )
                         })()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {house.hasOoa ? (
+                          <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-800" title={house.ooaNotes || 'Has OOA'}>
+                            OOA
+                          </span>
+                        ) : (
+                          <span className="text-gray-400 text-sm">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <ResidentAvatars houseId={house.id} maxDisplay={4} />

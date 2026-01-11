@@ -29,6 +29,8 @@ export class HouseService {
       dwellingType: dbHouse.dwelling_type || undefined, // Map dwelling_type from DB
       sdaDesignCategory: dbHouse.sda_design_category || undefined, // Map sda_design_category from DB
       sdaRegistrationStatus: dbHouse.sda_registration_status || undefined, // Map sda_registration_status from DB
+      hasOoa: dbHouse.has_ooa || false, // Map has_ooa from DB
+      ooaNotes: dbHouse.ooa_notes || undefined, // Map ooa_notes from DB
       notes: dbHouse.notes,
       goLiveDate: dbHouse.go_live_date, // Convert snake_case to camelCase
       resident: dbHouse.resident,
@@ -204,6 +206,8 @@ export class HouseService {
         dwelling_type: house.dwellingType, // Map dwellingType to dwelling_type
         sda_design_category: house.sdaDesignCategory, // Map sdaDesignCategory to sda_design_category
         sda_registration_status: house.sdaRegistrationStatus, // Map sdaRegistrationStatus to sda_registration_status
+        has_ooa: house.hasOoa || false, // Map hasOoa to has_ooa
+        ooa_notes: house.ooaNotes, // Map ooaNotes to ooa_notes
         notes: house.notes,
         go_live_date: house.goLiveDate, // Convert camelCase to snake_case
         resident: house.resident,
@@ -262,6 +266,8 @@ export class HouseService {
       if (updates.dwellingType !== undefined) dbUpdates.dwelling_type = updates.dwellingType
       if (updates.sdaDesignCategory !== undefined) dbUpdates.sda_design_category = updates.sdaDesignCategory
       if (updates.sdaRegistrationStatus !== undefined) dbUpdates.sda_registration_status = updates.sdaRegistrationStatus
+      if (updates.hasOoa !== undefined) dbUpdates.has_ooa = updates.hasOoa
+      if (updates.ooaNotes !== undefined) dbUpdates.ooa_notes = updates.ooaNotes
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes
       if (updates.goLiveDate !== undefined) dbUpdates.go_live_date = updates.goLiveDate
       if (updates.resident !== undefined) dbUpdates.resident = updates.resident

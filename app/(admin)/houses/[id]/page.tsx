@@ -448,6 +448,25 @@ export default function HouseDetailPage() {
                   </div>
                 )}
                 
+                {/* OOA */}
+                {house.hasOoa && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-600">OOA (Onsite Overnight Assistance)</dt>
+                    <dd className="text-gray-900">
+                      <div className="flex items-start gap-2">
+                        <span className="inline-flex px-2.5 py-1 text-sm font-semibold rounded-full bg-amber-100 text-amber-800">
+                          Yes
+                        </span>
+                        {house.ooaNotes && (
+                          <span className="text-sm text-gray-600 mt-0.5">
+                            {house.ooaNotes}
+                          </span>
+                        )}
+                      </div>
+                    </dd>
+                  </div>
+                )}
+                
                 <div>
                   <dt className="text-sm font-medium text-gray-600">Go-Live Date</dt>
                   <dd className="text-gray-900">

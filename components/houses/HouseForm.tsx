@@ -306,6 +306,44 @@ export function HouseForm({ onSubmit, isLoading = false, className, initialData,
             </div>
           </div>
           
+          {/* OOA Section */}
+          <div className="border-t pt-4">
+            <div className="flex items-center gap-3 mb-3">
+              <input
+                id="hasOoa"
+                type="checkbox"
+                {...register("hasOoa")}
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                disabled={submitDisabled}
+              />
+              <label htmlFor="hasOoa" className="text-sm font-medium text-gray-700">
+                OOA (Onsite Overnight Assistance)
+              </label>
+            </div>
+            
+            <div>
+              <label htmlFor="ooaNotes" className="block text-sm font-medium text-gray-700 mb-1">
+                OOA Notes <span className="text-gray-500">(Optional)</span>
+              </label>
+              <textarea
+                id="ooaNotes"
+                {...register("ooaNotes")}
+                rows={2}
+                placeholder="Optional notes about OOA arrangements..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                disabled={submitDisabled}
+              />
+              {errors.ooaNotes && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {errors.ooaNotes.message}
+                </p>
+              )}
+              <p className="mt-1 text-sm text-gray-500">
+                Record OOA arrangements for this property
+              </p>
+            </div>
+          </div>
+          
           <div>
             <label htmlFor="goLiveDate" className="block text-sm font-medium text-gray-700 mb-1">
               Go-Live Date <span className="text-red-500">*</span>

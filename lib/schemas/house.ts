@@ -46,6 +46,14 @@ export const houseCreateSchema = z.object({
   sdaRegistrationStatus: z.enum(['Registered', 'In Progress', 'Unknown'] as const)
     .optional(),
   
+  hasOoa: z.boolean()
+    .optional()
+    .default(false),
+  
+  ooaNotes: z.string()
+    .max(500, "OOA notes must be no more than 500 characters")
+    .optional(),
+  
   notes: z.string().optional(),
   
   goLiveDate: z.coerce.date({

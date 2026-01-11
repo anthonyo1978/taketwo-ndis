@@ -229,6 +229,8 @@ export default function EditHousePage() {
                   dwellingType: house.dwellingType,
                   sdaDesignCategory: house.sdaDesignCategory,
                   sdaRegistrationStatus: house.sdaRegistrationStatus,
+                  hasOoa: house.hasOoa,
+                  ooaNotes: house.ooaNotes || '',
                   goLiveDate: house.goLiveDate ? new Date(house.goLiveDate) : undefined,
                   notes: house.notes || '',
                   imageUrl: house.imageUrl || ''
