@@ -14,6 +14,8 @@ import { OwnerSummaryCard } from "components/owners/OwnerSummaryCard"
 import { OwnerModal } from "components/owners/OwnerModal"
 import { HeadLeaseCard } from "components/head-leases/HeadLeaseCard"
 import { HeadLeaseModal } from "components/head-leases/HeadLeaseModal"
+import { HouseSuppliersList } from "components/suppliers/HouseSuppliersList"
+import { LinkSupplierModal } from "components/suppliers/LinkSupplierModal"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 import type { HeadLease } from "types/head-lease"
@@ -53,13 +55,17 @@ export default function HouseDetailPage() {
   const [occupancyLoading, setOccupancyLoading] = useState(true)
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'details' | 'ownership'>('details')
+  const [activeTab, setActiveTab] = useState<'details' | 'ownership' | 'suppliers'>('details')
   
   // Ownership & Lease state
   const [currentLease, setCurrentLease] = useState<HeadLease | null>(null)
   const [leaseLoading, setLeaseLoading] = useState(false)
   const [showOwnerModal, setShowOwnerModal] = useState(false)
   const [showLeaseModal, setShowLeaseModal] = useState(false)
+  
+  // Suppliers state
+  const [showLinkSupplierModal, setShowLinkSupplierModal] = useState(false)
+  const [supplierRefreshTrigger, setSupplierRefreshTrigger] = useState(0)
 
   useEffect(() => {
     const fetchHouse = async () => {
@@ -314,6 +320,16 @@ export default function HouseDetailPage() {
               }`}
             >
               Ownership & Lease
+            </button>
+            <button
+              onClick={() => setActiveTab('suppliers')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'suppliers'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              Suppliers
             </button>
           </nav>
         </div>
@@ -618,6 +634,33 @@ export default function HouseDetailPage() {
           </div>
         )}
 
+        {/* Suppliers Tab */}
+        {activeTab === 'suppliers' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Linked Suppliers</h2>
+                <p className="text-sm text-gray-600 mt-1">Manage maintenance and service providers for this property</p>
+              </div>
+              <button
+                onClick={() => setShowLinkSupplierModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
+              >
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Link Supplier
+              </button>
+            </div>
+            
+            <HouseSuppliersList 
+              houseId={id} 
+              refreshTrigger={supplierRefreshTrigger}
+              onUpdate={() => setSupplierRefreshTrigger(prev => prev + 1)}
+            />
+          </div>
+        )}
+
         {/* Resident Selection Modal */}
         <ResidentSelectionModal
           open={showResidentSelection}
@@ -643,6 +686,17 @@ export default function HouseDetailPage() {
           onSuccess={fetchLeaseData}
           houseId={id}
           mode="create"
+        />
+
+        {/* Link Supplier Modal */}
+        <LinkSupplierModal
+          isOpen={showLinkSupplierModal}
+          onClose={() => setShowLinkSupplierModal(false)}
+          onSuccess={() => {
+            setShowLinkSupplierModal(false)
+            setSupplierRefreshTrigger(prev => prev + 1)
+          }}
+          houseId={id}
         />
       </div>
     </div>
