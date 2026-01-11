@@ -473,6 +473,16 @@ export default function HouseDetailPage() {
                     {new Date(house.goLiveDate).toLocaleDateString()}
                   </dd>
                 </div>
+                
+                {house.enrolmentDate && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-600">Enrolment Date</dt>
+                    <dd className="text-gray-900">
+                      {new Date(house.enrolmentDate).toLocaleDateString()}
+                    </dd>
+                  </div>
+                )}
+                
                 {house.resident && (
                   <div>
                     <dt className="text-sm font-medium text-gray-600">Current Resident</dt>

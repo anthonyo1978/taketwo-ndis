@@ -231,6 +231,7 @@ export default function EditHousePage() {
                   sdaRegistrationStatus: house.sdaRegistrationStatus,
                   hasOoa: house.hasOoa,
                   ooaNotes: house.ooaNotes || '',
+                  enrolmentDate: house.enrolmentDate ? new Date(house.enrolmentDate) : undefined,
                   goLiveDate: house.goLiveDate ? new Date(house.goLiveDate) : undefined,
                   notes: house.notes || '',
                   imageUrl: house.imageUrl || ''

@@ -32,6 +32,7 @@ export interface House {
   sdaRegistrationStatus?: SDARegistrationStatus
   hasOoa?: boolean
   ooaNotes?: string
+  enrolmentDate?: Date
   notes?: string
   goLiveDate: Date
   resident?: string
@@ -60,6 +61,7 @@ export interface HouseCreateInput {
   sdaRegistrationStatus?: SDARegistrationStatus
   hasOoa?: boolean
   ooaNotes?: string
+  enrolmentDate?: Date
   notes?: string
   goLiveDate: Date
   resident?: string

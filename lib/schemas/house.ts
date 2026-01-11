@@ -52,6 +52,8 @@ export const houseCreateSchema = z.object({
     .max(500, "OOA notes must be no more than 500 characters")
     .optional(),
   
+  enrolmentDate: z.coerce.date().optional(),
+  
   notes: z.string().optional(),
   
   goLiveDate: z.coerce.date({
