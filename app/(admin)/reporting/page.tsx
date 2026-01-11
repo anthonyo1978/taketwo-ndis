@@ -1,4 +1,4 @@
-import { BarChart3, Home, TrendingUp, DollarSign, FileCheck, Activity, Boxes } from 'lucide-react'
+import { BarChart3, Home, TrendingUp, TrendingDown, DollarSign, FileCheck, Activity, Boxes } from 'lucide-react'
 
 export default function ReportingPage() {
   return (
@@ -101,6 +101,74 @@ export default function ReportingPage() {
           <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
             <p className="text-sm text-indigo-800">
               <strong className="font-semibold">Note:</strong> Forecasting will leverage validated occupancy, billing, and transaction data to produce reliable projections once the core data model is proven stable.
+            </p>
+          </div>
+        </div>
+
+        {/* Funding Gap Analysis Card */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <TrendingDown className="size-6 text-orange-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Funding Gap Analysis <span className="text-gray-500 text-lg font-normal">(Coming Soon)</span>
+            </h2>
+          </div>
+          
+          <p className="text-base text-gray-700 leading-relaxed mb-4">
+            Funding Gap Analysis will project current participant spending patterns against available contract funds to identify potential shortfalls before they occur.
+          </p>
+          
+          <p className="text-sm text-gray-600 leading-relaxed mb-4">
+            This analysis will help you proactively manage funding by comparing actual spend rates with remaining balances, alerting you when a participant's funding may not last until their contract end date.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <span className="text-orange-600 font-bold text-sm">1</span>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Spend Rate Analysis</h4>
+                <p className="text-xs text-gray-600">Calculate daily/weekly spend rates per participant</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <span className="text-orange-600 font-bold text-sm">2</span>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Projected Depletion</h4>
+                <p className="text-xs text-gray-600">Estimate when funds will run out at current pace</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <span className="text-orange-600 font-bold text-sm">3</span>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Gap Identification</h4>
+                <p className="text-xs text-gray-600">Flag participants at risk of funding shortfall</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                <span className="text-orange-600 font-bold text-sm">4</span>
+              </div>
+              <div>
+                <h4 className="font-medium text-gray-900 text-sm mb-1">Early Alerts</h4>
+                <p className="text-xs text-gray-600">Proactive warnings before funds deplete</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <p className="text-sm text-orange-800">
+              <strong className="font-semibold">Note:</strong> Funding Gap Analysis requires stable transaction history and billing patterns. This feature will be introduced after sufficient data has been collected to produce accurate projections.
             </p>
           </div>
         </div>
