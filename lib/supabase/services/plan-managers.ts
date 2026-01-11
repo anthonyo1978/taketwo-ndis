@@ -1,6 +1,6 @@
 import { createClient } from "lib/supabase/client"
 import type { PlanManager, PlanManagerCreateInput, PlanManagerUpdateInput } from "types/plan-manager"
-import { getCurrentUserOrganizationId } from "./getCurrentUserOrganizationId"
+import { getCurrentUserOrganizationId } from "../../utils/organization"
 
 /**
  * Service for managing Plan Managers
