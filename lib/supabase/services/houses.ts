@@ -32,6 +32,7 @@ export class HouseService {
       hasOoa: dbHouse.has_ooa || false, // Map has_ooa from DB
       ooaNotes: dbHouse.ooa_notes || undefined, // Map ooa_notes from DB
       enrolmentDate: dbHouse.enrolment_date ? new Date(dbHouse.enrolment_date) : undefined, // Map enrolment_date from DB
+      electricityNmi: dbHouse.electricity_nmi || undefined, // Map electricity_nmi from DB
       notes: dbHouse.notes,
       goLiveDate: dbHouse.go_live_date, // Convert snake_case to camelCase
       resident: dbHouse.resident,
@@ -210,6 +211,7 @@ export class HouseService {
         has_ooa: house.hasOoa || false, // Map hasOoa to has_ooa
         ooa_notes: house.ooaNotes, // Map ooaNotes to ooa_notes
         enrolment_date: house.enrolmentDate, // Map enrolmentDate to enrolment_date
+        electricity_nmi: house.electricityNmi, // Map electricityNmi to electricity_nmi
         notes: house.notes,
         go_live_date: house.goLiveDate, // Convert camelCase to snake_case
         resident: house.resident,
@@ -271,6 +273,7 @@ export class HouseService {
       if (updates.hasOoa !== undefined) dbUpdates.has_ooa = updates.hasOoa
       if (updates.ooaNotes !== undefined) dbUpdates.ooa_notes = updates.ooaNotes
       if (updates.enrolmentDate !== undefined) dbUpdates.enrolment_date = updates.enrolmentDate
+      if (updates.electricityNmi !== undefined) dbUpdates.electricity_nmi = updates.electricityNmi
       if (updates.notes !== undefined) dbUpdates.notes = updates.notes
       if (updates.goLiveDate !== undefined) dbUpdates.go_live_date = updates.goLiveDate
       if (updates.resident !== undefined) dbUpdates.resident = updates.resident

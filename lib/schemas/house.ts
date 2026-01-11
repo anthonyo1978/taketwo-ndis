@@ -54,6 +54,10 @@ export const houseCreateSchema = z.object({
   
   enrolmentDate: z.coerce.date().optional(),
   
+  electricityNmi: z.string()
+    .max(50, "Electricity NMI must be no more than 50 characters")
+    .optional(),
+  
   notes: z.string().optional(),
   
   goLiveDate: z.coerce.date({

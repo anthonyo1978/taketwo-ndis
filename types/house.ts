@@ -33,6 +33,7 @@ export interface House {
   hasOoa?: boolean
   ooaNotes?: string
   enrolmentDate?: Date
+  electricityNmi?: string
   notes?: string
   goLiveDate: Date
   resident?: string
@@ -62,6 +63,7 @@ export interface HouseCreateInput {
   hasOoa?: boolean
   ooaNotes?: string
   enrolmentDate?: Date
+  electricityNmi?: string
   notes?: string
   goLiveDate: Date
   resident?: string
