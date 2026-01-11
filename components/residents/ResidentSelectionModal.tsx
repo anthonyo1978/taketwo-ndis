@@ -9,7 +9,7 @@ import type { House } from "types/house"
 interface ResidentSelectionModalProps {
   open: boolean
   onClose: () => void
-  onSelect: (resident: Resident, roomLabel?: string) => void
+  onSelect: (resident: Resident, roomLabel?: string, moveInDate?: Date) => void
   houseId: string
   excludeResidentIds?: string[] // Residents already in this house
 }
@@ -41,6 +41,7 @@ export function ResidentSelectionModal({
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null)
   const [roomLabel, setRoomLabel] = useState("")
+  const [moveInDate, setMoveInDate] = useState("")
 
   // Fetch residents and houses data
   useEffect(() => {
@@ -129,14 +130,16 @@ export function ResidentSelectionModal({
     setRoomLabel("") // Reset room label when selecting a new resident
   }
 
-  // Handle confirmation (second step - with optional room)
+  // Handle confirmation (second step - with optional room and move-in date)
   const handleConfirmAssignment = () => {
     if (!selectedResident) return
-    onSelect(selectedResident, roomLabel.trim() || undefined)
+    const moveIn = moveInDate ? new Date(moveInDate) : undefined
+    onSelect(selectedResident, roomLabel.trim() || undefined, moveIn)
     onClose()
     // Reset state
     setSelectedResident(null)
     setRoomLabel("")
+    setMoveInDate("")
   }
 
   // Handle canceling the selection
@@ -256,6 +259,23 @@ export function ResidentSelectionModal({
                 />
                 <p className="mt-2 text-xs text-gray-500">
                   Optional: Specify which room this resident will occupy in the property
+                </p>
+              </div>
+
+              {/* Move-in Date Input */}
+              <div>
+                <label htmlFor="moveInDate" className="block text-sm font-medium text-gray-700 mb-2">
+                  Move-in Date <span className="text-gray-500">(Optional)</span>
+                </label>
+                <input
+                  id="moveInDate"
+                  type="date"
+                  value={moveInDate}
+                  onChange={(e) => setMoveInDate(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Optional: Record when this resident moved into the property
                 </p>
               </div>
 

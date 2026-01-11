@@ -160,6 +160,9 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
                   Room
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Move-in Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Contact
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -337,6 +340,9 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                   {resident.roomLabel || <span className="text-gray-400">—</span>}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                  {resident.moveInDate ? new Date(resident.moveInDate).toLocaleDateString() : <span className="text-gray-400">—</span>}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">

@@ -137,7 +137,7 @@ export default function HouseDetailPage() {
     }
   }
 
-  const handleResidentAssigned = async (resident: Resident, roomLabel?: string) => {
+  const handleResidentAssigned = async (resident: Resident, roomLabel?: string, moveInDate?: Date) => {
     try {
       const response = await fetch(`/api/houses/${id}/residents/assign`, {
         method: 'POST',
@@ -146,7 +146,8 @@ export default function HouseDetailPage() {
         },
         body: JSON.stringify({ 
           residentId: resident.id,
-          roomLabel: roomLabel 
+          roomLabel: roomLabel,
+          moveInDate: moveInDate 
         })
       })
 

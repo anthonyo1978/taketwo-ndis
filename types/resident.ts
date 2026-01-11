@@ -113,6 +113,7 @@ export interface Resident {
   notes?: string
   status: ResidentStatus
   roomLabel?: string
+  moveInDate?: Date
   fundingInformation: FundingInformation[]
   preferences: ResidentPreferences
   detailedNotes?: string
@@ -161,6 +162,7 @@ export interface ResidentUpdateInput {
   photoBase64?: string
   status?: ResidentStatus
   roomLabel?: string
+  moveInDate?: Date
   detailedNotes?: string
   preferences?: ResidentPreferences
   emergencyContact?: EmergencyContact
