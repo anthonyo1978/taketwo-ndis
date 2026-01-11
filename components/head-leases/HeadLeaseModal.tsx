@@ -109,7 +109,7 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
         body: JSON.stringify(data)
       })
 
-      const result = await response.json()
+      const result = await response.json() as { success: boolean; error?: string }
 
       if (!result.success) {
         throw new Error(result.error || 'Failed to save head lease')
