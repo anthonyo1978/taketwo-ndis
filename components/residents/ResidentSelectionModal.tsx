@@ -203,7 +203,7 @@ export function ResidentSelectionModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
           {selectedResident ? (
             /* Confirmation Step - Show selected resident and room input */
             <div className="p-6 space-y-6">
