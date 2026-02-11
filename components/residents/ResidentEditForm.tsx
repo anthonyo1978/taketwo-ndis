@@ -274,9 +274,9 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
             <h4 className="text-md font-medium text-gray-900">Profile Photo</h4>
             
             <div className="flex items-center space-x-4">
-              {resident.photoBase64 ? (
+              {(resident.photoUrl || resident.photoBase64) ? (
                 <img
-                  src={resident.photoBase64}
+                  src={resident.photoUrl || resident.photoBase64}
                   alt={`${resident.firstName} ${resident.lastName}`}
                   className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
                 />

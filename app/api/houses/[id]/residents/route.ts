@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { residentCreateSchema } from "lib/schemas/resident"
 import { residentService } from "lib/supabase/services/residents"
 import { houseService } from "lib/supabase/services/houses"
-import { fileToBase64 } from "lib/utils/resident-storage"
+import { uploadResidentPhoto } from "lib/utils/photo-upload"
 
 interface RouteParams {
   params: Promise<{
@@ -13,9 +13,6 @@ interface RouteParams {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    // Add delay to simulate realistic API behavior
-    await new Promise((resolve) => setTimeout(resolve, 300))
-
     const { id: houseId } = await params
 
     // Verify house exists
@@ -55,9 +52,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
-    // Add delay to simulate realistic API behavior
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
     const { id: houseId } = await params
 
     // Verify house exists
@@ -87,18 +81,16 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       notes: formData.get('notes') as string || undefined,
     }
 
-    // Handle photo upload
+    // Handle photo upload — upload to Supabase Storage instead of base64
     const photoFile = formData.get('photo') as File | null
-    let photoBase64: string | undefined
-
-    console.log('[HOUSE RESIDENT CREATE] Photo file received:', photoFile ? `${photoFile.name} (${photoFile.size} bytes)` : 'No photo')
+    let photoUrl: string | undefined
 
     if (photoFile && photoFile.size > 0) {
       try {
-        photoBase64 = await fileToBase64(photoFile)
-        console.log('[HOUSE RESIDENT CREATE] Photo converted to base64, length:', photoBase64?.length)
+        const tempId = crypto.randomUUID()
+        photoUrl = await uploadResidentPhoto(photoFile, tempId)
       } catch (error) {
-        console.error('Photo conversion error:', error)
+        console.error('Photo upload error:', error)
         return NextResponse.json(
           { 
             success: false, 
@@ -129,7 +121,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Prepare data for Supabase
+    // Prepare data for Supabase — use photoUrl (Storage) instead of photoBase64
     const residentData = {
       houseId,
       firstName: validation.data.firstName,
@@ -139,7 +131,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       phone: validation.data.phone || undefined,
       email: validation.data.email || undefined,
       ndisId: validation.data.ndisId || undefined,
-      photoBase64,
+      photoUrl,
       notes: validation.data.notes || undefined,
     }
 

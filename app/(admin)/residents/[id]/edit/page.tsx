@@ -222,11 +222,11 @@ export default function ResidentEditPage({ params }: ResidentEditPageProps) {
           <div className="flex items-center space-x-4 mb-4">
             {/* Photo */}
             <div className="flex-shrink-0">
-              {resident.photoBase64 ? (
+              {(resident.photoUrl || resident.photoBase64) ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   className="h-16 w-16 rounded-full object-cover border-2 border-gray-200"
-                  src={resident.photoBase64}
+                  src={resident.photoUrl || resident.photoBase64}
                   alt={`${resident.firstName} ${resident.lastName}`}
                 />
               ) : (

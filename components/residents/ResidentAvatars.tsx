@@ -104,10 +104,10 @@ export function ResidentAvatars({ houseId, maxDisplay = 4 }: ResidentAvatarsProp
             className={`h-8 w-8 rounded-full border-2 ${borderColor} shadow-sm overflow-hidden bg-gray-100 hover:scale-110 transition-transform cursor-pointer`}
             onClick={() => router.push(`/residents/${resident.id}`)}
           >
-            {resident.photoBase64 ? (
+            {(resident.photoUrl || resident.photoBase64) ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={resident.photoBase64}
+                src={resident.photoUrl || resident.photoBase64}
                 alt={`${resident.firstName} ${resident.lastName}`}
                 className="h-full w-full object-cover"
               />

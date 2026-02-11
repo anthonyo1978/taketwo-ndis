@@ -112,7 +112,8 @@ export interface Resident {
   phone?: string
   email?: string
   ndisId?: string
-  photoBase64?: string
+  photoBase64?: string  // DEPRECATED: use photoUrl
+  photoUrl?: string     // URL to photo in Supabase Storage
   notes?: string
   status: ResidentStatus
   roomLabel?: string
@@ -159,7 +160,8 @@ export interface ResidentCreateInput {
   phone?: string
   email?: string
   ndisId?: string
-  photoBase64?: string
+  photoBase64?: string  // DEPRECATED: use photoUrl
+  photoUrl?: string     // URL to photo in Supabase Storage
   notes?: string
   status?: ResidentStatus
   preferences?: ResidentPreferences
@@ -176,7 +178,8 @@ export interface ResidentUpdateInput {
   phone?: string
   email?: string
   ndisId?: string
-  photoBase64?: string
+  photoBase64?: string  // DEPRECATED: use photoUrl
+  photoUrl?: string     // URL to photo in Supabase Storage
   status?: ResidentStatus
   roomLabel?: string
   moveInDate?: Date

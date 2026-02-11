@@ -301,11 +301,11 @@ export function ResidentTable({ houseId, refreshTrigger, onResidentsLoaded, onRe
                     className="flex-shrink-0 h-10 w-10 relative group cursor-pointer"
                     onClick={() => router.push(`/residents/${resident.id}`)}
                   >
-                    {resident.photoBase64 ? (
+                    {(resident.photoUrl || resident.photoBase64) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         className={`h-10 w-10 rounded-full object-cover ${ringClass} hover:scale-110 transition-transform`}
-                        src={resident.photoBase64}
+                        src={resident.photoUrl || resident.photoBase64}
                         alt={`${resident.firstName} ${resident.lastName}`}
                       />
                     ) : (

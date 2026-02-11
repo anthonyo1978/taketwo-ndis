@@ -393,11 +393,11 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
               <tr key={resident.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex-shrink-0 h-10 w-10 relative group">
-                    {resident.photoBase64 ? (
+                    {(resident.photoUrl || resident.photoBase64) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         className={`h-10 w-10 rounded-full object-cover ${ringClass}`}
-                        src={resident.photoBase64}
+                        src={resident.photoUrl || resident.photoBase64}
                         alt={`${resident.firstName} ${resident.lastName}`}
                       />
                     ) : (

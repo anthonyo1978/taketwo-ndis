@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 
 import { residentCreateSchema } from "lib/schemas/resident"
 import { residentService } from "lib/supabase/services/residents"
-import { fileToBase64 } from "lib/utils/resident-storage"
+import { uploadResidentPhoto } from "lib/utils/photo-upload"
 
 export async function GET(request: NextRequest) {
   try {
@@ -57,9 +57,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Add delay to simulate realistic API behavior
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
     // Parse FormData for file upload support
     const formData = await request.formData()
     
@@ -78,24 +75,17 @@ export async function POST(request: NextRequest) {
     // Get houseId from form data (optional for global creation)
     const houseId = formData.get('houseId') as string
 
-    // If no houseId provided, we'll create a Prospect resident without house assignment
-    // This allows residents to be created and assigned to houses later
-
-    // Verify house exists (we'll need to import houseService for this)
-    // For now, we'll skip this validation and let the database handle it
-
-    // Handle photo upload
+    // Handle photo upload — upload to Supabase Storage instead of base64
     const photoFile = formData.get('photo') as File | null
-    let photoBase64: string | undefined
-
-    console.log('[RESIDENT CREATE] Photo file received:', photoFile ? `${photoFile.name} (${photoFile.size} bytes)` : 'No photo')
+    let photoUrl: string | undefined
 
     if (photoFile && photoFile.size > 0) {
       try {
-        photoBase64 = await fileToBase64(photoFile)
-        console.log('[RESIDENT CREATE] Photo converted to base64, length:', photoBase64?.length)
+        // Use a temp ID for the filename; will be associated with the resident after creation
+        const tempId = crypto.randomUUID()
+        photoUrl = await uploadResidentPhoto(photoFile, tempId)
       } catch (error) {
-        console.error('Photo conversion error:', error)
+        console.error('Photo upload error:', error)
         return NextResponse.json(
           { 
             success: false, 
@@ -126,9 +116,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Prepare data for Supabase
+    // Prepare data for Supabase — use photoUrl (Storage) instead of photoBase64
     const residentData = {
-      houseId: houseId || null, // Allow null for Prospect residents without house assignment
+      houseId: houseId || null,
       firstName: validation.data.firstName,
       lastName: validation.data.lastName,
       dateOfBirth: validation.data.dateOfBirth,
@@ -136,23 +126,12 @@ export async function POST(request: NextRequest) {
       phone: validation.data.phone || undefined,
       email: validation.data.email || undefined,
       ndisId: validation.data.ndisId || undefined,
-      photoBase64,
+      photoUrl,
       notes: validation.data.notes || undefined,
     }
 
-    console.log('[RESIDENT CREATE] Data being sent to Supabase:', {
-      ...residentData,
-      photoBase64: photoBase64 ? `base64 string (length: ${photoBase64.length})` : 'none'
-    })
-
     // Create resident in Supabase
     const newResident = await residentService.create(residentData)
-    
-    console.log('[RESIDENT CREATE] Created resident:', {
-      id: newResident.id,
-      name: `${newResident.firstName} ${newResident.lastName}`,
-      hasPhoto: !!newResident.photoBase64
-    })
 
     return NextResponse.json(
       { 

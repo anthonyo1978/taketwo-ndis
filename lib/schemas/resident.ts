@@ -223,6 +223,7 @@ export const residentUpdateSchema = z.object({
     .or(z.literal('')),
   
   photoBase64: z.string().optional(),
+  photoUrl: z.string().url().optional().or(z.literal('')),
   
   status: residentStatusSchema.optional(),
   
@@ -300,6 +301,7 @@ export const residentSchema = residentCreateSchema
     id: z.string(),
     houseId: z.string(),
     photoBase64: z.string().optional(),
+    photoUrl: z.string().url().optional().or(z.literal('')),
     status: residentStatusSchema,
     fundingInformation: z.array(fundingInformationSchema),
     detailedNotes: z.string().optional(),

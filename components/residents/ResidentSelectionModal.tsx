@@ -216,10 +216,10 @@ export function ResidentSelectionModal({
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-center space-x-4">
                   <div className="flex-shrink-0 h-16 w-16">
-                    {selectedResident.photoBase64 ? (
+                    {(selectedResident.photoUrl || selectedResident.photoBase64) ? (
                       <img
                         className="h-16 w-16 rounded-full object-cover"
-                        src={selectedResident.photoBase64}
+                        src={selectedResident.photoUrl || selectedResident.photoBase64}
                         alt={`${selectedResident.firstName} ${selectedResident.lastName}`}
                       />
                     ) : (
@@ -330,10 +330,10 @@ export function ResidentSelectionModal({
                     <div className="flex items-center space-x-4">
                       {/* Avatar */}
                       <div className="flex-shrink-0 h-12 w-12">
-                        {resident.photoBase64 ? (
+                        {(resident.photoUrl || resident.photoBase64) ? (
                           <img
                             className="h-12 w-12 rounded-full object-cover"
-                            src={resident.photoBase64}
+                            src={resident.photoUrl || resident.photoBase64}
                             alt={`${resident.firstName} ${resident.lastName}`}
                           />
                         ) : (

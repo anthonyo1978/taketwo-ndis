@@ -27,6 +27,7 @@ export class ResidentService {
       email: dbResident.email || undefined,
       ndisId: dbResident.ndis_id || undefined,
       photoBase64: dbResident.photo_base64 || undefined,
+      photoUrl: dbResident.photo_url || undefined,
       notes: dbResident.notes || undefined,
       status: dbResident.status === 'Draft' ? 'Prospect' : dbResident.status,
       roomLabel: dbResident.room_label || undefined,
@@ -73,6 +74,7 @@ export class ResidentService {
       email: frontendResident.email || null,
       ndis_id: frontendResident.ndisId || null,
       photo_base64: frontendResident.photoBase64 || null,
+      photo_url: frontendResident.photoUrl || null,
       notes: frontendResident.notes || null,
       status: frontendResident.status === 'Prospect' ? 'Draft' : frontendResident.status || 'Draft',
       room_label: frontendResident.roomLabel || null,
@@ -401,6 +403,7 @@ export class ResidentService {
       if (updates.detailedNotes !== undefined) dbUpdates.detailed_notes = updates.detailedNotes || null
       if (updates.preferences !== undefined) dbUpdates.preferences = updates.preferences || null
       if (updates.emergencyContact !== undefined) dbUpdates.emergency_contact = updates.emergencyContact || null
+      if (updates.photoUrl !== undefined) dbUpdates.photo_url = updates.photoUrl || null
 
       const supabase = await this.getSupabase()
       const { data, error } = await supabase

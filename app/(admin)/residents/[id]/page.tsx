@@ -514,11 +514,11 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
             <div className="flex items-start space-x-6">
               {/* Photo */}
               <div className="flex-shrink-0">
-                {resident.photoBase64 ? (
+                {(resident.photoUrl || resident.photoBase64) ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     className="h-32 w-32 rounded-full object-cover border-4 border-white shadow-lg"
-                    src={resident.photoBase64}
+                    src={resident.photoUrl || resident.photoBase64}
                     alt={`${resident.firstName} ${resident.lastName}`}
                   />
                 ) : (
