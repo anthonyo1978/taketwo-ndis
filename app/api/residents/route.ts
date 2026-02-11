@@ -6,108 +6,38 @@ import { fileToBase64 } from "lib/utils/resident-storage"
 
 export async function GET(request: NextRequest) {
   try {
-    // Add delay to simulate realistic API behavior
-    await new Promise((resolve) => setTimeout(resolve, 300))
-
     // Parse query parameters
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '25')
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const limit = Math.min(parseInt(searchParams.get('limit') || '25', 10), 100) // Cap at 100
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
     const dateRange = searchParams.get('dateRange') || ''
     const sortBy = searchParams.get('sortBy') || 'created_at'
     const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
 
-    // Get all residents from Supabase
-    const residents = await residentService.getAll()
-
-    // Apply client-side filtering and sorting (for now)
-    // TODO: Move this to server-side for better performance
-    let filteredResidents = residents
-
-    // Apply search filter (include NDIS ID in search)
-    if (search) {
-      const searchLower = search.toLowerCase()
-      filteredResidents = filteredResidents.filter(resident =>
-        resident.firstName?.toLowerCase().includes(searchLower) ||
-        resident.lastName?.toLowerCase().includes(searchLower) ||
-        resident.email?.toLowerCase().includes(searchLower) ||
-        resident.phone?.includes(search) ||
-        resident.ndisId?.toLowerCase().includes(searchLower)
-      )
-    }
-
-    // Apply status filter
-    if (status) {
-      filteredResidents = filteredResidents.filter(resident => resident.status === status)
-    }
-
-    // Apply date range filter (created date)
-    if (dateRange) {
-      const daysAgo = parseInt(dateRange)
-      const cutoffDate = new Date()
-      cutoffDate.setDate(cutoffDate.getDate() - daysAgo)
-      
-      filteredResidents = filteredResidents.filter(resident => {
-        const createdAt = new Date(resident.createdAt)
-        return createdAt >= cutoffDate
-      })
-    }
-
-    // Apply sorting
-    filteredResidents.sort((a, b) => {
-      let aValue: any
-      let bValue: any
-
-      switch (sortBy) {
-        case 'firstName':
-          aValue = a.firstName || ''
-          bValue = b.firstName || ''
-          break
-        case 'lastName':
-          aValue = a.lastName || ''
-          bValue = b.lastName || ''
-          break
-        case 'status':
-          aValue = a.status || ''
-          bValue = b.status || ''
-          break
-        case 'email':
-          aValue = a.email || ''
-          bValue = b.email || ''
-          break
-        case 'created_at':
-        default:
-          aValue = new Date(a.createdAt).getTime()
-          bValue = new Date(b.createdAt).getTime()
-          break
-      }
-
-      if (sortOrder === 'asc') {
-        return aValue > bValue ? 1 : aValue < bValue ? -1 : 0
-      } else {
-        return aValue < bValue ? 1 : aValue > bValue ? -1 : 0
-      }
+    // Server-side paginated query — search, filter, sort, and pagination all happen in Supabase
+    const result = await residentService.getPaginated({
+      page,
+      limit,
+      search,
+      status,
+      dateRange,
+      sortBy,
+      sortOrder
     })
-
-    // Apply pagination
-    const total = filteredResidents.length
-    const totalPages = Math.ceil(total / limit)
-    const offset = (page - 1) * limit
-    const paginatedResidents = filteredResidents.slice(offset, offset + limit)
 
     return NextResponse.json(
       { 
         success: true, 
-        data: paginatedResidents,
+        data: result.residents,
         pagination: {
-          page,
-          limit,
-          total,
-          totalPages,
-          hasNext: page < totalPages,
-          hasPrev: page > 1
+          page: result.page,
+          limit: result.limit,
+          total: result.total,
+          totalPages: result.totalPages,
+          hasNext: result.hasNext,
+          hasPrev: result.hasPrev
         }
       },
       { status: 200 }

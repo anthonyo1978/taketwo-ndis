@@ -126,6 +126,123 @@ export class ResidentService {
   }
 
   /**
+   * Get paginated residents with server-side search, filtering, and sorting.
+   * This avoids fetching all rows and filtering in JS.
+   * 
+   * @param options - Pagination, search, filter, and sort options
+   * @returns Promise resolving to paginated residents result
+   * @throws Error if database query fails
+   */
+  async getPaginated(options: {
+    page: number
+    limit: number
+    search?: string
+    status?: string
+    dateRange?: string
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
+  }): Promise<{
+    residents: Resident[]
+    page: number
+    limit: number
+    total: number
+    totalPages: number
+    hasNext: boolean
+    hasPrev: boolean
+  }> {
+    try {
+      const supabase = await this.getSupabase()
+      const { page, limit, search, status, dateRange, sortBy, sortOrder } = options
+      const offset = (page - 1) * limit
+
+      // Build query — exclude photo_base64 from list queries for performance
+      let query = supabase
+        .from('residents')
+        .select(`
+          id, house_id, first_name, last_name, date_of_birth, gender,
+          phone, email, ndis_id, notes, status, room_label, move_in_date,
+          participant_funding_level_label, participant_funding_level_notes,
+          funding_management_type, plan_manager_id, gta_reference,
+          gta_start_date, gta_end_date, detailed_notes, preferences,
+          emergency_contact, created_at, created_by, updated_at, updated_by,
+          funding_contracts (
+            id,
+            contract_status,
+            current_balance
+          ),
+          plan_managers (
+            id,
+            name,
+            email,
+            phone,
+            billing_email
+          )
+        `, { count: 'exact' })
+
+      // Apply search filter (name, email, phone, NDIS ID)
+      if (search) {
+        query = query.or(
+          `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,ndis_id.ilike.%${search}%`
+        )
+      }
+
+      // Apply status filter — map frontend 'Prospect' to DB 'Draft'
+      if (status) {
+        const dbStatus = status === 'Prospect' ? 'Draft' : status
+        query = query.eq('status', dbStatus)
+      }
+
+      // Apply date range filter (created within last N days)
+      if (dateRange) {
+        const daysAgo = parseInt(dateRange, 10)
+        if (!isNaN(daysAgo) && daysAgo > 0) {
+          const cutoffDate = new Date()
+          cutoffDate.setDate(cutoffDate.getDate() - daysAgo)
+          query = query.gte('created_at', cutoffDate.toISOString())
+        }
+      }
+
+      // Map frontend sort fields to DB column names
+      const sortFieldMap: Record<string, string> = {
+        firstName: 'first_name',
+        lastName: 'last_name',
+        status: 'status',
+        email: 'email',
+        created_at: 'created_at',
+      }
+      const dbSortField = sortFieldMap[sortBy || 'created_at'] || 'created_at'
+      query = query.order(dbSortField, { ascending: sortOrder === 'asc' })
+
+      // Apply pagination
+      query = query.range(offset, offset + limit - 1)
+
+      const { data, error, count } = await query
+
+      if (error) {
+        console.error('Error fetching paginated residents:', error)
+        throw new Error(`Failed to fetch residents: ${error.message}`)
+      }
+
+      const residents = (data || []).map(resident => this.convertDbResidentToFrontend(resident))
+      const total = count || 0
+      const totalPages = Math.ceil(total / limit)
+
+      return {
+        residents,
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    } catch (error) {
+      console.error('ResidentService.getPaginated error:', error)
+      throw error
+    }
+  }
+
+  /**
    * Get resident by ID.
    * 
    * @param id - The resident ID to find
