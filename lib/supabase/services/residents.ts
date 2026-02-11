@@ -157,13 +157,13 @@ export class ResidentService {
       const { page, limit, search, status, dateRange, sortBy, sortOrder } = options
       const offset = (page - 1) * limit
 
-      // Build query — exclude photo_base64 from list queries for performance
-      // but include photo_url (small URL string) for avatar display
+      // Build query with targeted columns for list display
+      // Include both photo_url and photo_base64 for backward compat with existing photos
       let query = supabase
         .from('residents')
         .select(`
           id, house_id, first_name, last_name, date_of_birth, gender,
-          phone, email, ndis_id, photo_url, notes, status, room_label, move_in_date,
+          phone, email, ndis_id, photo_url, photo_base64, notes, status, room_label, move_in_date,
           participant_funding_level_label, participant_funding_level_notes,
           funding_management_type, plan_manager_id, gta_reference,
           gta_start_date, gta_end_date, detailed_notes, preferences,
