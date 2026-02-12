@@ -139,8 +139,12 @@ export class TransactionService {
   }
 
   /**
-   * Generate the next sequential TXN ID
+   * Generate the next sequential TXN ID using an atomic Postgres function.
+   * Uses pg_advisory_xact_lock to prevent race conditions between concurrent requests.
+   * Falls back to application-level logic if the RPC function is not yet deployed.
+   * 
    * @param organizationId - Optional organization ID. If not provided, fetches from current user session.
+   * @param maxRetries - Maximum retry attempts (used by fallback logic only)
    * @param supabaseClient - Optional Supabase client (for service role access in automation)
    */
   async generateNextTxnId(organizationId?: string, maxRetries: number = 5, supabaseClient?: any): Promise<string> {
@@ -153,13 +157,27 @@ export class TransactionService {
       throw new Error('User organization not found. Please log in again.')
     }
     
-    // Generate org-specific prefix (first 6 chars of org ID in uppercase)
-    const orgPrefix = orgId.substring(0, 6).toUpperCase()
-    console.log(`[TXN ID GEN] Fetching transactions for org: ${orgId} (prefix: ${orgPrefix})`)
+    // Try atomic RPC function first (eliminates race conditions)
+    try {
+      const { data, error } = await supabase.rpc('generate_next_txn_id', {
+        p_organization_id: orgId
+      })
+      
+      if (!error && data) {
+        return data as string
+      }
+      
+      // RPC not available yet (migration not run) — fall back to app-level logic
+      if (error) {
+        console.warn('[TXN ID GEN] RPC not available, using fallback:', error.message)
+      }
+    } catch {
+      console.warn('[TXN ID GEN] RPC call failed, using fallback')
+    }
     
-    // Query transactions for THIS organization with org-specific prefix
-    // Format: TXN-{ORG_PREFIX}-A000001
-    // This ensures each org has its own ID sequence
+    // ── Fallback: application-level ID generation ──
+    const orgPrefix = orgId.substring(0, 6).toUpperCase()
+    
     const { data, error } = await supabase
       .from('transactions')
       .select('id')
@@ -173,89 +191,50 @@ export class TransactionService {
       throw new Error('Failed to generate TXN ID')
     }
     
-    console.log(`[TXN ID GEN] Found ${data?.length || 0} existing transaction IDs`)
-    if (data && data.length > 0) {
-      console.log(`[TXN ID GEN] First 5 IDs from DB:`, data.slice(0, 5).map((d: { id: string }) => d.id))
-    }
-    
     if (!data || data.length === 0) {
-      // First transaction for this org
-      const firstId = `TXN-${orgPrefix}-A000001`
-      console.log(`[TXN ID GEN] No existing transactions, starting with ${firstId}`)
-      return firstId
+      return `TXN-${orgPrefix}-A000001`
     }
     
     // Filter for sequential format IDs
-    // Format: TXN-{ORG_PREFIX}-A000001 OR TXN-{ORG_PREFIX}-A000001-XXX (old suffix format)
-    // Also support legacy format: TXN-A000001 (no org prefix)
     const legacyPattern = /^TXN-[A-Z]\d{6}(-\d+)?$/
     const newPattern = new RegExp(`^TXN-${orgPrefix}-[A-Z]\\d{6}(-\\d+)?$`)
     
     const sequentialIds = data
       .map((item: { id: string }) => item.id)
-      .filter((id: string) => legacyPattern.test(id) || newPattern.test(id)) // Match both formats
+      .filter((id: string) => legacyPattern.test(id) || newPattern.test(id))
       .map((id: string) => {
-        // Extract base ID (remove suffix if present)
-        // Handles: TXN-A000001-XXX → TXN-A000001
-        // Handles: TXN-D9430C-A000001-XXX → TXN-D9430C-A000001
         const baseMatch = id.match(/^(TXN-(?:[A-Z0-9]+-)?[A-Z]\d{6})/)
         return baseMatch ? baseMatch[1] : id
       })
-      .filter((id: string, index: number, self: string[]) => self.indexOf(id) === index) // Remove duplicates
+      .filter((id: string, index: number, self: string[]) => self.indexOf(id) === index)
       .sort((a: string, b: string) => {
-        // Sort by letter first, then by number
-        // Handles: TXN-A000001 or TXN-D9430C-A000001
         const aMatch = a.match(/^TXN-(?:[A-Z0-9]+-)?([A-Z])(\d+)$/)
         const bMatch = b.match(/^TXN-(?:[A-Z0-9]+-)?([A-Z])(\d+)$/)
         
         if (!aMatch || !bMatch) return 0
         if (!aMatch[1] || !aMatch[2] || !bMatch[1] || !bMatch[2]) return 0
         
-        const aLetter = aMatch[1]
-        const aNum = aMatch[2]
-        const bLetter = bMatch[1]
-        const bNum = bMatch[2]
-        
-        if (aLetter !== bLetter) {
-          return bLetter.localeCompare(aLetter) // Z comes before A
+        if (aMatch[1] !== bMatch[1]) {
+          return bMatch[1].localeCompare(aMatch[1])
         }
-        
-        return parseInt(bNum) - parseInt(aNum) // Higher numbers first
+        return parseInt(bMatch[2], 10) - parseInt(aMatch[2], 10)
       })
     
-    console.log(`[TXN ID GEN] After filtering, found ${sequentialIds.length} sequential IDs`)
-    if (sequentialIds.length > 0) {
-      console.log(`[TXN ID GEN] Top 3 sequential IDs:`, sequentialIds.slice(0, 3))
-    }
-    
     if (sequentialIds.length === 0) {
-      // No sequential format found, start with A000001
-      const firstId = `TXN-${orgPrefix}-A000001`
-      console.log(`[TXN ID GEN] No sequential IDs found, starting with ${firstId}`)
-      return firstId
+      return `TXN-${orgPrefix}-A000001`
     }
     
-    // Get the highest sequential ID (base, without suffix)
-    const latestId = sequentialIds[0] // Now properly sorted descending
-    console.log(`[TXN ID GEN] Latest ID from sort: ${latestId}`)
-    
-    // Match both formats: TXN-A000001 or TXN-D9430C-A000001
+    const latestId = sequentialIds[0]
     const match = latestId.match(/^TXN-(?:[A-Z0-9]+-)?([A-Z])(\d+)$/)
     
     if (!match) {
-      // This shouldn't happen since we filtered, but just in case
-      const firstId = `TXN-${orgPrefix}-A000001`
-      console.log(`[TXN ID GEN] Failed to parse latest ID, defaulting to ${firstId}`)
-      return firstId
+      return `TXN-${orgPrefix}-A000001`
     }
     
     const [, letter, numberStr] = match
     let currentLetter = letter
     let currentNumber = parseInt(numberStr, 10)
     
-    console.log(`[TXN ID GEN] Parsed: letter=${currentLetter}, number=${currentNumber}`)
-    
-    // Check if we need to move to next letter (assuming 999999 is the max per letter)
     if (currentNumber >= 999999) {
       currentLetter = String.fromCharCode(currentLetter.charCodeAt(0) + 1)
       currentNumber = 1
@@ -263,11 +242,7 @@ export class TransactionService {
       currentNumber += 1
     }
     
-    // Generate ID with org prefix: TXN-{ORG_PREFIX}-A000001
-    const nextId = `TXN-${orgPrefix}-${currentLetter}${currentNumber.toString().padStart(6, '0')}`
-    console.log(`[TXN ID GEN] Generated next ID: ${nextId}`)
-    
-    return nextId
+    return `TXN-${orgPrefix}-${currentLetter}${currentNumber.toString().padStart(6, '0')}`
   }
 
   /**
