@@ -1,6 +1,5 @@
 import "styles/tailwind.css"
 import { Metadata } from "next"
-import { TransactionMigration } from "components/TransactionMigration"
 
 export const metadata: Metadata = {
   title: {
@@ -14,7 +13,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <TransactionMigration />
         {children}
       </body>
     </html>
