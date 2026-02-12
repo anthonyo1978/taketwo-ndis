@@ -15,9 +15,6 @@ export async function GET(
   try {
     const { id } = await params
     
-    // Simulate realistic delay for loading states
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
     const resident = await residentService.getById(id)
     
     if (!resident) {
@@ -119,9 +116,6 @@ export async function PUT(
       )
     }
     
-    // Simulate realistic delay for loading states
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
     const updatedResident = await residentService.update(id, validation.data as ResidentUpdateInput)
     
     return NextResponse.json({
@@ -147,9 +141,6 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    
-    // Simulate realistic delay for loading states
-    await new Promise(resolve => setTimeout(resolve, 300))
     
     try {
       const deactivatedResident = await residentService.update(id, { status: 'Deactivated' })

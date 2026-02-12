@@ -16,9 +16,6 @@ export async function GET(
   try {
     const { id } = await params
     
-    // Simulate realistic delay for loading states
-    await new Promise(resolve => setTimeout(resolve, 200))
-    
     const resident = await residentService.getById(id)
     
     if (!resident) {
@@ -129,9 +126,6 @@ export async function POST(
         { status: 400 }
       )
     }
-    
-    // Simulate realistic delay for loading states
-    await new Promise(resolve => setTimeout(resolve, 300))
     
     // Calculate duration in days if both start and end dates are provided
     let durationDays: number | undefined = undefined
@@ -287,9 +281,6 @@ export async function PUT(
       )
     }
     
-    // Simulate realistic delay for loading states
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
     // Calculate duration in days if both start and end dates are provided
     let durationDays: number | undefined = undefined
     if (validation.data.startDate && validation.data.endDate) {
@@ -376,9 +367,6 @@ export async function DELETE(
     }
     
     console.log(`[Contract Delete] Deleting contract ${fundingId} - No drawdowns detected`)
-    
-    // Simulate realistic delay for loading states
-    await new Promise(resolve => setTimeout(resolve, 300))
     
     // Delete funding contract from Supabase
     await residentService.deleteFundingContract(fundingId)

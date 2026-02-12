@@ -23,9 +23,6 @@ export async function POST(
     // Post the transaction
     const transaction = postTransaction(id, 'current-user') // TODO: Get from auth
     
-    // Add delay for loading state demonstration
-    await new Promise(resolve => setTimeout(resolve, 200))
-    
     return NextResponse.json({
       success: true,
       data: transaction,

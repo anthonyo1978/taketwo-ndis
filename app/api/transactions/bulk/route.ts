@@ -49,9 +49,6 @@ export async function POST(request: NextRequest) {
       operationResult = bulkVoidTransactions(transactionIds, reason!, currentUser)
     }
     
-    // Add delay for loading state demonstration
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
     const statusCode = operationResult.success ? 200 : 207 // Multi-Status for partial success
     
     return NextResponse.json({

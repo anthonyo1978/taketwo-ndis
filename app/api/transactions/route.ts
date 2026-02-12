@@ -129,9 +129,6 @@ export async function GET(request: NextRequest) {
     
     const sort: TransactionSortConfig = sortResult.data || { field: 'id', direction: 'desc' }
     
-    // Add delay for loading state demonstration
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
     // Get transactions from database
     const result = await transactionService.getAll(filters, sort, page, pageSize)
     

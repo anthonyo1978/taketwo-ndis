@@ -6,9 +6,6 @@ import { getCurrentUserId, logAction, getRequestMetadata } from "lib/services/au
 
 export async function POST(request: NextRequest) {
   try {
-    // Add delay to simulate realistic API behavior
-    await new Promise((resolve) => setTimeout(resolve, 800))
-
     const body = await request.json()
     
     // Debug: Log the incoming data
@@ -86,9 +83,6 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Add delay to simulate realistic API behavior
-    await new Promise((resolve) => setTimeout(resolve, 300))
-
     // Parse query parameters
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')

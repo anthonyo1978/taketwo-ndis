@@ -237,9 +237,6 @@ export async function GET(request: NextRequest) {
     const timestamp = new Date().toISOString().split('T')[0]
     const filename = `transactions-export-${timestamp}.csv`
     
-    // Add delay for loading state demonstration
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
     return new NextResponse(csvContent, {
       status: 200,
       headers: {

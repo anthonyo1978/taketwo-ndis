@@ -195,9 +195,6 @@ export async function DELETE(
     
     await transactionService.delete(id)
     
-    // Add delay for loading state demonstration
-    await new Promise(resolve => setTimeout(resolve, 150))
-    
     return NextResponse.json({
       success: true,
       message: 'Transaction deleted successfully'
