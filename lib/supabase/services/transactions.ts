@@ -47,6 +47,20 @@ export class TransactionService {
       if (filters.contractIds && filters.contractIds.length > 0) {
         query = query.in('contract_id', filters.contractIds)
       }
+      if (filters.houseIds && filters.houseIds.length > 0) {
+        // Transactions don't have house_id directly — resolve via residents
+        const { data: houseResidents } = await supabase
+          .from('residents')
+          .select('id')
+          .in('house_id', filters.houseIds)
+        const houseResidentIds = houseResidents?.map(r => r.id) || []
+        if (houseResidentIds.length > 0) {
+          query = query.in('resident_id', houseResidentIds)
+        } else {
+          // No residents in these houses → no transactions can match
+          query = query.in('resident_id', ['00000000-0000-0000-0000-000000000000'])
+        }
+      }
       if (filters.statuses && filters.statuses.length > 0) {
         query = query.in('status', filters.statuses)
       }
