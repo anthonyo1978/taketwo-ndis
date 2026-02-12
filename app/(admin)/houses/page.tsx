@@ -341,6 +341,27 @@ function HousesPageContent() {
           />
         </div>
         
+        {/* Occupancy Ring Legend */}
+        <div className="mb-4 flex items-center gap-5 text-xs text-gray-500">
+          <span className="font-medium text-gray-600">Occupancy:</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-green-400 ring-1 ring-green-500/30" />
+            Fully Occupied
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-amber-400 ring-1 ring-amber-500/30" />
+            Partially Occupied
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-red-400 ring-1 ring-red-500/30" />
+            Vacant
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-full bg-pink-300 ring-1 ring-pink-400/30" />
+            No Bedrooms Set
+          </span>
+        </div>
+
         {/* Dynamic Houses Table */}
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="overflow-x-auto">
@@ -415,26 +436,35 @@ function HousesPageContent() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {(() => {
                         const occupancy = occupancyData[house.id]
-                        const occupancyRate = occupancy 
+                        const hasBedrooms = occupancy && occupancy.total_bedrooms > 0
+                        const occupancyRate = hasBedrooms
                           ? (occupancy.occupied_bedrooms / occupancy.total_bedrooms) * 100 
-                          : 0
+                          : -1 // -1 signals "no bedroom data"
                         
-                        // Simple binary color scheme: Green = 100%, Rose/Pink = anything else
-                        const getRingColor = () => {
-                          if (!occupancy) return 'ring-gray-200 ring-2'
-                          return occupancyRate === 100 
-                            ? 'ring-green-500 ring-4' // Thick green ring for fully occupied
-                            : 'ring-rose-400 ring-4'  // Thick rose/pink ring for not fully occupied (softer than red)
+                        // 4-tier occupancy ring:
+                        //   Green  = 100% fully occupied
+                        //   Orange = 1-99% partially occupied
+                        //   Red    = 0% vacant (hot — needs attention)
+                        //   Pink   = no bedrooms configured
+                        //   Gray   = data not yet loaded
+                        const getRingStyle = () => {
+                          if (!occupancy) return 'border-gray-200' // loading
+                          if (!hasBedrooms) return 'border-pink-300' // no bedrooms set
+                          if (occupancyRate === 100) return 'border-green-400'
+                          if (occupancyRate > 0) return 'border-amber-400'
+                          return 'border-red-400' // 0% — vacant
                         }
                         
                         const tooltipText = occupancy 
-                          ? `${occupancy.occupied_bedrooms}/${occupancy.total_bedrooms} bedrooms occupied (${occupancyRate.toFixed(0)}%)`
+                          ? hasBedrooms
+                            ? `${occupancy.occupied_bedrooms}/${occupancy.total_bedrooms} bedrooms occupied (${occupancyRate.toFixed(0)}%)`
+                            : 'No bedrooms configured'
                           : 'Occupancy loading...'
                         
                         return (
                           <div className="flex items-center">
                             <div 
-                              className={`relative rounded-full ${getRingColor()} ring-offset-2 cursor-help transition-all hover:ring-offset-3`}
+                              className={`relative rounded-full border-[3px] ${getRingStyle()} p-0.5 cursor-help transition-all hover:shadow-md`}
                               title={tooltipText}
                             >
                               {house.imageUrl ? (
