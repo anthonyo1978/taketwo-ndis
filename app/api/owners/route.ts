@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ownerService } from 'lib/supabase/services/owners'
 import type { OwnerCreateInput } from 'types/owner'
+import { CACHE_MEDIUM } from 'lib/utils/cache-headers'
 
 /**
  * GET /api/owners - Get all owners for the current organization
@@ -8,7 +9,7 @@ import type { OwnerCreateInput } from 'types/owner'
 export async function GET(request: NextRequest) {
   try {
     const owners = await ownerService.getAll()
-    return NextResponse.json({ success: true, data: owners })
+    return NextResponse.json({ success: true, data: owners }, { headers: CACHE_MEDIUM })
   } catch (error) {
     console.error('[API] Error fetching owners:', error)
     return NextResponse.json(

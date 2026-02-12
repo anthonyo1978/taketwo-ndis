@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Bell, ChevronRight, CheckCheck, Clipboard, Calendar } from 'lucide-react'
-import { Notification, generateMockNotifications } from './mockNotifications'
+import { Notification } from './mockNotifications'
 import { NotificationItem } from './NotificationItem'
 import { TodoList } from './TodoList'
 import { RemindersPanel } from './RemindersPanel'
@@ -24,15 +24,6 @@ type TabType = 'notifications' | 'todos' | 'reminders'
 export function NotificationsPanel() {
   // Feature flag check
   const isEnabled = process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS === 'true'
-  
-  // Debug log (remove after confirming it works)
-  useEffect(() => {
-    console.log('[NotificationsPanel] Feature flag check:', {
-      envVar: process.env.NEXT_PUBLIC_ENABLE_NOTIFICATIONS,
-      isEnabled,
-      willRender: isEnabled
-    })
-  }, [isEnabled])
   
   if (!isEnabled) {
     return null
@@ -112,14 +103,13 @@ export function NotificationsPanel() {
           }))
           setNotifications(mappedNotifications)
         } else {
-          // Fallback to mock data if API fails
-          console.warn('[NotificationsPanel] API failed, using mock data:', result.error)
-          setNotifications(generateMockNotifications())
+          // API returned an error — show empty state rather than fake data
+          console.warn('[NotificationsPanel] API failed:', result.error)
+          setNotifications([])
         }
       } catch (error) {
         console.error('[NotificationsPanel] Error fetching notifications:', error)
-        // Fallback to mock data on error
-        setNotifications(generateMockNotifications())
+        setNotifications([])
       } finally {
         setLoading(false)
       }

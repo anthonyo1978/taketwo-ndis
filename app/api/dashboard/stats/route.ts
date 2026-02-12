@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from 'lib/supabase/server'
 import { getCurrentUserOrganizationId } from 'lib/utils/organization'
+import { CACHE_SHORT } from 'lib/utils/cache-headers'
 
 export interface DashboardStats {
   portfolio: {
@@ -256,7 +257,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: stats
-    })
+    }, { headers: CACHE_SHORT })
     
   } catch (error) {
     console.error('[Dashboard API] Error:', error)

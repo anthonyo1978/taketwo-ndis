@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { houseCreateSchema } from "lib/schemas/house"
 import { houseService } from "lib/supabase/services/houses"
 import { getCurrentUserId, logAction, getRequestMetadata } from "lib/services/audit-logger"
+import { CACHE_SHORT } from "lib/utils/cache-headers"
 
 export async function POST(request: NextRequest) {
   try {
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
           hasPrev: result.hasPrev
         }
       },
-      { status: 200 }
+      { status: 200, headers: CACHE_SHORT }
     )
   } catch (error) {
     console.error('Houses retrieval error:', error)

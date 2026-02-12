@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { planManagerService } from "lib/supabase/services/plan-managers"
 import { planManagerCreateSchema } from "lib/schemas/plan-manager"
+import { CACHE_MEDIUM } from "lib/utils/cache-headers"
 
 // GET /api/plan-managers
 // Fetch all plan managers for the current organization
@@ -13,7 +14,7 @@ export async function GET() {
         success: true, 
         data: planManagers 
       },
-      { status: 200 }
+      { status: 200, headers: CACHE_MEDIUM }
     )
   } catch (error) {
     console.error('Get plan managers error:', error)

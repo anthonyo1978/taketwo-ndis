@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { residentCreateSchema } from "lib/schemas/resident"
 import { residentService } from "lib/supabase/services/residents"
 import { uploadResidentPhoto } from "lib/utils/photo-upload"
+import { CACHE_SHORT } from "lib/utils/cache-headers"
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
           hasPrev: result.hasPrev
         }
       },
-      { status: 200 }
+      { status: 200, headers: CACHE_SHORT }
     )
   } catch (error) {
     console.error('Global residents retrieval error:', error)

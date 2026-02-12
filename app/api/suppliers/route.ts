@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supplierService } from 'lib/supabase/services/suppliers'
 import type { SupplierCreateInput } from 'types/supplier'
+import { CACHE_MEDIUM } from 'lib/utils/cache-headers'
 
 /**
  * GET /api/suppliers - Get all suppliers for the current organization
@@ -8,7 +9,7 @@ import type { SupplierCreateInput } from 'types/supplier'
 export async function GET(request: NextRequest) {
   try {
     const suppliers = await supplierService.getAll()
-    return NextResponse.json({ success: true, data: suppliers })
+    return NextResponse.json({ success: true, data: suppliers }, { headers: CACHE_MEDIUM })
   } catch (error) {
     console.error('[API] Error fetching suppliers:', error)
     return NextResponse.json(
