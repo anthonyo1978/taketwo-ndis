@@ -19,12 +19,6 @@ const setupPasswordSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as { token: string; password: string }
-    console.log('[BACKEND] Received request:', {
-      password: body.password,
-      passwordLength: body.password?.length,
-      token: body.token?.substring(0, 10) + '...',
-      userAgent: request.headers.get('user-agent')?.substring(0, 50) + '...'
-    })
     const validation = setupPasswordSchema.safeParse(body)
 
     if (!validation.success) {
@@ -113,7 +107,7 @@ export async function POST(request: NextRequest) {
       // Handle specific error cases
       if (authError?.code === 'email_exists') {
         // User already exists in Supabase Auth, try to sign them in instead
-        console.log('[SETUP PASSWORD] User already exists, attempting sign in...')
+        // User already exists in Supabase Auth, try to sign them in instead
         
         const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
           email: user.email,

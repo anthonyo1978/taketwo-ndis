@@ -74,7 +74,7 @@ export async function POST(
     
     const setupLink = `${baseUrl}/auth/setup-password?token=${token}`
     
-    console.log('[RESEND INVITE] Setup link:', setupLink)
+    
     
     const emailResult = await sendWelcomeEmail({
       firstName: user.first_name,

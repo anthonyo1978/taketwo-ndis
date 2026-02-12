@@ -62,14 +62,11 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    console.log('[USERS API] POST /api/users - Starting user creation')
     const body = await request.json()
-    console.log('[USERS API] Request body:', JSON.stringify(body, null, 2))
     
     const validation = createUserSchema.safeParse(body)
 
     if (!validation.success) {
-      console.log('[USERS API] Validation failed:', validation.error.issues)
       return NextResponse.json(
         { 
           success: false, 
@@ -81,10 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { firstName, lastName, email, phone, jobTitle, role, sendWelcomeEmail: shouldSendEmail } = validation.data
-    console.log('[USERS API] Creating user:', email, 'Role:', role)
-
     const supabase = await createClient()
-    console.log('[USERS API] Supabase client created')
 
     // Get inviter's organization (new user joins same org as inviter)
     const organizationId = await getCurrentUserOrganizationId()
@@ -94,8 +88,6 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       )
     }
-    console.log('[USERS API] Organization context:', organizationId)
-
     // Check if user with this email already exists
     const { data: existingUser } = await supabase
       .from('users')
@@ -171,7 +163,7 @@ export async function POST(request: NextRequest) {
       
       const setupLink = `${baseUrl}/auth/setup-password?token=${token}`
       
-      console.log('[USERS API] Setup link:', setupLink)
+      
       
       const emailResult = await sendWelcomeEmail({
         firstName,
@@ -185,7 +177,7 @@ export async function POST(request: NextRequest) {
         console.error('[USERS API] Failed to send welcome email:', emailResult.error)
         // Don't fail the request, user is created successfully
       } else {
-        console.log('[USERS API] Welcome email sent to:', email)
+        // Email sent successfully
       }
     }
 

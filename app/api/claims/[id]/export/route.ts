@@ -142,7 +142,7 @@ export async function POST(
 
     // Use the path returned from upload (it should match our filePath)
     const uploadedPath = uploadData?.path || filePath
-    console.log('File uploaded to:', uploadedPath)
+    
 
     // Update claim record with file metadata and status
     const { error: updateError } = await supabase

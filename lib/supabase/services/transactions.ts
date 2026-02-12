@@ -257,7 +257,7 @@ export class TransactionService {
       throw new Error('User organization not found. Please log in again.')
     }
     
-    console.log(`[TRANSACTION] Creating transaction for org: ${organizationId}`)
+    
     
     let retryCount = 0
     const maxRetries = 5
@@ -267,13 +267,13 @@ export class TransactionService {
       try {
         // Generate sequential TXN ID - regenerate on each retry to avoid collisions
         if (retryCount > 0) {
-          console.log(`[TRANSACTION] Retry ${retryCount}: Waiting before regenerating ID...`)
+          
           // Force a small delay to allow other transactions to complete
           await new Promise(resolve => setTimeout(resolve, 100 * retryCount))
         }
         
         const customId = await this.generateNextTxnId(organizationId)
-        console.log(`[TRANSACTION] Generated ID: ${customId} (attempt ${retryCount + 1}/${maxRetries})`)
+        
         
         // Check if this ID already exists
         const { data: existingTx, error: checkError } = await supabase
@@ -290,7 +290,7 @@ export class TransactionService {
         }
         
         if (existingTx) {
-          console.log(`[TRANSACTION] ID ${customId} already exists, will retry...`)
+          
           retryCount++
           continue
         }
@@ -319,7 +319,7 @@ export class TransactionService {
         if (error) {
           // If duplicate key error, retry
           if (error.code === '23505') {
-            console.log(`[TRANSACTION] Duplicate key error, retrying... (attempt ${retryCount + 1}/${maxRetries})`)
+            
             retryCount++
             await new Promise(resolve => setTimeout(resolve, 100))
             continue
@@ -460,11 +460,7 @@ export class TransactionService {
         return
       }
       
-      console.log(`Contract ${contractId} balance update:`)
-      console.log(`  Current balance: $${contract.current_balance}`)
-      console.log(`  Original amount: $${contract.original_amount}`)
-      console.log(`  Transaction amount: $${amount}`)
-      console.log(`  Operation: ${isRefund ? 'REFUND (adding back)' : 'DEDUCT (subtracting)'}`)
+      
       
       // Calculate new balance
       let newBalance: number
@@ -476,7 +472,7 @@ export class TransactionService {
         newBalance = Math.max(0, contract.current_balance - amount)
       }
       
-      console.log(`  New balance: $${newBalance}`)
+      
       
       // Update contract balance
       const { error: updateError } = await supabase
@@ -487,7 +483,7 @@ export class TransactionService {
       if (updateError) {
         console.error('Error updating contract balance:', updateError)
       } else {
-        console.log(`  ✅ Contract balance updated successfully`)
+        
       }
     } catch (error) {
       console.error('Error in updateContractBalance:', error)

@@ -28,8 +28,6 @@ const signupSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('[SIGNUP] Starting organization signup')
-    
     const body = await request.json()
     const validation = signupSchema.safeParse(body)
     
@@ -59,9 +57,6 @@ export async function POST(request: NextRequest) {
     )
     
     // Step 1: Check if email already exists in Auth AND in users table
-    console.log('[SIGNUP] Checking if email exists')
-    
-    // Check Supabase Auth first
     const { data: authUsers, error: authCheckError } = await supabaseAdmin.auth.admin.listUsers()
     const existingAuthUser = authUsers?.users.find(u => u.email === email)
     
@@ -113,8 +108,6 @@ export async function POST(request: NextRequest) {
       slug = `${slug}-${randomSuffix}`
     }
     
-    console.log('[SIGNUP] Creating organization:', slug)
-    
     // Step 3: Create organization
     const { data: organization, error: orgError } = await supabaseAdmin
       .from('organizations')
@@ -138,10 +131,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    console.log('[SIGNUP] Organization created:', organization.id)
-    
     // Step 4: Create Supabase Auth user
-    console.log('[SIGNUP] Creating auth user')
     const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -168,10 +158,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    console.log('[SIGNUP] Auth user created:', authUser.user.id)
-    
     // Step 5: Create user record in database
-    console.log('[SIGNUP] Creating user record')
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
@@ -204,10 +191,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    console.log('[SIGNUP] User record created:', user.id)
-    
     // Step 6: Create default automation settings for this organization
-    console.log('[SIGNUP] Creating automation settings')
     await supabaseAdmin
       .from('automation_settings')
       .insert({
@@ -218,11 +202,7 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
     
-    console.log('[SIGNUP] Signup completed successfully')
-    
     // Step 7: Send welcome email (if Resend is properly configured)
-    // Note: Currently limited by Resend free tier - can only send to verified emails
-    console.log('[SIGNUP] Attempting to send welcome email')
     let emailSent = false
     let emailError = null
     
@@ -238,11 +218,8 @@ export async function POST(request: NextRequest) {
       if (!emailResult.success) {
         console.error('[SIGNUP] Failed to send welcome email:', emailResult.error)
         emailError = emailResult.error
-        console.log('[SIGNUP] Note: Resend free tier only sends to verified addresses')
-        console.log('[SIGNUP] User can still log in with their credentials')
         // Don't fail the signup if email fails - user can still log in
       } else {
-        console.log('[SIGNUP] Welcome email sent successfully to:', email)
         emailSent = true
       }
     } catch (emailErr) {
@@ -277,4 +254,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-

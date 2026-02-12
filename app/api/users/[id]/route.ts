@@ -138,7 +138,7 @@ export async function DELETE(
 
     if (hardDelete) {
       // Hard delete: completely remove user and related data
-      console.log('[USERS API] Hard deleting user:', id)
+      
       
       // Delete invites first (foreign key constraint)
       await supabase.from('user_invites').delete().eq('user_id', id)

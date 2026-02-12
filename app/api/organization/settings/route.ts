@@ -9,20 +9,16 @@ import { OrganizationSettingsUpdateInput } from 'types/organization'
  */
 export async function GET(request: NextRequest) {
   try {
-    console.log('[ORG SETTINGS] Fetching organization settings')
-    
     const orgService = new OrganizationService()
     const settings = await orgService.getSettings()
 
     if (!settings) {
-      console.log('[ORG SETTINGS] No settings found')
       return NextResponse.json({
         success: false,
         error: 'Organization settings not found'
       }, { status: 404 })
     }
 
-    console.log('[ORG SETTINGS] Settings retrieved successfully')
     return NextResponse.json({
       success: true,
       data: settings
@@ -43,8 +39,6 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    console.log('[ORG SETTINGS] Updating organization settings')
-    
     const body = await request.json() as OrganizationSettingsUpdateInput
     
     // Validate required fields
@@ -59,14 +53,12 @@ export async function PATCH(request: NextRequest) {
     const updatedSettings = await orgService.updateSettings(body)
 
     if (!updatedSettings) {
-      console.log('[ORG SETTINGS] Failed to update settings')
       return NextResponse.json({
         success: false,
         error: 'Failed to update organization settings'
       }, { status: 500 })
     }
 
-    console.log('[ORG SETTINGS] Settings updated successfully')
     return NextResponse.json({
       success: true,
       data: updatedSettings
@@ -80,4 +72,3 @@ export async function PATCH(request: NextRequest) {
     }, { status: 500 })
   }
 }
-

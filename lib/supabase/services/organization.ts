@@ -75,7 +75,7 @@ export class OrganizationService {
 
       // If settings don't exist, create default ones
       if (!data) {
-        console.log('[ORG SERVICE] No settings found, creating defaults for org:', organizationId)
+        // No settings found, create defaults
         
         // Get organization name from organizations table
         const { data: org } = await supabase

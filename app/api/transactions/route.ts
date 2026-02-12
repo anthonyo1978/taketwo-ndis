@@ -176,15 +176,9 @@ export async function POST(request: NextRequest) {
       isDrawdownTransaction?: boolean
     }
     
-    // Debug logging for Drawing Down transactions
-    if ((body as any).isDrawdownTransaction) {
-      console.log('Drawing Down transaction data:', JSON.stringify(body, null, 2))
-    }
-    
     // Validate input
     const result = createTransactionSchema.safeParse(body)
     if (!result.success) {
-      console.log('Transaction validation errors:', result.error.errors)
       return NextResponse.json(
         { 
           success: false, 
@@ -249,7 +243,7 @@ export async function POST(request: NextRequest) {
       // Regular transaction creation - use database service
       const transaction = await transactionService.create(input, userId || 'system')
       
-      console.log('Created transaction in database:', transaction.id)
+
       
       // Log the action
       if (userId) {

@@ -47,8 +47,6 @@ export async function PUT(
       )
     }
     
-    console.log(`[Contract Status] Updating contract ${contractId} from ${contract.contract_status} to ${body.status}`)
-    
     // Update contract status
     const { error: updateError } = await supabase
       .from('funding_contracts')
@@ -88,7 +86,7 @@ export async function PUT(
         
         if (warnings.length > 0) {
           residentWarnings = warnings
-          console.log('[Contract Status] Resident readiness warnings:', warnings)
+          // Resident readiness warnings captured
         }
       }
     }
@@ -131,7 +129,7 @@ export async function PUT(
       lastRunDate: fc.last_run_date
     }))
     
-    console.log(`[Contract Status] Contract ${contractId} updated to ${body.status}`)
+    
     
     return NextResponse.json({
       success: true,

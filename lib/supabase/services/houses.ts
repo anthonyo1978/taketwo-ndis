@@ -218,8 +218,7 @@ export class HouseService {
         image_url: house.imageUrl // Add image URL support
       }
       
-      // Debug: Log what we're about to insert
-      console.log('[HOUSE SERVICE] About to insert:', JSON.stringify(dbHouse, null, 2))
+
 
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
@@ -234,8 +233,7 @@ export class HouseService {
         throw new Error(`Failed to create house: ${error.message}`)
       }
 
-      // Debug: Log what Supabase returned
-      console.log('[HOUSE SERVICE] Supabase returned:', JSON.stringify(data, null, 2))
+
 
       return this.convertDbHouseToFrontend(data)
     } catch (error) {

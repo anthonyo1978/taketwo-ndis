@@ -116,7 +116,7 @@ export async function POST(
     const validation = createFundingSchema.safeParse(body)
     
     if (!validation.success) {
-      console.log('Validation failed:', validation.error.issues)
+      console.error('Funding validation failed:', validation.error.issues)
       return NextResponse.json(
         { 
           success: false, 
@@ -365,8 +365,6 @@ export async function DELETE(
         { status: 400 }
       )
     }
-    
-    console.log(`[Contract Delete] Deleting contract ${fundingId} - No drawdowns detected`)
     
     // Delete funding contract from Supabase
     await residentService.deleteFundingContract(fundingId)

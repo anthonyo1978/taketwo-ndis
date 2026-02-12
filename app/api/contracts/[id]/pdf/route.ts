@@ -39,8 +39,6 @@ export async function POST(
       )
     }
     
-    console.log(`[PDF API] Starting PDF generation for contract: ${contractId}`)
-    
     // 1. Load contract with resident and house data
     const { data: contract, error: contractError } = await supabase
       .from('funding_contracts')
@@ -181,8 +179,7 @@ export async function POST(
       timezone
     }
     
-    console.log('[PDF API] Variables built:', JSON.stringify(vars, null, 2))
-    console.log('[PDF API] Validating against schema...')
+    // Validate variables against schema
     
     // 6. Validate variables against schema
     const validation = ndisServiceAgreementV1Schema.safeParse(vars)
@@ -208,7 +205,7 @@ export async function POST(
       )
     }
     
-    console.log('[PDF API] Validation passed, rendering PDF...')
+    // Render PDF
     
     // 7. Render PDF
     const renderResult = await renderContractPdf({
@@ -225,14 +222,13 @@ export async function POST(
       )
     }
     
-    console.log(`[PDF API] PDF rendered successfully in ${renderResult.renderMs}ms`)
+    
     
     // 8. Upload to Supabase Storage
     const timestamp = Date.now()
     const storagePath = `contracts/${contractId}/ndis_service_agreement-v1-${timestamp}.pdf`
     
-    console.log(`[PDF API] Uploading to storage: ${storagePath}`)
-    console.log(`[PDF API] Buffer size: ${renderResult.buffer.length} bytes`)
+    
     
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('exports')
@@ -258,9 +254,7 @@ export async function POST(
       )
     }
     
-    console.log('[PDF API] Upload successful:', uploadData)
     
-    console.log(`[PDF API] PDF uploaded to storage: ${storagePath}`)
     
     // 9. Generate signed URL (15 min expiry)
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
@@ -305,7 +299,6 @@ export async function POST(
     }
     
     const totalTime = Date.now() - startTime
-    console.log(`[PDF API] Complete in ${totalTime}ms`)
     
     // 11. Return success response
     return NextResponse.json({

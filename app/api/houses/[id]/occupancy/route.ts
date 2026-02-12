@@ -28,7 +28,6 @@ export async function GET(
     }
     
     // Get current occupancy
-    console.log('[OCCUPANCY API] Fetching occupancy for house:', houseId, 'org:', organizationId)
     const { data: currentOccupancy, error: currentError } = await supabase
       .rpc('get_current_house_occupancy', {
         p_house_id: houseId,
@@ -54,10 +53,7 @@ export async function GET(
       )
     }
     
-    console.log('[OCCUPANCY API] Current occupancy data:', currentOccupancy)
-    
     // Get 12-month history
-    console.log('[OCCUPANCY API] Fetching history for house:', houseId)
     const { data: history, error: historyError } = await supabase
       .rpc('get_house_occupancy_history', {
         p_house_id: houseId,
@@ -81,8 +77,6 @@ export async function GET(
         { status: 500 }
       )
     }
-    
-    console.log('[OCCUPANCY API] History data:', history)
     
     return NextResponse.json({
       success: true,
