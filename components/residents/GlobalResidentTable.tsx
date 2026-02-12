@@ -70,6 +70,22 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
   // Debounced search state
   const [debouncedSearch, setDebouncedSearch] = useState(search)
 
+  // Fetch houses once on mount (they rarely change) and cache them
+  const housesLoadedRef = useRef(false)
+  const fetchHouses = useCallback(async () => {
+    if (housesLoadedRef.current) return
+    try {
+      const response = await fetch('/api/houses?limit=100')
+      const result = await response.json() as HousesApiResponse
+      if (result.success && result.data) {
+        setHouses(result.data)
+        housesLoadedRef.current = true
+      }
+    } catch (err) {
+      console.error('Error fetching houses:', err)
+    }
+  }, [])
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true)
@@ -85,16 +101,8 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
         sortOrder
       })
       
-      // Fetch both residents and houses in parallel
-      const [residentsResponse, housesResponse] = await Promise.all([
-        fetch(`/api/residents?${params}`),
-        fetch('/api/houses')
-      ])
-      
-      const [residentsResult, housesResult] = await Promise.all([
-        residentsResponse.json() as Promise<ApiResponse>,
-        housesResponse.json() as Promise<HousesApiResponse>
-      ])
+      const residentsResponse = await fetch(`/api/residents?${params}`)
+      const residentsResult = await residentsResponse.json() as ApiResponse
       
       if (residentsResult.success && residentsResult.data) {
         setResidents(residentsResult.data)
@@ -103,13 +111,6 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
         }
       } else {
         setError(residentsResult.error || 'Failed to load residents')
-        return
-      }
-
-      if (housesResult.success && housesResult.data) {
-        setHouses(housesResult.data)
-      } else {
-        setError(housesResult.error || 'Failed to load houses')
         return
       }
       
@@ -153,6 +154,10 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
     
     router.replace(`?${params.toString()}`, { scroll: false })
   }
+
+  useEffect(() => {
+    fetchHouses()
+  }, [fetchHouses])
 
   useEffect(() => {
     fetchData()
