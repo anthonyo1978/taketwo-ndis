@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { format } from "date-fns"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
@@ -154,8 +154,11 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
     })
   }, [data, residentLookup, houseLookup, contractLookup])
 
-  // Fetch lookup data from API
-  const fetchLookupData = async () => {
+  // Track whether lookup data has been fetched at least once
+  const lookupReadyRef = useRef(false)
+
+  // Fetch lookup data from API (residents + houses for name resolution)
+  const fetchLookupData = useCallback(async () => {
     try {
       setLookupLoading(true)
       
@@ -175,15 +178,17 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       if (housesResult.success) {
         setHouses(housesResult.data || [])
       }
+      
+      lookupReadyRef.current = true
     } catch (err) {
       console.error('Error fetching lookup data:', err)
     } finally {
       setLookupLoading(false)
     }
-  }
+  }, [])
 
   // Fetch transactions using API
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -240,27 +245,31 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
     } finally {
       setLoading(false)
     }
-  }
+  }, [filters, pagination, sorting])
 
-  // Fetch lookup data on component mount
+  // Fetch lookup data once on mount
   useEffect(() => {
     fetchLookupData()
-  }, [])
+  }, [fetchLookupData])
 
-  // Fetch transactions when filters, pagination, or sorting changes
-  // Only fetch if lookup data is loaded
+  // Fetch transactions once lookups are ready, and whenever filters/pagination/sorting change.
+  // The `lookupLoading` gate ensures we wait for the initial lookup fetch, and the
+  // `lookupReadyRef` prevents re-triggering when lookupLoading toggles during refreshes.
   useEffect(() => {
-    if (!lookupLoading) {
+    if (!lookupLoading && lookupReadyRef.current) {
       fetchTransactions()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, pagination, sorting, lookupLoading])
 
   // Refresh data when refreshTrigger changes (e.g., after creating a transaction)
+  // Refreshes lookup data (which will set lookupLoading → true → false, triggering
+  // the transactions effect above exactly once).
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
       fetchLookupData()
-    fetchTransactions()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger])
 
   // Table columns - Only showing requested columns in specified order
