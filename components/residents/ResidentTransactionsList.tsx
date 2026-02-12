@@ -32,8 +32,8 @@ export function ResidentTransactionsList({ residentId }: ResidentTransactionsLis
   const [error, setError] = useState<string | null>(null)
   
   // Pagination state - initialize from URL params
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'))
-  const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '10'))
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1', 10))
+  const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '10', 10))
   const [totalPages, setTotalPages] = useState(0)
   const [totalTransactions, setTotalTransactions] = useState(0)
 
@@ -193,7 +193,7 @@ export function ResidentTransactionsList({ residentId }: ResidentTransactionsLis
           <select
             id="pageSize"
             value={pageSize}
-            onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
+            onChange={(e) => handlePageSizeChange(parseInt(e.target.value, 10))}
             className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value={5}>5</option>

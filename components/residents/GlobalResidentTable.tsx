@@ -45,13 +45,13 @@ export function GlobalResidentTable({ refreshTrigger }: GlobalResidentTableProps
   const [error, setError] = useState<string | null>(null)
   
   // Pagination state - initialize from URL params
-  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'))
-  const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '10'))
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1', 10))
+  const [pageSize, setPageSize] = useState(parseInt(searchParams.get('pageSize') || '10', 10))
   
   // Server-side pagination state
   const [pagination, setPagination] = useState({
-    page: parseInt(searchParams.get('page') || '1'),
-    limit: parseInt(searchParams.get('pageSize') || '10'),
+    page: parseInt(searchParams.get('page') || '1', 10),
+    limit: parseInt(searchParams.get('pageSize') || '10', 10),
     total: 0,
     totalPages: 0,
     hasNext: false,

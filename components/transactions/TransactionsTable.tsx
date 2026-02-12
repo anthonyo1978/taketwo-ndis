@@ -52,8 +52,8 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
   
   // Initialize pagination from URL params
   const [pagination, setPagination] = useState({
-    pageIndex: parseInt(searchParams.get('page') || '1') - 1,
-    pageSize: parseInt(searchParams.get('pageSize') || '25'),
+    pageIndex: parseInt(searchParams.get('page') || '1', 10) - 1,
+    pageSize: parseInt(searchParams.get('pageSize') || '25', 10),
   })
   const [totalCount, setTotalCount] = useState(0)
   const [residents, setResidents] = useState<any[]>([])
