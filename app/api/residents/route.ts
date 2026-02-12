@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
   try {
     // Parse query parameters
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1', 10)
-    const limit = Math.min(parseInt(searchParams.get('limit') || '25', 10), 100) // Cap at 100
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '25', 10)), 100) // Cap at 100
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
     const dateRange = searchParams.get('dateRange') || ''

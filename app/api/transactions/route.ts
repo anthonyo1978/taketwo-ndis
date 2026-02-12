@@ -55,8 +55,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     
     // Parse pagination parameters
-    const page = parseInt(searchParams.get('page') || '1', 10)
-    const pageSize = Math.min(parseInt(searchParams.get('pageSize') || '25', 10), 100)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+    const pageSize = Math.min(Math.max(1, parseInt(searchParams.get('pageSize') || '25', 10)), 100)
     
     // Parse and validate filters - convert null to undefined
     const rawFilters = {

@@ -75,8 +75,8 @@ export async function GET(request: NextRequest) {
   try {
     // Parse query parameters
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+    const limit = Math.min(Math.max(1, parseInt(searchParams.get('limit') || '10', 10)), 100) // Cap at 100
     const search = searchParams.get('search') || ''
     const status = searchParams.get('status') || ''
     const sortBy = searchParams.get('sortBy') || 'created_at'
