@@ -381,9 +381,6 @@ function HousesPageContent() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type/Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     OOA
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -403,7 +400,7 @@ function HousesPageContent() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {isEmpty ? (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center">
+                    <td colSpan={9} className="px-6 py-12 text-center">
                       <div className="text-gray-500">
                         <svg className="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -464,17 +461,17 @@ function HousesPageContent() {
                         return (
                           <div className="flex items-center">
                             <div 
-                              className={`relative rounded-full border-[3px] ${getRingStyle()} p-0.5 cursor-help transition-all hover:shadow-md`}
+                              className={`relative rounded-full border-[3.5px] ${getRingStyle()} p-[2px] cursor-help transition-all hover:shadow-md`}
                               title={tooltipText}
                             >
                               {house.imageUrl ? (
                                 <img
                                   src={house.imageUrl}
                                   alt={house.descriptor || `${house.address1}, ${house.suburb}`}
-                                  className="w-10 h-10 rounded-full object-cover"
+                                  className="w-12 h-12 rounded-full object-cover aspect-square"
                                 />
                               ) : (
-                                <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center aspect-square">
                                   <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21l4-7 4 7" />
@@ -491,12 +488,7 @@ function HousesPageContent() {
                         href={`/houses/${house.id}`}
                         className="text-blue-600 hover:text-blue-900 font-medium"
                       >
-                        <div className="font-medium">
-                          {house.descriptor || `${house.address1}, ${house.suburb}`}
-                        </div>
-                        <div className="text-xs text-gray-500 font-mono">
-                          ID: {house.id}
-                        </div>
+                        {house.descriptor || `${house.address1}, ${house.suburb}`}
                       </Link>
                     </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -519,26 +511,6 @@ function HousesPageContent() {
                         }`}>
                           {house.status}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {(() => {
-                          const parts = []
-                          if (house.dwellingType) parts.push(house.dwellingType)
-                          if (house.sdaDesignCategory) parts.push(house.sdaDesignCategory)
-                          if (house.sdaRegistrationStatus) parts.push(house.sdaRegistrationStatus)
-                          
-                          if (parts.length === 0) return <span className="text-gray-400 text-sm">—</span>
-                          
-                          return (
-                            <div className="flex flex-wrap gap-1.5">
-                              {parts.map((part, idx) => (
-                                <span key={idx} className="inline-flex px-2 py-0.5 text-xs font-medium rounded bg-blue-50 text-blue-700 border border-blue-200">
-                                  {part}
-                                </span>
-                              ))}
-                            </div>
-                          )
-                        })()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         {house.hasOoa ? (
