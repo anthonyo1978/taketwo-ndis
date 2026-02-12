@@ -104,7 +104,7 @@ export class HouseSupplierService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('house_suppliers')
-        .select('*')
+        .select('id, organization_id, house_id, supplier_id, notes, created_at, updated_at')
         .eq('supplier_id', supplierId)
         .eq('organization_id', organizationId)
         .order('created_at', { ascending: false })

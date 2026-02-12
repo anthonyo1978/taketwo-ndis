@@ -64,7 +64,12 @@ export class OrganizationService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('organization_settings')
-        .select('*')
+        .select(`
+          id, organization_id, organization_name, abn, email, phone,
+          website, address_line1, address_line2, suburb, state, postcode,
+          country, logo_url, primary_color, created_at, updated_at,
+          created_by, updated_by
+        `)
         .eq('organization_id', organizationId)
         .maybeSingle()
 

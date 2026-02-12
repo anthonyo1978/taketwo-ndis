@@ -44,7 +44,7 @@ export class OwnerService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('owners')
-        .select('*')
+        .select('id, organization_id, name, owner_type, primary_contact_name, email, phone, notes, created_at, updated_at, created_by, updated_by')
         .eq('organization_id', organizationId)
         .order('name', { ascending: true })
 
@@ -73,7 +73,7 @@ export class OwnerService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('owners')
-        .select('*')
+        .select('id, organization_id, name, owner_type, primary_contact_name, email, phone, notes, created_at, updated_at, created_by, updated_by')
         .eq('id', id)
         .eq('organization_id', organizationId)
         .single()

@@ -42,7 +42,7 @@ export class SupplierService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('suppliers')
-        .select('*')
+        .select('id, organization_id, name, supplier_type, contact_name, phone, email, notes, created_at, updated_at')
         .eq('organization_id', organizationId)
         .order('name', { ascending: true })
 
@@ -71,7 +71,7 @@ export class SupplierService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('suppliers')
-        .select('*')
+        .select('id, organization_id, name, supplier_type, contact_name, phone, email, notes, created_at, updated_at')
         .eq('id', id)
         .eq('organization_id', organizationId)
         .single()

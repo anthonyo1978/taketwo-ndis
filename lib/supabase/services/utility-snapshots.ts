@@ -43,7 +43,11 @@ export class UtilitySnapshotService {
       
       let query = supabase
         .from('property_utility_snapshots')
-        .select('*')
+        .select(`
+          id, organization_id, property_id, utility_type, on_charge,
+          meter_reading, reading_unit, reading_at, notes,
+          created_at, updated_at
+        `)
         .eq('property_id', propertyId)
       
       if (utilityType) {

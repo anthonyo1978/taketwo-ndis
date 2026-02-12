@@ -38,7 +38,7 @@ export class PlanManagerService {
       
       const { data, error } = await supabase
         .from('plan_managers')
-        .select('*')
+        .select('id, provider_id, name, email, phone, billing_email, notes, created_at, updated_at')
         .eq('provider_id', organizationId)
         .order('name', { ascending: true })
       
@@ -63,7 +63,7 @@ export class PlanManagerService {
       
       const { data, error } = await supabase
         .from('plan_managers')
-        .select('*')
+        .select('id, provider_id, name, email, phone, billing_email, notes, created_at, updated_at')
         .eq('id', id)
         .single()
       

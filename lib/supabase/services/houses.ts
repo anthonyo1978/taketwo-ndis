@@ -76,7 +76,13 @@ export class HouseService {
       // Build query
       let query = supabase
         .from('houses')
-        .select('*', { count: 'exact' })
+        .select(`
+          id, descriptor, address1, unit, suburb, state, postcode, country,
+          status, bedroom_count, dwelling_type, sda_design_category,
+          sda_registration_status, has_ooa, ooa_notes, enrolment_date,
+          electricity_nmi, notes, go_live_date, resident, image_url,
+          created_at, updated_at
+        `, { count: 'exact' })
 
       // Add search filter
       if (search) {
@@ -132,7 +138,13 @@ export class HouseService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('houses')
-        .select('*')
+        .select(`
+          id, descriptor, address1, unit, suburb, state, postcode, country,
+          status, bedroom_count, dwelling_type, sda_design_category,
+          sda_registration_status, has_ooa, ooa_notes, enrolment_date,
+          electricity_nmi, notes, go_live_date, resident, image_url,
+          created_at, updated_at
+        `)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -160,7 +172,13 @@ export class HouseService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('houses')
-        .select('*')
+        .select(`
+          id, descriptor, address1, unit, suburb, state, postcode, country,
+          status, bedroom_count, dwelling_type, sda_design_category,
+          sda_registration_status, has_ooa, ooa_notes, enrolment_date,
+          electricity_nmi, notes, go_live_date, resident, image_url,
+          created_at, updated_at
+        `)
         .eq('id', id)
         .single()
 

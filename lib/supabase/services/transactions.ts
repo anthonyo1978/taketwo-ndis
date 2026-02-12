@@ -581,7 +581,11 @@ export class TransactionService {
       
       const { data, error } = await supabase
         .from('transaction_audit_trail')
-        .select('*')
+        .select(`
+          id, action, field, old_value, new_value, timestamp,
+          user_id, user_email, comment, changed_fields,
+          previous_values, new_values
+        `)
         .eq('transaction_id', transactionId)
         .order('timestamp', { ascending: false })
       

@@ -467,7 +467,14 @@ export class ResidentService {
       const supabase = await this.getSupabase()
       const { data, error } = await supabase
         .from('funding_contracts')
-        .select('*')
+        .select(`
+          id, resident_id, type, amount, start_date, end_date, description,
+          is_active, contract_status, original_amount, current_balance,
+          drawdown_rate, auto_drawdown, last_drawdown_date, renewal_date,
+          parent_contract_id, support_item_code, daily_support_item_cost,
+          auto_billing_enabled, automated_drawdown_frequency,
+          next_run_date, first_run_date, created_at, updated_at
+        `)
         .eq('resident_id', residentId)
         .order('created_at', { ascending: false })
 
