@@ -149,45 +149,48 @@ export async function GET(request: NextRequest) {
         if (adminEmails && adminEmails.length > 0) {
           console.log(`[AUTOMATION CRON] ${orgName} - Preparing email for ${adminEmails.length} recipient(s)`)
           
-          // Fetch resident names and updated contract balances for email
-          const transactionDetails = await Promise.all(
-            result.transactions.map(async (txn) => {
-              const { data: resident } = await supabase
-                .from('residents')
-                .select('first_name, last_name')
-                .eq('id', txn.residentId)
-                .single()
-              
-              const { data: contract } = await supabase
-                .from('funding_contracts')
-                .select('current_balance, next_run_date')
-                .eq('id', txn.contractId)
-                .single()
-              
-              return {
-                residentName: resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown',
-                amount: txn.amount,
-                remainingBalance: contract?.current_balance || 0,
-                nextRunDate: contract?.next_run_date || new Date().toISOString()
-              }
-            })
+          // Batch-fetch resident names and contract balances (avoids N+1 queries)
+          const allResidentIds = Array.from(new Set(
+            [
+              ...result.transactions.map((txn: any) => txn.residentId),
+              ...result.errors.map((err: any) => err.residentId)
+            ].filter(Boolean)
+          ))
+          const allContractIds = Array.from(new Set(
+            result.transactions.map((txn: any) => txn.contractId).filter(Boolean)
+          ))
+          
+          const [residentsResult, contractsResult] = await Promise.all([
+            allResidentIds.length > 0
+              ? supabase.from('residents').select('id, first_name, last_name').in('id', allResidentIds)
+              : Promise.resolve({ data: [] }),
+            allContractIds.length > 0
+              ? supabase.from('funding_contracts').select('id, current_balance, next_run_date').in('id', allContractIds)
+              : Promise.resolve({ data: [] })
+          ])
+          
+          const residentsMap = new Map(
+            (residentsResult.data || []).map((r: any) => [r.id, `${r.first_name} ${r.last_name}`])
+          )
+          const contractsMap = new Map(
+            (contractsResult.data || []).map((c: any) => [c.id, { currentBalance: c.current_balance, nextRunDate: c.next_run_date }])
           )
           
-          // Add resident names to errors
-          const errorsWithNames = await Promise.all(
-            result.errors.map(async (error) => {
-              const { data: resident } = await supabase
-                .from('residents')
-                .select('first_name, last_name')
-                .eq('id', error.residentId)
-                .single()
-              
-              return {
-                ...error,
-                residentName: resident ? `${resident.first_name} ${resident.last_name}` : 'Unknown'
-              }
-            })
-          )
+          const transactionDetails = result.transactions.map((txn: any) => {
+            const contract = contractsMap.get(txn.contractId)
+            return {
+              residentName: residentsMap.get(txn.residentId) || 'Unknown',
+              amount: txn.amount,
+              remainingBalance: contract?.currentBalance || 0,
+              nextRunDate: contract?.nextRunDate || new Date().toISOString()
+            }
+          })
+          
+          // Map resident names to errors
+          const errorsWithNames = result.errors.map((error: any) => ({
+            ...error,
+            residentName: residentsMap.get(error.residentId) || 'Unknown'
+          }))
           
           // Calculate success and failed totals
           const totalSuccessAmount = transactionDetails.reduce((sum, txn) => sum + txn.amount, 0)
