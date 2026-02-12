@@ -1,6 +1,7 @@
 import { createClient } from '../server'
 import type { House } from '../../../types/house'
 import { getCurrentUserOrganizationId } from '../../utils/organization'
+import { sanitizeSearch } from '../../utils/sanitize-search'
 
 /**
  * Service class for managing house data operations with Supabase.
@@ -79,7 +80,8 @@ export class HouseService {
 
       // Add search filter
       if (search) {
-        query = query.or(`descriptor.ilike.%${search}%,address1.ilike.%${search}%,suburb.ilike.%${search}%,postcode.ilike.%${search}%`)
+        const safe = sanitizeSearch(search)
+        query = query.or(`descriptor.ilike.%${safe}%,address1.ilike.%${safe}%,suburb.ilike.%${safe}%,postcode.ilike.%${safe}%`)
       }
 
       // Add status filter

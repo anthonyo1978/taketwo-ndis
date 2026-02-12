@@ -9,6 +9,7 @@ import type {
   TransactionAuditEntry
 } from 'types/transaction'
 import { getCurrentUserOrganizationId } from '../../utils/organization'
+import { sanitizeSearch } from '../../utils/sanitize-search'
 
 export class TransactionService {
   /**
@@ -65,12 +66,13 @@ export class TransactionService {
         query = query.in('status', filters.statuses)
       }
       if (filters.serviceCode) {
-        query = query.ilike('service_code', `%${filters.serviceCode}%`)
+        const safeCode = sanitizeSearch(filters.serviceCode)
+        query = query.ilike('service_code', `%${safeCode}%`)
       }
       if (filters.search) {
-        // For search, we need to use a different approach since we need to search resident names
-        // We'll use a text search that includes resident information
-        const searchTerm = `%${filters.search}%`
+        // Sanitize and build search term
+        const safe = sanitizeSearch(filters.search)
+        const searchTerm = `%${safe}%`
         
         // First, get resident IDs that match the search term
         const { data: matchingResidents } = await supabase

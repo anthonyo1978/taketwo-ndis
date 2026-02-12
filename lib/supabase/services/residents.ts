@@ -1,6 +1,7 @@
 import { createClient } from '../server'
 import type { Resident, ResidentCreateInput, ResidentUpdateInput, FundingInformation, EmergencyContact, ResidentPreferences } from 'types/resident'
 import { getCurrentUserOrganizationId } from '../../utils/organization'
+import { sanitizeSearch } from '../../utils/sanitize-search'
 
 /**
  * Service class for managing resident data operations with Supabase.
@@ -184,8 +185,9 @@ export class ResidentService {
 
       // Apply search filter (name, email, phone, NDIS ID)
       if (search) {
+        const safe = sanitizeSearch(search)
         query = query.or(
-          `first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,ndis_id.ilike.%${search}%`
+          `first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,email.ilike.%${safe}%,phone.ilike.%${safe}%,ndis_id.ilike.%${safe}%`
         )
       }
 
