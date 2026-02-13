@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <!-- Haven Logo: Three concentric rings with transparent background -->
+  <!-- Outer ring - Green -->
+  <circle cx="100" cy="100" r="84" stroke="#1AAF4F" stroke-width="20" fill="none"/>
+  <!-- Middle ring - Orange/Amber -->
+  <circle cx="100" cy="100" r="57" stroke="#F0932B" stroke-width="17" fill="none"/>
+  <!-- Inner ring - Coral Red -->
+  <circle cx="100" cy="100" r="33" stroke="#EF4060" stroke-width="15" fill="none"/>
+</svg>

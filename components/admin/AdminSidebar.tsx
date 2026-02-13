@@ -215,12 +215,12 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
               href="/dashboard"
               className={`flex items-center gap-3 font-semibold ${havenMode ? 'text-white hover:text-blue-400' : 'text-gray-900 hover:text-blue-600'} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded group`}
             >
-              <div className="size-12 rounded-lg flex items-center justify-center overflow-hidden -ml-px">
+              <div className="size-10 flex items-center justify-center -ml-px">
                 <Image
-                  src="/assets/Haven_House_App_Icon_Compressed.jpg"
+                  src="/assets/haven-logo.svg"
                   alt="Haven"
-                  width={48}
-                  height={48}
+                  width={40}
+                  height={40}
                   className="object-contain transition-transform duration-300 group-hover:scale-110"
                 />
               </div>
