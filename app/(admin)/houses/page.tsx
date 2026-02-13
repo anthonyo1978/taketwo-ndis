@@ -345,15 +345,15 @@ function HousesPageContent() {
         <div className="mb-4 flex items-center gap-5 text-xs text-gray-500">
           <span className="font-medium text-gray-600">Occupancy Indicator:</span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-green-400 ring-1 ring-green-500/30 shrink-0" />
-            Fully Occupied
+            <span className="w-3.5 h-3.5 rounded-full border-[2.5px] border-green-500 shrink-0" />
+            Full
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-amber-400 ring-1 ring-amber-500/30 shrink-0" />
-            Partially Occupied
+            <span className="w-3.5 h-3.5 rounded-full border-[2.5px] border-amber-400 shrink-0" />
+            Partial
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-full bg-red-400 ring-1 ring-red-500/30 shrink-0" />
+            <span className="w-3.5 h-3.5 rounded-full bg-red-400 shrink-0" />
             Vacant
           </span>
         </div>
