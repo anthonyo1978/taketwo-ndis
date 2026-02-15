@@ -20,6 +20,29 @@ function getStorageClient() {
 }
 
 /**
+ * Ensure the resident-photos storage bucket exists, creating it if necessary.
+ * Only needs the service role key to create buckets.
+ */
+async function ensureBucketExists(supabase: ReturnType<typeof createSupabaseClient>) {
+  const { data: buckets } = await supabase.storage.listBuckets()
+  const exists = buckets?.some(b => b.id === BUCKET_NAME)
+
+  if (!exists) {
+    console.log(`[photo-upload] Bucket "${BUCKET_NAME}" not found — creating it…`)
+    const { error } = await supabase.storage.createBucket(BUCKET_NAME, {
+      public: true,
+      fileSizeLimit: 5 * 1024 * 1024, // 5 MB
+      allowedMimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+    })
+    if (error) {
+      console.error(`[photo-upload] Failed to create bucket:`, error)
+      throw new Error(`Storage bucket setup failed: ${error.message}`)
+    }
+    console.log(`[photo-upload] Bucket "${BUCKET_NAME}" created successfully`)
+  }
+}
+
+/**
  * Upload a resident photo to Supabase Storage and return the public URL.
  * 
  * @param file - The photo File object
@@ -29,6 +52,9 @@ function getStorageClient() {
  */
 export async function uploadResidentPhoto(file: File, residentId: string): Promise<string> {
   const supabase = await getStorageClient()
+
+  // Auto-create the bucket if it doesn't exist yet
+  await ensureBucketExists(supabase as ReturnType<typeof createSupabaseClient>)
 
   // Generate unique filename
   const fileExt = file.name.split('.').pop() || 'jpg'
@@ -85,4 +111,3 @@ export async function deleteResidentPhoto(photoUrl: string): Promise<void> {
     // Don't throw — deletion failures shouldn't block other operations
   }
 }
-
