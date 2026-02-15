@@ -79,7 +79,7 @@ export function HeadLeaseCard({ lease, onUpdate }: HeadLeaseCardProps) {
             <div>
               <dt className="text-sm font-medium text-gray-600">Rent</dt>
               <dd className="text-sm text-gray-900">
-                {formatCurrency(lease.rentAmount)} / {lease.rentFrequency}
+                {formatCurrency(lease.rentAmount)} / {lease.rentFrequency.charAt(0).toUpperCase() + lease.rentFrequency.slice(1)}
               </dd>
             </div>
           )}

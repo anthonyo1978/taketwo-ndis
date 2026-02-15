@@ -12,7 +12,9 @@ export const headLeaseSchema = z.object({
     errorMap: () => ({ message: 'Please select a valid status' })
   }),
   rentAmount: z.coerce.number().min(0, 'Rent amount must be positive').optional().nullable(),
-  rentFrequency: z.string().min(1, 'Rent frequency is required').max(50),
+  rentFrequency: z.enum(['weekly', 'fortnightly', 'monthly'], {
+    errorMap: () => ({ message: 'Please select a valid rent frequency' })
+  }),
   reviewDate: z.coerce.date().optional().nullable(),
   notes: z.string().max(1000, 'Notes must be less than 1000 characters').optional(),
   documentUrl: z.string().url('Invalid URL').optional().or(z.literal(''))

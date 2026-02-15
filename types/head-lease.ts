@@ -7,6 +7,9 @@ import type { Owner } from './owner'
 /** Valid lease statuses */
 export type LeaseStatus = 'active' | 'upcoming' | 'expired'
 
+/** Valid rent frequency options */
+export type RentFrequency = 'weekly' | 'fortnightly' | 'monthly'
+
 /**
  * Complete head lease information
  */
@@ -20,7 +23,7 @@ export interface HeadLease {
   endDate?: Date
   status: LeaseStatus
   rentAmount?: number
-  rentFrequency: string
+  rentFrequency: RentFrequency
   reviewDate?: Date
   notes?: string
   documentUrl?: string
@@ -43,7 +46,7 @@ export interface HeadLeaseCreateInput {
   endDate?: Date
   status: LeaseStatus
   rentAmount?: number
-  rentFrequency: string
+  rentFrequency: RentFrequency
   reviewDate?: Date
   notes?: string
   documentUrl?: string
@@ -59,7 +62,7 @@ export interface HeadLeaseUpdateInput {
   endDate?: Date
   status?: LeaseStatus
   rentAmount?: number
-  rentFrequency?: string
+  rentFrequency?: RentFrequency
   reviewDate?: Date
   notes?: string
   documentUrl?: string
