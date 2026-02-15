@@ -341,23 +341,6 @@ function HousesPageContent() {
           />
         </div>
         
-        {/* Occupancy Indicator Legend */}
-        <div className="mb-4 flex items-center gap-5 text-xs text-gray-500">
-          <span className="font-medium text-gray-600">Occupancy Indicator:</span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full border-[2.5px] border-green-500 shrink-0" />
-            Full
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full border-[2.5px] border-amber-400 shrink-0" />
-            Partial
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="w-3.5 h-3.5 rounded-full bg-red-400 shrink-0" />
-            Vacant
-          </span>
-        </div>
-
         {/* Dynamic Houses Table */}
         <div className="bg-white rounded-lg border border-gray-200">
           <div className="overflow-x-auto">
@@ -460,20 +443,11 @@ function HousesPageContent() {
                               className={`w-[52px] h-[52px] shrink-0 rounded-full border-[3.5px] ${getRingStyle()} flex items-center justify-center cursor-help transition-all hover:shadow-md overflow-hidden`}
                               title={tooltipText}
                             >
-                              {house.imageUrl ? (
-                                <img
-                                  src={house.imageUrl}
-                                  alt={house.descriptor || `${house.address1}, ${house.suburb}`}
-                                  className="w-full h-full rounded-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center">
-                                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 21l4-7 4 7" />
-                                  </svg>
-                                </div>
-                              )}
+                              <img
+                                src={house.imageUrl || '/assets/Haven_House_App_Icon_Compressed.jpg'}
+                                alt={house.descriptor || `${house.address1}, ${house.suburb}`}
+                                className="w-full h-full rounded-full object-cover"
+                              />
                             </div>
                           </div>
                         )
@@ -598,6 +572,25 @@ function HousesPageContent() {
             </div>
           )}
         </div>
+
+        {/* Occupancy Indicator Legend */}
+        {!isEmpty && (
+          <div className="mt-4 flex items-center justify-center gap-5 text-xs text-gray-500">
+            <span className="font-medium text-gray-600">Occupancy:</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-full border-[2.5px] border-green-500 shrink-0" />
+              Full
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-full border-[2.5px] border-amber-400 shrink-0" />
+              Partial
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-3.5 h-3.5 rounded-full border-[2.5px] border-red-400 shrink-0" />
+              Vacant
+            </span>
+          </div>
+        )}
       </div>
     </div>
   )
