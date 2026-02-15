@@ -1,14 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 
 import { ResidentSelectionModal } from "components/residents/ResidentSelectionModal"
 import { ResidentTable } from "components/residents/ResidentTable"
 import { HouseImageUpload } from "components/houses/HouseImageUpload"
 import { OccupancyBadge } from "components/houses/OccupancyBadge"
-import { OccupancyHeatmap } from "components/houses/OccupancyHeatmap"
 import { OccupancyHistoryGrid } from "components/houses/OccupancyHistoryGrid"
 import { OwnerSummaryCard } from "components/owners/OwnerSummaryCard"
 import { OwnerModal } from "components/owners/OwnerModal"
@@ -53,8 +52,19 @@ function DetailItem({ label, children }: { label: string; children: React.ReactN
   )
 }
 
+/* ── Calculate age helper ── */
+function calcAge(dob: Date): number {
+  const today = new Date()
+  const birth = new Date(dob)
+  let age = today.getFullYear() - birth.getFullYear()
+  const m = today.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
+  return age
+}
+
 export default function HouseDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const id = params.id as string
   
   const [house, setHouse] = useState<House | null>(null)
@@ -194,12 +204,12 @@ export default function HouseDetailPage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+      <div className="px-5 py-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="animate-pulse space-y-3">
+            <div className="h-5 bg-gray-200 rounded w-1/4"></div>
             <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-            <div className="h-32 bg-gray-200 rounded"></div>
+            <div className="h-24 bg-gray-200 rounded"></div>
           </div>
         </div>
       </div>
@@ -208,69 +218,60 @@ export default function HouseDetailPage() {
 
   if (error || !house) {
     return (
-      <div className="p-6">
-        <div className="max-w-6xl mx-auto text-center py-12">
-          <div className="text-red-600 text-lg mb-4">
-            {error || 'House not found'}
-          </div>
+      <div className="px-5 py-4">
+        <div className="max-w-5xl mx-auto text-center py-10">
+          <div className="text-red-600 mb-3">{error || 'House not found'}</div>
           <Link href="/houses" className="text-blue-600 hover:text-blue-800 text-sm">
-            ← Back to Houses
-          </Link>
+              ← Back to Houses
+            </Link>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="p-6">
-      <div className="max-w-6xl mx-auto">
+    <div className="px-5 py-4">
+      <div className="max-w-5xl mx-auto">
 
         {/* ─── Compact Header ─── */}
-        <div className="mb-5">
+        <div className="mb-4">
           {/* Breadcrumb */}
-          <nav className="flex items-center space-x-1.5 text-xs text-gray-400 mb-3">
+          <nav className="flex items-center space-x-1.5 text-xs text-gray-400 mb-2">
             <Link href="/houses" className="hover:text-gray-600">Houses</Link>
             <span>/</span>
             <span className="text-gray-700 font-medium">
               {house.descriptor || `${house.address1}, ${house.suburb}`}
             </span>
           </nav>
-
-          {/* Title row: image + name + badges + actions */}
-          <div className="flex items-center gap-4">
-            {/* House image — small circle */}
-            <div className="flex-shrink-0">
-              <img
-                src={house.imageUrl || '/assets/Haven_House_App_Icon_Compressed.jpg'}
-                alt={house.descriptor || house.address1}
-                className="w-14 h-14 rounded-xl object-cover border border-gray-200"
-              />
-            </div>
-
-            {/* Name + address */}
+          
+          {/* Title row */}
+          <div className="flex items-center gap-3">
+            <img
+              src={house.imageUrl || '/assets/Haven_House_App_Icon_Compressed.jpg'}
+              alt={house.descriptor || house.address1}
+              className="w-12 h-12 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+            />
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl font-bold text-gray-900 truncate">
-                {house.descriptor || `${house.address1}${house.unit ? `, ${house.unit}` : ''}`}
-              </h1>
-              <p className="text-sm text-gray-500 truncate">
+              <h1 className="text-lg font-bold text-gray-900 truncate leading-tight">
+                  {house.descriptor || `${house.address1}${house.unit ? `, ${house.unit}` : ''}`}
+                </h1>
+              <p className="text-xs text-gray-500 truncate">
                 {house.descriptor
                   ? `${house.address1}${house.unit ? `, ${house.unit}` : ''}, ${house.suburb}, ${house.state} ${house.postcode}`
                   : `${house.suburb}, ${house.state} ${house.postcode}, ${house.country}`}
               </p>
             </div>
-
-            {/* Status badge */}
-            <span className={`flex-shrink-0 inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${
-              house.status === 'Active' 
-                ? 'bg-green-100 text-green-800'
-                : house.status === 'Vacant'
-                ? 'bg-yellow-100 text-yellow-800'
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {house.status}
-            </span>
-
-            {/* Occupancy badge (inline) */}
+            
+            <span className={`flex-shrink-0 inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${
+                house.status === 'Active' 
+                  ? 'bg-green-100 text-green-800'
+                  : house.status === 'Vacant'
+                  ? 'bg-yellow-100 text-yellow-800'
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {house.status}
+              </span>
+              
             {occupancyData && (
               <div className="flex-shrink-0">
                 <OccupancyBadge
@@ -282,20 +283,19 @@ export default function HouseDetailPage() {
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex-shrink-0 flex items-center gap-2">
+            <div className="flex-shrink-0 flex items-center gap-1.5">
               <Link
                 href={`/houses/${house.id}/edit`}
-                className="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-1.5"
+                className="text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
               >
-                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 Edit
               </Link>
               <Link
                 href="/houses"
-                className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+                className="text-[11px] text-gray-400 hover:text-gray-600 px-1.5 py-1 rounded-md hover:bg-gray-100 transition-colors"
               >
                 ← Back
               </Link>
@@ -304,25 +304,25 @@ export default function HouseDetailPage() {
         </div>
 
         {/* ─── Tab Navigation ─── */}
-        <div className="border-b border-gray-200 mb-5">
-          <nav className="-mb-px flex space-x-6">
+        <div className="border-b border-gray-200 mb-4">
+          <nav className="-mb-px flex space-x-5">
             {([
               { key: 'details', label: 'Details & Residents' },
               { key: 'ownership', label: 'Ownership & Lease' },
               { key: 'suppliers', label: 'Suppliers' },
               { key: 'utilities', label: 'Utilities & Charges' },
             ] as const).map((tab) => (
-              <button
+            <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
+                className={`py-2.5 px-0.5 border-b-2 text-xs font-medium transition-colors ${
                   activeTab === tab.key
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
                 {tab.label}
-              </button>
+            </button>
             ))}
           </nav>
         </div>
@@ -330,9 +330,9 @@ export default function HouseDetailPage() {
         {/* ═══════════ Details & Residents Tab ═══════════ */}
         {activeTab === 'details' && (
           <>
-            {/* ── Property Info Strip ── */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-5">
-              <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-6 gap-y-3">
+            {/* ── Row 1: Property Info Strip ── */}
+            <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4">
+              <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-2">
                 <DetailItem label="House ID">
                   <span className="font-mono text-xs">{house.id.slice(0, 8)}…</span>
                 </DetailItem>
@@ -347,19 +347,19 @@ export default function HouseDetailPage() {
                     {new Date(house.enrolmentDate).toLocaleDateString()}
                   </DetailItem>
                 )}
-                {house.dwellingType && (
+                        {house.dwellingType && (
                   <DetailItem label="Dwelling Type">
-                    {house.dwellingType}
+                            {house.dwellingType}
                   </DetailItem>
-                )}
-                {house.sdaDesignCategory && (
+                        )}
+                        {house.sdaDesignCategory && (
                   <DetailItem label="SDA Category">
-                    {house.sdaDesignCategory}
+                            {house.sdaDesignCategory}
                   </DetailItem>
-                )}
-                {house.sdaRegistrationStatus && (
+                        )}
+                        {house.sdaRegistrationStatus && (
                   <DetailItem label="Registration">
-                    {house.sdaRegistrationStatus}
+                            {house.sdaRegistrationStatus}
                   </DetailItem>
                 )}
                 {house.hasOoa && (
@@ -368,7 +368,7 @@ export default function HouseDetailPage() {
                       <span className="size-1.5 rounded-full bg-amber-400" />
                       Yes
                       {house.ooaNotes && <span className="text-gray-400 ml-1 truncate">— {house.ooaNotes}</span>}
-                    </span>
+                        </span>
                   </DetailItem>
                 )}
                 {house.electricityNmi && (
@@ -379,20 +379,115 @@ export default function HouseDetailPage() {
               </dl>
             </div>
 
-            {/* ── Image Upload + Notes row ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-5">
-              {/* Image upload — compact */}
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
+            {/* ── Row 2: Residents widget (left) + House Image (right) ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+              {/* Residents quick-view — takes 2/3 */}
+              <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-3">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">House Image</h3>
+                  <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                    Residents
+                    {currentResidents.length > 0 && (
+                      <span className="ml-1.5 text-gray-400 font-normal normal-case tracking-normal">
+                        ({currentResidents.length}{house.bedroomCount ? `/${house.bedroomCount} beds` : ''})
+                      </span>
+                    )}
+                  </h3>
+                  <button
+                    onClick={() => setShowResidentSelection(true)}
+                    className="text-[11px] font-medium text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1"
+                  >
+                    <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Resident
+                  </button>
+                </div>
+
+                {currentResidents.length === 0 ? (
+                  <div className="py-6 text-center">
+                    <svg className="mx-auto h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-1.053M18 6.75a3 3 0 11-6 0 3 3 0 016 0zm-8.25 6a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                    </svg>
+                    <p className="mt-1.5 text-xs text-gray-400">No residents assigned yet</p>
+                    <button
+                      onClick={() => setShowResidentSelection(true)}
+                      className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-800"
+                    >
+                      Assign a resident →
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {currentResidents.map((r) => (
+                      <div
+                        key={r.id}
+                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
+                        onClick={() => router.push(`/residents/${r.id}`)}
+                      >
+                        {/* Avatar */}
+                        <div className="flex-shrink-0">
+                          {(r.photoUrl || r.photoBase64) ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={r.photoUrl || r.photoBase64}
+                              alt={`${r.firstName} ${r.lastName}`}
+                              className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100"
+                />
+              ) : (
+                            <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center ring-2 ring-gray-100">
+                              <span className="text-xs font-medium text-gray-500">
+                                {r.firstName.charAt(0)}{r.lastName.charAt(0)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Name + Room */}
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 truncate leading-tight">
+                            {r.firstName} {r.lastName}
+                          </p>
+                          <p className="text-[11px] text-gray-400 truncate">
+                            {r.roomLabel || 'No room assigned'}
+                            {r.moveInDate && ` · Since ${new Date(r.moveInDate).toLocaleDateString()}`}
+                      </p>
+                    </div>
+
+                        {/* Quick info chips */}
+                        <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                          <span className="text-[11px] text-gray-400">{calcAge(r.dateOfBirth)}y</span>
+                          {r.ndisId && (
+                            <span className="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                              NDIS
+                            </span>
+                          )}
+                          {r.participantFundingLevelLabel && (
+                            <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                              {r.participantFundingLevelLabel}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Arrow */}
+                        <svg className="size-3.5 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </div>
+
+              {/* House Image upload — takes 1/3 */}
+              <div className="bg-white rounded-lg border border-gray-200 p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">House Image</h3>
                   {house.imageUrl && (
                     <button
                       onClick={() => {
-                        if (confirm('Are you sure you want to remove this image?')) {
-                          handleImageRemoved()
-                        }
+                        if (confirm('Remove this image?')) handleImageRemoved()
                       }}
-                      className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors"
+                      className="text-red-500 hover:text-red-700 text-[11px] font-medium transition-colors"
                     >
                       Remove
                     </button>
@@ -405,49 +500,64 @@ export default function HouseDetailPage() {
                   onImageRemoved={handleImageRemoved}
                 />
               </div>
-
-              {/* Notes */}
-              {house.notes && (
-                <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Notes</h3>
-                  <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{house.notes}</p>
-                </div>
-              )}
-
-              {/* Audit info — compact */}
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2">Audit</h3>
-                <dl className="space-y-1.5 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Created</span>
-                    <span className="text-gray-600">{new Date(house.createdAt).toLocaleDateString()} by {house.createdBy}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Updated</span>
-                    <span className="text-gray-600">{new Date(house.updatedAt).toLocaleDateString()} by {house.updatedBy}</span>
-                  </div>
-                </dl>
-              </div>
             </div>
+            
+            {/* ── Notes (if any) ── */}
+            {house.notes && (
+              <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4">
+                <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">Notes</h3>
+                <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{house.notes}</p>
+              </div>
+            )}
 
-            {/* ── Occupancy History ── */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">Occupancy History</h3>
+            {/* ── Full Residents Table ── */}
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">All Residents</h3>
+            <button
+              onClick={() => setShowResidentSelection(true)}
+                  className="bg-blue-600 text-white px-2.5 py-1 rounded-md hover:bg-blue-700 transition-colors inline-flex items-center gap-1 text-[11px] font-medium"
+            >
+                  <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Assign Resident
+            </button>
+          </div>
+          
+          <ResidentTable 
+            houseId={id} 
+            refreshTrigger={residentRefreshTrigger}
+            onResidentsLoaded={(residents) => {
+              setCurrentResidents(prev => {
+                const prevIds = prev.map(r => r.id).sort()
+                const newIds = residents.map(r => r.id).sort()
+                if (prevIds.length !== newIds.length || !prevIds.every((id, index) => id === newIds[index])) {
+                  return residents
+                }
+                return prev
+              })
+            }}
+            onResidentRemoved={() => setResidentRefreshTrigger(prev => prev + 1)}
+          />
+        </div>
+
+            {/* ── Occupancy History (green/red grid) ── */}
+            <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4">
+              <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Occupancy History</h3>
               {occupancyLoading ? (
-                <div className="flex items-center justify-center py-6">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                  <p className="ml-2 text-sm text-gray-500">Loading…</p>
+                <div className="flex items-center justify-center py-4">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                  <p className="ml-2 text-xs text-gray-400">Loading…</p>
                 </div>
               ) : !house.bedroomCount || house.bedroomCount === 0 ? (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <svg className="size-4 text-blue-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="bg-blue-50 border border-blue-200 rounded p-2.5">
+                  <p className="text-[11px] text-blue-700 flex items-center gap-1.5">
+                    <svg className="size-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-xs text-blue-700">
-                      Set the bedroom count via <strong>Edit</strong> to enable occupancy tracking.
-                    </p>
-                  </div>
+                    Set the bedroom count via <strong>Edit</strong> to enable occupancy tracking.
+                  </p>
                 </div>
               ) : occupancyData && occupancyData.current ? (
                 <OccupancyHistoryGrid
@@ -456,106 +566,72 @@ export default function HouseDetailPage() {
                   totalBedrooms={occupancyData.current.total_bedrooms}
                 />
               ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                  <div className="flex items-start gap-2">
-                    <svg className="size-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="bg-amber-50 border border-amber-200 rounded p-2.5">
+                  <p className="text-[11px] text-amber-700 flex items-center gap-1.5">
+                    <svg className="size-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
-                    <p className="text-xs text-amber-700">
-                      Occupancy data not available. Bedroom count: {house.bedroomCount || 'Not set'}. Try refreshing.
-                    </p>
-                  </div>
+                    Occupancy data not available. Bedroom count: {house.bedroomCount || 'Not set'}. Try refreshing.
+                  </p>
                 </div>
               )}
             </div>
 
-            {/* ── Occupancy Analytics (heatmap) ── */}
-            {occupancyData && occupancyData.history && occupancyData.history.length > 0 && (
-              <div className="bg-white rounded-lg border border-gray-200 p-4 mb-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700">Occupancy Analytics</h3>
-                  <OccupancyBadge
-                    occupiedBedrooms={occupancyData.current.occupied_bedrooms}
-                    totalBedrooms={occupancyData.current.total_bedrooms}
-                    size="sm"
-                    showDetails={false}
-                  />
+            {/* ── Audit Information (bottom) ── */}
+            <div className="bg-gray-50 rounded-lg border border-gray-100 p-3">
+              <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Record Audit</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                <div className="flex justify-between sm:justify-start sm:gap-3">
+                  <span className="text-gray-400">Created</span>
+                  <span className="text-gray-500">
+                    {new Date(house.createdAt).toLocaleString()} by {house.createdBy}
+                  </span>
                 </div>
-                <OccupancyHeatmap 
-                  data={occupancyData.history}
-                  totalBedrooms={occupancyData.current.total_bedrooms}
-                />
+                <div className="flex justify-between sm:justify-start sm:gap-3">
+                  <span className="text-gray-400">Last updated</span>
+                  <span className="text-gray-500">
+                    {new Date(house.updatedAt).toLocaleString()} by {house.updatedBy}
+                  </span>
+                </div>
               </div>
-            )}
-
-            {/* ── Residents ── */}
-            <div className="mb-5">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-gray-700">Residents</h3>
-                <button
-                  onClick={() => setShowResidentSelection(true)}
-                  className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-xs font-medium"
-                >
-                  <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Assign Resident
-                </button>
-              </div>
-              
-              <ResidentTable 
-                houseId={id} 
-                refreshTrigger={residentRefreshTrigger}
-                onResidentsLoaded={(residents) => {
-                  setCurrentResidents(prev => {
-                    const prevIds = prev.map(r => r.id).sort()
-                    const newIds = residents.map(r => r.id).sort()
-                    if (prevIds.length !== newIds.length || !prevIds.every((id, index) => id === newIds[index])) {
-                      return residents
-                    }
-                    return prev
-                  })
-                }}
-                onResidentRemoved={() => setResidentRefreshTrigger(prev => prev + 1)}
-              />
-            </div>
+        </div>
           </>
         )}
 
         {/* ═══════════ Ownership & Lease Tab ═══════════ */}
         {activeTab === 'ownership' && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {leaseLoading ? (
-              <div className="flex items-center justify-center py-10">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                <p className="ml-2 text-sm text-gray-500">Loading lease information…</p>
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                <p className="ml-2 text-xs text-gray-400">Loading lease information…</p>
               </div>
             ) : currentLease ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {currentLease.owner && (
                   <OwnerSummaryCard owner={currentLease.owner} onUpdate={fetchLeaseData} />
                 )}
                 <HeadLeaseCard lease={currentLease} onUpdate={fetchLeaseData} />
               </div>
             ) : (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-10 text-center">
-                <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+                <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <h3 className="mt-3 text-base font-medium text-gray-900">No Head Lease</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Create a head lease to track ownership and lease details for this property.
+                <h3 className="mt-2 text-sm font-medium text-gray-900">No Head Lease</h3>
+                <p className="mt-1 text-xs text-gray-500">
+                  Create a head lease to track ownership and lease details.
                 </p>
-                <div className="mt-5 flex items-center justify-center gap-3">
+                <div className="mt-4 flex items-center justify-center gap-2">
                   <button
                     onClick={() => setShowOwnerModal(true)}
-                    className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
+                    className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-xs"
                   >
                     Add Owner First
                   </button>
                   <button
                     onClick={() => setShowLeaseModal(true)}
-                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                    className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs"
                   >
                     Create Head Lease
                   </button>
@@ -567,17 +643,17 @@ export default function HouseDetailPage() {
 
         {/* ═══════════ Suppliers Tab ═══════════ */}
         {activeTab === 'suppliers' && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-semibold text-gray-900">Linked Suppliers</h2>
-                <p className="text-xs text-gray-500 mt-0.5">Maintenance and service providers for this property</p>
+                <h2 className="text-sm font-semibold text-gray-900">Linked Suppliers</h2>
+                <p className="text-[11px] text-gray-400 mt-0.5">Maintenance and service providers</p>
               </div>
               <button
                 onClick={() => setShowLinkSupplierModal(true)}
-                className="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-xs font-medium"
+                className="bg-blue-600 text-white px-2.5 py-1 rounded-md hover:bg-blue-700 transition-colors inline-flex items-center gap-1 text-[11px] font-medium"
               >
-                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Link Supplier
@@ -594,14 +670,14 @@ export default function HouseDetailPage() {
 
         {/* ═══════════ Utilities & Charges Tab ═══════════ */}
         {activeTab === 'utilities' && house && house.id && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {/* Electricity */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-lg border border-gray-200 p-3">
+              <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h2 className="text-base font-semibold text-gray-900">Electricity</h2>
+                  <h2 className="text-sm font-semibold text-gray-900">Electricity</h2>
                   {house.electricityNmi && (
-                    <p className="text-xs text-gray-500 mt-0.5">NMI: {house.electricityNmi}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5">NMI: {house.electricityNmi}</p>
                   )}
                 </div>
               </div>
@@ -614,9 +690,9 @@ export default function HouseDetailPage() {
             </div>
 
             {/* Water */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-gray-900">Water</h2>
+            <div className="bg-white rounded-lg border border-gray-200 p-3">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-gray-900">Water</h2>
               </div>
               <UtilitySnapshotsList
                 propertyId={house.id}
