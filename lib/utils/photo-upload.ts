@@ -1,6 +1,23 @@
-import { createClient } from '../supabase/server'
+import { createClient as createServerClient } from '../supabase/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 const BUCKET_NAME = 'resident-photos'
+
+/**
+ * Create a Supabase client with the service role key for server-side storage operations.
+ * Falls back to the regular server client if the service role key is not available.
+ */
+function getStorageClient() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+
+  if (serviceRoleKey) {
+    // Use service role to bypass RLS — correct for server-side API route uploads
+    return createSupabaseClient(supabaseUrl, serviceRoleKey)
+  }
+  // Fallback: use the regular server client (requires authenticated user session)
+  return createServerClient()
+}
 
 /**
  * Upload a resident photo to Supabase Storage and return the public URL.
@@ -11,7 +28,7 @@ const BUCKET_NAME = 'resident-photos'
  * @throws Error if upload fails
  */
 export async function uploadResidentPhoto(file: File, residentId: string): Promise<string> {
-  const supabase = await createClient()
+  const supabase = await getStorageClient()
 
   // Generate unique filename
   const fileExt = file.name.split('.').pop() || 'jpg'
@@ -49,7 +66,7 @@ export async function uploadResidentPhoto(file: File, residentId: string): Promi
  * @param photoUrl - The full public URL of the photo
  */
 export async function deleteResidentPhoto(photoUrl: string): Promise<void> {
-  const supabase = await createClient()
+  const supabase = await getStorageClient()
 
   // Extract the file path from the URL
   // URL format: https://<project>.supabase.co/storage/v1/object/public/resident-photos/<filename>

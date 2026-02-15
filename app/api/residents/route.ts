@@ -86,11 +86,12 @@ export async function POST(request: NextRequest) {
         const tempId = crypto.randomUUID()
         photoUrl = await uploadResidentPhoto(photoFile, tempId)
       } catch (error) {
-        console.error('Photo upload error:', error)
+        const message = error instanceof Error ? error.message : 'Unknown error'
+        console.error('Photo upload error:', message, error)
         return NextResponse.json(
           { 
             success: false, 
-            error: "Failed to process photo upload" 
+            error: `Failed to process photo upload: ${message}` 
           },
           { status: 400 }
         )
