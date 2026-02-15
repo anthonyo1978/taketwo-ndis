@@ -46,7 +46,7 @@ interface ApiResponse {
 function DetailItem({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <dt className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{label}</dt>
+      <dt className="text-xs font-medium uppercase tracking-wide text-gray-400">{label}</dt>
       <dd className="mt-0.5 text-sm text-gray-900 truncate">{children}</dd>
     </div>
   )
@@ -204,12 +204,12 @@ export default function HouseDetailPage() {
 
   if (loading) {
     return (
-      <div className="px-5 py-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="animate-pulse space-y-3">
-            <div className="h-5 bg-gray-200 rounded w-1/4"></div>
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse space-y-4">
+            <div className="h-6 bg-gray-200 rounded w-1/4"></div>
             <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-            <div className="h-24 bg-gray-200 rounded"></div>
+            <div className="h-32 bg-gray-200 rounded"></div>
           </div>
         </div>
       </div>
@@ -218,9 +218,9 @@ export default function HouseDetailPage() {
 
   if (error || !house) {
     return (
-      <div className="px-5 py-4">
-        <div className="max-w-5xl mx-auto text-center py-10">
-          <div className="text-red-600 mb-3">{error || 'House not found'}</div>
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto text-center py-12">
+          <div className="text-red-600 mb-4">{error || 'House not found'}</div>
           <Link href="/houses" className="text-blue-600 hover:text-blue-800 text-sm">
               ← Back to Houses
             </Link>
@@ -230,39 +230,39 @@ export default function HouseDetailPage() {
   }
 
   return (
-    <div className="px-5 py-4">
-      <div className="max-w-5xl mx-auto">
+    <div className="p-8">
+      <div className="max-w-7xl mx-auto">
 
-        {/* ─── Compact Header ─── */}
-        <div className="mb-4">
+        {/* ─── Header ─── */}
+        <div className="mb-6">
           {/* Breadcrumb */}
-          <nav className="flex items-center space-x-1.5 text-xs text-gray-400 mb-2">
-            <Link href="/houses" className="hover:text-gray-600">Houses</Link>
-            <span>/</span>
-            <span className="text-gray-700 font-medium">
+          <nav className="flex items-center space-x-2 text-sm text-gray-400 mb-3">
+            <Link href="/houses" className="text-blue-600 hover:text-blue-800">Houses</Link>
+            <span>→</span>
+            <span className="text-gray-600">
               {house.descriptor || `${house.address1}, ${house.suburb}`}
             </span>
           </nav>
           
           {/* Title row */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <img
               src={house.imageUrl || '/assets/Haven_House_App_Icon_Compressed.jpg'}
               alt={house.descriptor || house.address1}
-              className="w-12 h-12 rounded-xl object-cover border border-gray-200 flex-shrink-0"
+              className="w-14 h-14 rounded-xl object-cover border border-gray-200 flex-shrink-0"
             />
             <div className="min-w-0 flex-1">
-              <h1 className="text-lg font-bold text-gray-900 truncate leading-tight">
+              <h1 className="text-2xl font-bold text-gray-900 truncate leading-tight">
                   {house.descriptor || `${house.address1}${house.unit ? `, ${house.unit}` : ''}`}
                 </h1>
-              <p className="text-xs text-gray-500 truncate">
+              <p className="text-sm text-gray-500 truncate mt-0.5">
                 {house.descriptor
                   ? `${house.address1}${house.unit ? `, ${house.unit}` : ''}, ${house.suburb}, ${house.state} ${house.postcode}`
                   : `${house.suburb}, ${house.state} ${house.postcode}, ${house.country}`}
               </p>
             </div>
             
-            <span className={`flex-shrink-0 inline-flex px-2 py-0.5 text-[11px] font-semibold rounded-full ${
+            <span className={`flex-shrink-0 inline-flex px-2.5 py-1 text-xs font-semibold rounded-full ${
                 house.status === 'Active' 
                   ? 'bg-green-100 text-green-800'
                   : house.status === 'Vacant'
@@ -283,19 +283,19 @@ export default function HouseDetailPage() {
               </div>
             )}
 
-            <div className="flex-shrink-0 flex items-center gap-1.5">
+            <div className="flex-shrink-0 flex items-center gap-2">
               <Link
                 href={`/houses/${house.id}/edit`}
-                className="text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md hover:bg-blue-100 transition-colors inline-flex items-center gap-1"
+                className="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition-colors inline-flex items-center gap-1.5"
               >
-                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 Edit
               </Link>
               <Link
                 href="/houses"
-                className="text-[11px] text-gray-400 hover:text-gray-600 px-1.5 py-1 rounded-md hover:bg-gray-100 transition-colors"
+                className="text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 ← Back
               </Link>
@@ -304,8 +304,8 @@ export default function HouseDetailPage() {
         </div>
 
         {/* ─── Tab Navigation ─── */}
-        <div className="border-b border-gray-200 mb-4">
-          <nav className="-mb-px flex space-x-5">
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="-mb-px flex space-x-6">
             {([
               { key: 'details', label: 'Details & Residents' },
               { key: 'ownership', label: 'Ownership & Lease' },
@@ -315,7 +315,7 @@ export default function HouseDetailPage() {
             <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`py-2.5 px-0.5 border-b-2 text-xs font-medium transition-colors ${
+                className={`py-3 px-1 border-b-2 text-sm font-medium transition-colors ${
                   activeTab === tab.key
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -331,8 +331,8 @@ export default function HouseDetailPage() {
         {activeTab === 'details' && (
           <>
             {/* ── Row 1: Property Info Strip ── */}
-            <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4">
-              <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-5 gap-y-2">
+            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+              <dl className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-x-6 gap-y-3">
                 <DetailItem label="House ID">
                   <span className="font-mono text-xs">{house.id.slice(0, 8)}…</span>
                 </DetailItem>
@@ -380,23 +380,23 @@ export default function HouseDetailPage() {
             </div>
 
             {/* ── Row 2: Residents widget (left) + House Image (right) ── */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
               {/* Residents quick-view — takes 2/3 */}
-              <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+              <div className="lg:col-span-2 bg-white rounded-lg border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700">
                     Residents
                     {currentResidents.length > 0 && (
-                      <span className="ml-1.5 text-gray-400 font-normal normal-case tracking-normal">
+                      <span className="ml-1.5 text-gray-400 font-normal">
                         ({currentResidents.length}{house.bedroomCount ? `/${house.bedroomCount} beds` : ''})
                       </span>
                     )}
                   </h3>
                   <button
                     onClick={() => setShowResidentSelection(true)}
-                    className="text-[11px] font-medium text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1.5"
                   >
-                    <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     Add Resident
@@ -404,24 +404,24 @@ export default function HouseDetailPage() {
                 </div>
 
                 {currentResidents.length === 0 ? (
-                  <div className="py-6 text-center">
-                    <svg className="mx-auto h-8 w-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="py-8 text-center">
+                    <svg className="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-1.053M18 6.75a3 3 0 11-6 0 3 3 0 016 0zm-8.25 6a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                     </svg>
-                    <p className="mt-1.5 text-xs text-gray-400">No residents assigned yet</p>
+                    <p className="mt-2 text-sm text-gray-400">No residents assigned yet</p>
                     <button
                       onClick={() => setShowResidentSelection(true)}
-                      className="mt-2 text-xs font-medium text-blue-600 hover:text-blue-800"
+                      className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800"
                     >
                       Assign a resident →
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {currentResidents.map((r) => (
                       <div
                         key={r.id}
-                        className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
+                        className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
                         onClick={() => router.push(`/residents/${r.id}`)}
                       >
                         {/* Avatar */}
@@ -431,10 +431,10 @@ export default function HouseDetailPage() {
                             <img
                               src={r.photoUrl || r.photoBase64}
                               alt={`${r.firstName} ${r.lastName}`}
-                              className="w-9 h-9 rounded-full object-cover ring-2 ring-gray-100"
+                              className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
                 />
               ) : (
-                            <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center ring-2 ring-gray-100">
+                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center ring-2 ring-gray-100">
                               <span className="text-xs font-medium text-gray-500">
                                 {r.firstName.charAt(0)}{r.lastName.charAt(0)}
                               </span>
@@ -447,7 +447,7 @@ export default function HouseDetailPage() {
                           <p className="text-sm font-medium text-gray-900 truncate leading-tight">
                             {r.firstName} {r.lastName}
                           </p>
-                          <p className="text-[11px] text-gray-400 truncate">
+                          <p className="text-xs text-gray-500 truncate mt-0.5">
                             {r.roomLabel || 'No room assigned'}
                             {r.moveInDate && ` · Since ${new Date(r.moveInDate).toLocaleDateString()}`}
                       </p>
@@ -455,39 +455,39 @@ export default function HouseDetailPage() {
 
                         {/* Quick info chips */}
                         <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-                          <span className="text-[11px] text-gray-400">{calcAge(r.dateOfBirth)}y</span>
+                          <span className="text-xs text-gray-400">{calcAge(r.dateOfBirth)}y</span>
                           {r.ndisId && (
-                            <span className="text-[10px] font-mono text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                            <span className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                               NDIS
                             </span>
                           )}
                           {r.participantFundingLevelLabel && (
-                            <span className="text-[10px] font-medium text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                            <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                               {r.participantFundingLevelLabel}
                             </span>
                           )}
                         </div>
 
                         {/* Arrow */}
-                        <svg className="size-3.5 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <svg className="size-4 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
-                      </div>
+                  </div>
                     ))}
                 </div>
               )}
             </div>
 
               {/* House Image upload — takes 1/3 */}
-              <div className="bg-white rounded-lg border border-gray-200 p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">House Image</h3>
+              <div className="bg-white rounded-lg border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-700">House Image</h3>
                   {house.imageUrl && (
                     <button
                       onClick={() => {
                         if (confirm('Remove this image?')) handleImageRemoved()
                       }}
-                      className="text-red-500 hover:text-red-700 text-[11px] font-medium transition-colors"
+                      className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors"
                     >
                       Remove
                     </button>
@@ -504,27 +504,14 @@ export default function HouseDetailPage() {
             
             {/* ── Notes (if any) ── */}
             {house.notes && (
-              <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4">
-                <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1.5">Notes</h3>
+              <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Notes</h3>
                 <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{house.notes}</p>
               </div>
             )}
 
-            {/* ── Full Residents Table ── */}
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">All Residents</h3>
-            <button
-              onClick={() => setShowResidentSelection(true)}
-                  className="bg-blue-600 text-white px-2.5 py-1 rounded-md hover:bg-blue-700 transition-colors inline-flex items-center gap-1 text-[11px] font-medium"
-            >
-                  <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Assign Resident
-            </button>
-          </div>
-          
+            {/* Hidden ResidentTable for data loading */}
+            <div className="hidden">
           <ResidentTable 
             houseId={id} 
             refreshTrigger={residentRefreshTrigger}
@@ -543,17 +530,17 @@ export default function HouseDetailPage() {
         </div>
 
             {/* ── Occupancy History (green/red grid) ── */}
-            <div className="bg-white rounded-lg border border-gray-200 p-3 mb-4">
-              <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Occupancy History</h3>
+            <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Occupancy History</h3>
               {occupancyLoading ? (
-                <div className="flex items-center justify-center py-4">
+                <div className="flex items-center justify-center py-6">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                  <p className="ml-2 text-xs text-gray-400">Loading…</p>
+                  <p className="ml-2 text-sm text-gray-400">Loading…</p>
                 </div>
               ) : !house.bedroomCount || house.bedroomCount === 0 ? (
-                <div className="bg-blue-50 border border-blue-200 rounded p-2.5">
-                  <p className="text-[11px] text-blue-700 flex items-center gap-1.5">
-                    <svg className="size-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-sm text-blue-700 flex items-center gap-2">
+                    <svg className="size-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Set the bedroom count via <strong>Edit</strong> to enable occupancy tracking.
@@ -566,9 +553,9 @@ export default function HouseDetailPage() {
                   totalBedrooms={occupancyData.current.total_bedrooms}
                 />
               ) : (
-                <div className="bg-amber-50 border border-amber-200 rounded p-2.5">
-                  <p className="text-[11px] text-amber-700 flex items-center gap-1.5">
-                    <svg className="size-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <p className="text-sm text-amber-700 flex items-center gap-2">
+                    <svg className="size-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                     Occupancy data not available. Bedroom count: {house.bedroomCount || 'Not set'}. Try refreshing.
@@ -578,16 +565,16 @@ export default function HouseDetailPage() {
             </div>
 
             {/* ── Audit Information (bottom) ── */}
-            <div className="bg-gray-50 rounded-lg border border-gray-100 p-3">
-              <h3 className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-2">Record Audit</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
-                <div className="flex justify-between sm:justify-start sm:gap-3">
+            <div className="bg-gray-50 rounded-lg border border-gray-100 p-5">
+              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Record Audit</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <div className="flex justify-between sm:justify-start sm:gap-4">
                   <span className="text-gray-400">Created</span>
                   <span className="text-gray-500">
                     {new Date(house.createdAt).toLocaleString()} by {house.createdBy}
                   </span>
                 </div>
-                <div className="flex justify-between sm:justify-start sm:gap-3">
+                <div className="flex justify-between sm:justify-start sm:gap-4">
                   <span className="text-gray-400">Last updated</span>
                   <span className="text-gray-500">
                     {new Date(house.updatedAt).toLocaleString()} by {house.updatedBy}
@@ -600,14 +587,14 @@ export default function HouseDetailPage() {
 
         {/* ═══════════ Ownership & Lease Tab ═══════════ */}
         {activeTab === 'ownership' && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {leaseLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                <p className="ml-2 text-xs text-gray-400">Loading lease information…</p>
+                <p className="ml-2 text-sm text-gray-400">Loading lease information…</p>
               </div>
             ) : currentLease ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {currentLease.owner && (
                   <OwnerSummaryCard owner={currentLease.owner} onUpdate={fetchLeaseData} />
                 )}
@@ -619,19 +606,19 @@ export default function HouseDetailPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
                 <h3 className="mt-2 text-sm font-medium text-gray-900">No Head Lease</h3>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-sm text-gray-500">
                   Create a head lease to track ownership and lease details.
                 </p>
-                <div className="mt-4 flex items-center justify-center gap-2">
+                <div className="mt-4 flex items-center justify-center gap-3">
                   <button
                     onClick={() => setShowOwnerModal(true)}
-                    className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-xs"
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm"
                   >
                     Add Owner First
                   </button>
                   <button
                     onClick={() => setShowLeaseModal(true)}
-                    className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-xs"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                   >
                     Create Head Lease
                   </button>
@@ -643,17 +630,17 @@ export default function HouseDetailPage() {
 
         {/* ═══════════ Suppliers Tab ═══════════ */}
         {activeTab === 'suppliers' && (
-          <div className="space-y-3">
+          <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-semibold text-gray-900">Linked Suppliers</h2>
-                <p className="text-[11px] text-gray-400 mt-0.5">Maintenance and service providers</p>
+                <h2 className="text-base font-semibold text-gray-900">Linked Suppliers</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Maintenance and service providers</p>
               </div>
               <button
                 onClick={() => setShowLinkSupplierModal(true)}
-                className="bg-blue-600 text-white px-2.5 py-1 rounded-md hover:bg-blue-700 transition-colors inline-flex items-center gap-1 text-[11px] font-medium"
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
               >
-                <svg className="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Link Supplier
@@ -670,14 +657,14 @@ export default function HouseDetailPage() {
 
         {/* ═══════════ Utilities & Charges Tab ═══════════ */}
         {activeTab === 'utilities' && house && house.id && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {/* Electricity */}
-            <div className="bg-white rounded-lg border border-gray-200 p-3">
-              <div className="flex items-center justify-between mb-3">
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-sm font-semibold text-gray-900">Electricity</h2>
+                  <h2 className="text-base font-semibold text-gray-900">Electricity</h2>
                   {house.electricityNmi && (
-                    <p className="text-[11px] text-gray-400 mt-0.5">NMI: {house.electricityNmi}</p>
+                    <p className="text-sm text-gray-500 mt-0.5">NMI: {house.electricityNmi}</p>
                   )}
                 </div>
               </div>
@@ -690,9 +677,9 @@ export default function HouseDetailPage() {
             </div>
 
             {/* Water */}
-            <div className="bg-white rounded-lg border border-gray-200 p-3">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-gray-900">Water</h2>
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-semibold text-gray-900">Water</h2>
               </div>
               <UtilitySnapshotsList
                 propertyId={house.id}
