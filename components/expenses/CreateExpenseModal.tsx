@@ -76,6 +76,22 @@ export function CreateExpenseModal({
 
   const selectedCategory = watch('category')
   const watchIsSnapshot = watch('isSnapshot')
+  const watchOccurredAt = watch('occurredAt')
+
+  // Auto-populate due date to 14 days after expense date
+  useEffect(() => {
+    if (watchOccurredAt) {
+      const expenseDate = new Date(watchOccurredAt)
+      if (!isNaN(expenseDate.getTime())) {
+        const dueDate = new Date(expenseDate)
+        dueDate.setDate(dueDate.getDate() + 14)
+        const yyyy = dueDate.getFullYear()
+        const mm = String(dueDate.getMonth() + 1).padStart(2, '0')
+        const dd = String(dueDate.getDate()).padStart(2, '0')
+        setValue('dueDate', `${yyyy}-${mm}-${dd}` as unknown as Date)
+      }
+    }
+  }, [watchOccurredAt, setValue])
 
   // Linked suppliers for the picker
   const [linkedSuppliers, setLinkedSuppliers] = useState<HouseSupplierWithDetails[]>([])
