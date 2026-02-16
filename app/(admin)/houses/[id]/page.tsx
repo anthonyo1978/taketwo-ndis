@@ -15,8 +15,6 @@ import { HeadLeaseCard } from "components/head-leases/HeadLeaseCard"
 import { HeadLeaseModal } from "components/head-leases/HeadLeaseModal"
 import { HouseSuppliersList } from "components/suppliers/HouseSuppliersList"
 import { LinkSupplierModal } from "components/suppliers/LinkSupplierModal"
-import { UtilitySnapshotsList } from "components/utilities/UtilitySnapshotsList"
-import { AddUtilitySnapshotModal } from "components/utilities/AddUtilitySnapshotModal"
 import { HouseExpensesList } from "components/expenses/HouseExpensesList"
 import { CreateExpenseModal } from "components/expenses/CreateExpenseModal"
 import { IncomeVsExpenseChart } from "components/charts/IncomeVsExpenseChart"
@@ -98,10 +96,6 @@ export default function HouseDetailPage() {
   const [expenseRefreshTrigger, setExpenseRefreshTrigger] = useState(0)
   
   // Utilities state
-  const [showElectricityModal, setShowElectricityModal] = useState(false)
-  const [showWaterModal, setShowWaterModal] = useState(false)
-  const [electricityRefreshTrigger, setElectricityRefreshTrigger] = useState(0)
-  const [waterRefreshTrigger, setWaterRefreshTrigger] = useState(0)
   const [showUtilityLinkSupplierModal, setShowUtilityLinkSupplierModal] = useState(false)
   const [utilitySupplierRefreshTrigger, setUtilitySupplierRefreshTrigger] = useState(0)
   const [showUtilityExpenseModal, setShowUtilityExpenseModal] = useState(false)
@@ -752,7 +746,7 @@ export default function HouseDetailPage() {
                 <div>
                   <h2 className="text-base font-semibold text-gray-900">Utility Charges</h2>
                   <p className="text-sm text-gray-500 mt-0.5">Bills, invoices and meter readings from utility providers</p>
-                </div>
+              </div>
                 <button
                   onClick={() => setShowUtilityExpenseModal(true)}
                   className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
@@ -785,56 +779,6 @@ export default function HouseDetailPage() {
               />
             </div>
 
-            {/* ── Legacy Snapshots (Electricity / Water) ── */}
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="mb-4">
-                <h2 className="text-base font-semibold text-gray-900">Legacy Meter Snapshots</h2>
-                <p className="text-sm text-gray-500 mt-0.5">Historic electricity and water readings</p>
-              </div>
-
-              <div className="space-y-4">
-                {/* Electricity */}
-                <details className="group">
-                  <summary className="flex items-center justify-between cursor-pointer py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium text-gray-700">⚡ Electricity</span>
-                      {house.electricityNmi && (
-                        <span className="text-xs text-gray-400">NMI: {house.electricityNmi}</span>
-                      )}
-                    </div>
-                    <svg className="size-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </summary>
-                  <div className="pt-3">
-                    <UtilitySnapshotsList
-                      propertyId={house.id}
-                      utilityType="electricity"
-                      onAddSnapshot={() => setShowElectricityModal(true)}
-                      refreshTrigger={electricityRefreshTrigger}
-                    />
-                  </div>
-                </details>
-
-                {/* Water */}
-                <details className="group">
-                  <summary className="flex items-center justify-between cursor-pointer py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <span className="text-sm font-medium text-gray-700">💧 Water</span>
-                    <svg className="size-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </summary>
-                  <div className="pt-3">
-                    <UtilitySnapshotsList
-                      propertyId={house.id}
-                      utilityType="water"
-                      onAddSnapshot={() => setShowWaterModal(true)}
-                      refreshTrigger={waterRefreshTrigger}
-                    />
-                  </div>
-                </details>
-              </div>
-            </div>
           </div>
         )}
 
@@ -871,28 +815,6 @@ export default function HouseDetailPage() {
             setSupplierRefreshTrigger(prev => prev + 1)
           }}
           houseId={id}
-        />
-
-        <AddUtilitySnapshotModal
-          isOpen={showElectricityModal}
-          onClose={() => setShowElectricityModal(false)}
-          onSuccess={() => {
-            setShowElectricityModal(false)
-            setElectricityRefreshTrigger(prev => prev + 1)
-          }}
-          propertyId={id}
-          utilityType="electricity"
-        />
-
-        <AddUtilitySnapshotModal
-          isOpen={showWaterModal}
-          onClose={() => setShowWaterModal(false)}
-          onSuccess={() => {
-            setShowWaterModal(false)
-            setWaterRefreshTrigger(prev => prev + 1)
-          }}
-          propertyId={id}
-          utilityType="water"
         />
 
         <CreateExpenseModal
