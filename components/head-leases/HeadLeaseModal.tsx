@@ -249,18 +249,16 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
                 <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
                   Start Date <span className="text-red-500">*</span>
                 </label>
-                <div className="flex items-center gap-1.5">
-                  <div className="flex-1">
-                    <Input
-                      id="startDate"
-                      type="date"
-                      {...register('startDate')}
-                      className={errors.startDate ? 'border-red-500' : ''}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <button type="button" onClick={() => incrementDate('startDate', 1)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 month">+1M</button>
-                  <button type="button" onClick={() => incrementDate('startDate', 12)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 year">+1Y</button>
+                <Input
+                  id="startDate"
+                  type="date"
+                  {...register('startDate')}
+                  className={errors.startDate ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
+                />
+                <div className="flex items-center gap-1 mt-1.5">
+                  <button type="button" onClick={() => incrementDate('startDate', 1)} disabled={isSubmitting} className="px-2 py-0.5 text-[11px] font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors">+1 month</button>
+                  <button type="button" onClick={() => incrementDate('startDate', 12)} disabled={isSubmitting} className="px-2 py-0.5 text-[11px] font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors">+1 year</button>
                 </div>
                 {errors.startDate && (
                   <p className="mt-1 text-sm text-red-600">{errors.startDate.message}</p>
@@ -271,20 +269,18 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
                 <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
                   End Date
                 </label>
-                <div className="flex items-center gap-1.5">
-                  <div className="flex-1">
-                    <Input
-                      id="endDate"
-                      type="date"
-                      {...register('endDate')}
-                      className={errors.endDate ? 'border-red-500' : ''}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <button type="button" onClick={() => incrementDate('endDate', 1)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 month">+1M</button>
-                  <button type="button" onClick={() => incrementDate('endDate', 12)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 year">+1Y</button>
+                <Input
+                  id="endDate"
+                  type="date"
+                  {...register('endDate')}
+                  className={errors.endDate ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
+                />
+                <div className="flex items-center gap-1 mt-1.5">
+                  <button type="button" onClick={() => incrementDate('endDate', 1)} disabled={isSubmitting} className="px-2 py-0.5 text-[11px] font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors">+1 month</button>
+                  <button type="button" onClick={() => incrementDate('endDate', 12)} disabled={isSubmitting} className="px-2 py-0.5 text-[11px] font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors">+1 year</button>
+                  <span className="text-[11px] text-gray-400 ml-1">or leave empty</span>
                 </div>
-                <p className="mt-1 text-xs text-gray-500">Leave empty for ongoing</p>
                 {errors.endDate && (
                   <p className="mt-1 text-sm text-red-600">{errors.endDate.message}</p>
                 )}
@@ -294,18 +290,16 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
                 <label htmlFor="reviewDate" className="block text-sm font-medium text-gray-700 mb-1">
                   Review Date
                 </label>
-                <div className="flex items-center gap-1.5">
-                  <div className="flex-1">
-                    <Input
-                      id="reviewDate"
-                      type="date"
-                      {...register('reviewDate')}
-                      className={errors.reviewDate ? 'border-red-500' : ''}
-                      disabled={isSubmitting}
-                    />
-                  </div>
-                  <button type="button" onClick={() => incrementDate('reviewDate', 1)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 month">+1M</button>
-                  <button type="button" onClick={() => incrementDate('reviewDate', 12)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 year">+1Y</button>
+                <Input
+                  id="reviewDate"
+                  type="date"
+                  {...register('reviewDate')}
+                  className={errors.reviewDate ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
+                />
+                <div className="flex items-center gap-1 mt-1.5">
+                  <button type="button" onClick={() => incrementDate('reviewDate', 1)} disabled={isSubmitting} className="px-2 py-0.5 text-[11px] font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors">+1 month</button>
+                  <button type="button" onClick={() => incrementDate('reviewDate', 12)} disabled={isSubmitting} className="px-2 py-0.5 text-[11px] font-medium text-blue-600 bg-blue-50 rounded-full hover:bg-blue-100 transition-colors">+1 year</button>
                 </div>
                 {errors.reviewDate && (
                   <p className="mt-1 text-sm text-red-600">{errors.reviewDate.message}</p>
