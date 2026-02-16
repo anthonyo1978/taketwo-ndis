@@ -9,7 +9,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts'
 
 /* ───── Types ───── */
@@ -21,9 +20,18 @@ interface MonthData {
   expenses: number
 }
 
+interface Notable {
+  month: string
+  type: 'income' | 'expense'
+  amount: number
+  description?: string
+  category?: string
+}
+
 interface FinancialData {
   months: MonthData[]
   totals: { income: number; expenses: number; net: number }
+  notables?: Notable[]
 }
 
 interface IncomeVsExpenseChartProps {
@@ -32,7 +40,21 @@ interface IncomeVsExpenseChartProps {
   defaultPeriod?: TimePeriod
 }
 
-type TimePeriod = '6m' | '12m'
+type TimePeriod = 'all' | '12m' | '6m' | '3m'
+
+const PERIOD_LABELS: Record<TimePeriod, string> = {
+  all: 'All Time',
+  '12m': '12 Months',
+  '6m': '6 Months',
+  '3m': '3 Months',
+}
+
+const PERIOD_MONTHS: Record<TimePeriod, number> = {
+  all: 0,
+  '12m': 12,
+  '6m': 6,
+  '3m': 3,
+}
 
 /* ───── Helpers ───── */
 const fmtCurrency = (v: number) =>
@@ -50,6 +72,16 @@ const fmtCurrencyFull = (v: number) =>
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(v)
+
+const CATEGORY_LABELS: Record<string, string> = {
+  rent: 'Rent',
+  maintenance: 'Maintenance',
+  insurance: 'Insurance',
+  utilities: 'Utilities',
+  rates: 'Rates',
+  management_fee: 'Management Fee',
+  other: 'Other',
+}
 
 /* ───── Custom Tooltip ───── */
 function ChartTooltip({ active, payload, label }: any) {
@@ -89,7 +121,7 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 /* ───── Component ───── */
-export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPeriod = '12m' }: IncomeVsExpenseChartProps) {
+export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPeriod = 'all' }: IncomeVsExpenseChartProps) {
   const [data, setData] = useState<FinancialData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -99,7 +131,7 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
     setLoading(true)
     setError(null)
     try {
-      const months = period === '6m' ? 6 : 12
+      const months = PERIOD_MONTHS[period]
       const res = await fetch(`/api/houses/${houseId}/financials?months=${months}`)
       const json = await res.json() as { success: boolean; data?: FinancialData; error?: string }
       if (json.success && json.data) {
@@ -127,6 +159,8 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
           <div className="flex items-center justify-between mb-6">
             <div className="h-5 bg-gray-200 rounded w-48" />
             <div className="flex gap-2">
+              <div className="h-8 w-16 bg-gray-200 rounded-lg" />
+              <div className="h-8 w-12 bg-gray-200 rounded-lg" />
               <div className="h-8 w-12 bg-gray-200 rounded-lg" />
               <div className="h-8 w-12 bg-gray-200 rounded-lg" />
             </div>
@@ -148,6 +182,7 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
 
   const chartData = data?.months || []
   const totals = data?.totals || { income: 0, expenses: 0, net: 0 }
+  const notables = data?.notables || []
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0)
 
   return (
@@ -192,7 +227,7 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
 
         {/* Right: Period toggle */}
         <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-0.5 self-start sm:self-auto">
-          {(['6m', '12m'] as TimePeriod[]).map((p) => (
+          {(['all', '12m', '6m', '3m'] as TimePeriod[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
@@ -202,7 +237,7 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              {p === '6m' ? '6 Months' : '12 Months'}
+              {PERIOD_LABELS[p]}
             </button>
           ))}
         </div>
@@ -239,6 +274,7 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
                 tickLine={false}
                 axisLine={{ stroke: '#e5e7eb' }}
                 dy={8}
+                interval={chartData.length > 12 ? Math.floor(chartData.length / 12) : 0}
               />
 
               <YAxis
@@ -263,7 +299,7 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
                 stroke="#3C50E0"
                 strokeWidth={2}
                 fill="url(#incomeGrad)"
-                dot={{ r: 3, fill: '#3C50E0', stroke: '#fff', strokeWidth: 2 }}
+                dot={chartData.length <= 12 ? { r: 3, fill: '#3C50E0', stroke: '#fff', strokeWidth: 2 } : false}
                 activeDot={{ r: 5, fill: '#3C50E0', stroke: '#fff', strokeWidth: 2 }}
               />
 
@@ -274,7 +310,7 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
                 stroke="#80CAEE"
                 strokeWidth={2}
                 fill="url(#expenseGrad)"
-                dot={{ r: 3, fill: '#80CAEE', stroke: '#fff', strokeWidth: 2 }}
+                dot={chartData.length <= 12 ? { r: 3, fill: '#80CAEE', stroke: '#fff', strokeWidth: 2 } : false}
                 activeDot={{ r: 5, fill: '#80CAEE', stroke: '#fff', strokeWidth: 2 }}
               />
             </AreaChart>
@@ -291,7 +327,52 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
           </div>
         )}
       </div>
+
+      {/* ── Notable items footnotes ── */}
+      {notables.length > 0 && (
+        <div className="px-6 pb-5 border-t border-gray-100">
+          <div className="pt-3 space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Notable Months
+            </p>
+            {notables.map((n, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-xs">
+                <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                  n.type === 'expense' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'
+                }`}>
+                  {n.type === 'expense' ? (
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01M12 3l9.66 16.5H2.34L12 3z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <span className="font-medium text-gray-700">{n.month}</span>
+                  <span className="text-gray-400 mx-1">·</span>
+                  <span className={`font-semibold ${n.type === 'expense' ? 'text-amber-700' : 'text-blue-700'}`}>
+                    {fmtCurrency(n.amount)} {n.type === 'expense' ? 'in expenses' : 'income'}
+                  </span>
+                  {n.description && (
+                    <>
+                      <span className="text-gray-400 mx-1">—</span>
+                      <span className="text-gray-500">
+                        {n.description}
+                        {n.category && n.category !== 'other' && (
+                          <span className="ml-1 text-gray-400">({CATEGORY_LABELS[n.category] || n.category})</span>
+                        )}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-
