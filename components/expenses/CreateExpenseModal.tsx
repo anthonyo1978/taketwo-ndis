@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'react-hot-toast'
@@ -46,6 +46,51 @@ interface CreateExpenseModalProps {
   duplicateFrom?: DuplicateExpenseData | null
 }
 
+// ─── Helpers ────────────────────────────────────────────────
+
+/** Advance a date string (YYYY-MM-DD) by the given frequency interval. */
+function advanceDateByFrequency(dateStr: string, frequency: ExpenseFrequency): string {
+  const d = new Date(dateStr + 'T00:00:00') // parse as local
+  if (isNaN(d.getTime())) return dateStr
+
+  switch (frequency) {
+    case 'weekly':
+      d.setDate(d.getDate() + 7)
+      break
+    case 'fortnightly':
+      d.setDate(d.getDate() + 14)
+      break
+    case 'monthly':
+      d.setMonth(d.getMonth() + 1)
+      break
+    case 'quarterly':
+      d.setMonth(d.getMonth() + 3)
+      break
+    case 'annually':
+      d.setFullYear(d.getFullYear() + 1)
+      break
+    case 'one_off':
+    default:
+      // For one-off, advance by 1 month as a sensible default
+      d.setMonth(d.getMonth() + 1)
+      break
+  }
+
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+/** Format a YYYY-MM-DD string to a friendly label like "Apr 2025". */
+function friendlyMonth(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })
+}
+
+// ─── Component ──────────────────────────────────────────────
+
 export function CreateExpenseModal({
   isOpen,
   onClose,
@@ -64,6 +109,7 @@ export function CreateExpenseModal({
     reset,
     setValue,
     watch,
+    getValues,
   } = useForm<HouseExpenseSchemaType>({
     resolver: zodResolver(houseExpenseSchema),
     defaultValues: {
@@ -77,6 +123,12 @@ export function CreateExpenseModal({
   const selectedCategory = watch('category')
   const watchIsSnapshot = watch('isSnapshot')
   const watchOccurredAt = watch('occurredAt')
+  const watchFrequency = watch('frequency')
+
+  // "Create & Next" mode — keeps modal open and advances dates
+  const [createAndNext, setCreateAndNext] = useState(false)
+  // Counter for how many expenses have been created in a chain
+  const [chainCount, setChainCount] = useState(0)
 
   // Auto-populate due date to 14 days after expense date
   useEffect(() => {
@@ -116,6 +168,7 @@ export function CreateExpenseModal({
   // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
+      setChainCount(0)
       const today = new Date()
       const yyyy = today.getFullYear()
       const mm = String(today.getMonth() + 1).padStart(2, '0')
@@ -206,9 +259,28 @@ export function CreateExpenseModal({
         throw new Error(result.error || 'Failed to create expense')
       }
 
-      toast.success('Expense created successfully')
       onSuccess()
-      onClose()
+
+      if (createAndNext) {
+        // Advance the dates by frequency and keep the modal open
+        const currentDate = getValues('occurredAt') as unknown as string
+        const currentFreq = getValues('frequency') as ExpenseFrequency
+
+        if (currentDate) {
+          const nextDate = advanceDateByFrequency(currentDate, currentFreq)
+          setValue('occurredAt', nextDate as unknown as Date)
+          // Due date will auto-update via the useEffect above
+        }
+
+        setChainCount(prev => prev + 1)
+        toast.success(
+          `Expense created! Form advanced to ${currentDate ? friendlyMonth(advanceDateByFrequency(currentDate as string, currentFreq)) : 'next period'}.`,
+          { duration: 2000 }
+        )
+      } else {
+        toast.success('Expense created successfully')
+        onClose()
+      }
     } catch (error) {
       console.error('Error creating expense:', error)
       toast.error(error instanceof Error ? error.message : 'Failed to create expense')
@@ -217,12 +289,27 @@ export function CreateExpenseModal({
 
   if (!isOpen) return null
 
+  // Compute what the next period will be for the hint label
+  const currentDateStr = watchOccurredAt as unknown as string
+  const nextDatePreview = currentDateStr && watchFrequency
+    ? friendlyMonth(advanceDateByFrequency(currentDateStr, watchFrequency as ExpenseFrequency))
+    : null
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">{duplicateFrom ? 'Duplicate Expense' : 'New Expense'}</h2>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              {duplicateFrom ? 'Duplicate Expense' : 'New Expense'}
+            </h2>
+            {chainCount > 0 && (
+              <p className="text-xs text-green-600 mt-0.5">
+                {chainCount} expense{chainCount !== 1 ? 's' : ''} created in this session
+              </p>
+            )}
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600" type="button">
             <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -231,7 +318,7 @@ export function CreateExpenseModal({
         </div>
 
         {/* Duplicate banner */}
-        {duplicateFrom && (
+        {duplicateFrom && chainCount === 0 && (
           <div className="mx-6 mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-2">
             <svg className="size-4 text-purple-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -243,7 +330,7 @@ export function CreateExpenseModal({
         )}
 
         {/* Quick-fill from lease */}
-        {headLease && headLease.rentAmount && !showSupplierPicker && !duplicateFrom && (
+        {headLease && headLease.rentAmount && !showSupplierPicker && !duplicateFrom && chainCount === 0 && (
           <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div className="text-sm text-blue-800">
               <strong>Head Lease:</strong> ${headLease.rentAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })} / {headLease.rentFrequency}
@@ -500,23 +587,64 @@ export function CreateExpenseModal({
             </div>
           )}
 
+          {/* ─── Create & Next toggle ─── */}
+          <div className="border border-indigo-200 bg-indigo-50/50 rounded-lg px-4 py-3">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={createAndNext}
+                onChange={(e) => setCreateAndNext(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                disabled={isSubmitting}
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-indigo-900">Create & Next</span>
+                <p className="text-xs text-indigo-600 mt-0.5">
+                  After creating, keep the form open and auto-advance the date to the next period
+                  {nextDatePreview && createAndNext && (
+                    <span className="font-medium"> → {nextDatePreview}</span>
+                  )}
+                </p>
+              </div>
+            </label>
+          </div>
+
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
-              disabled={isSubmitting}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Creating...' : 'Create Expense'}
-            </button>
+          <div className="flex items-center justify-between pt-4 border-t">
+            <div className="text-xs text-gray-400">
+              {chainCount > 0 && `${chainCount} created`}
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm"
+                disabled={isSubmitting}
+              >
+                {chainCount > 0 ? 'Done' : 'Cancel'}
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium inline-flex items-center gap-2"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent"></div>
+                    Creating...
+                  </>
+                ) : createAndNext ? (
+                  <>
+                    Create & Next
+                    {nextDatePreview && (
+                      <span className="text-blue-200 text-xs">→ {nextDatePreview}</span>
+                    )}
+                  </>
+                ) : (
+                  'Create Expense'
+                )}
+              </button>
+            </div>
           </div>
         </form>
       </div>
