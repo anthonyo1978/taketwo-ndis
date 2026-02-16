@@ -167,6 +167,45 @@ export class HouseExpenseService {
     return true
   }
 
+  /** Get all expenses across the organization, ordered by most recent first */
+  async getAll(options?: { limit?: number; offset?: number }): Promise<{ data: HouseExpense[]; total: number }> {
+    const organizationId = await getCurrentUserOrganizationId()
+    if (!organizationId) throw new Error('User organization not found')
+
+    const supabase = await this.getSupabase()
+
+    // Get total count
+    const { count } = await supabase
+      .from('house_expenses')
+      .select('*', { count: 'exact', head: true })
+      .eq('organization_id', organizationId)
+
+    // Get data
+    let query = supabase
+      .from('house_expenses')
+      .select('*, houses(descriptor, address1, suburb)')
+      .eq('organization_id', organizationId)
+      .order('occurred_at', { ascending: false })
+
+    if (options?.limit) query = query.limit(options.limit)
+    if (options?.offset) query = query.range(options.offset, options.offset + (options.limit || 50) - 1)
+
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Error fetching all expenses:', error)
+      throw new Error(`Failed to fetch expenses: ${error.message}`)
+    }
+
+    return {
+      data: (data || []).map((row: any) => ({
+        ...this.toFrontend(row),
+        houseName: row.houses?.descriptor || row.houses?.address1 || 'Unknown',
+      })),
+      total: count || 0,
+    }
+  }
+
   /** Get summary totals for a house (for balance sheet view) */
   async getSummaryByHouseId(houseId: string): Promise<{ totalExpenses: number; byCategory: Record<string, number>; byStatus: Record<string, number> }> {
     const expenses = await this.getByHouseId(houseId)
