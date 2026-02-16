@@ -7,6 +7,7 @@ import { AuditTrail } from "components/residents/AuditTrail"
 import { FundingDashboard } from "components/residents/FundingDashboard"
 import { ResidentBalanceWidget } from "components/residents/ResidentBalanceWidget"
 import { ResidentEditForm } from "components/residents/ResidentEditForm"
+import { ResidentClaimSummary } from "components/residents/ResidentClaimSummary"
 import { ResidentTransactionsList } from "components/residents/ResidentTransactionsList"
 import { ResidentDocumentsList } from "components/residents/ResidentDocumentsList"
 import { ContactList } from "components/residents/ContactList"
@@ -473,6 +474,12 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
       label: 'Funding & Contracts',
       icon: '💰',
       content: renderFundingTab()
+    },
+    {
+      id: 'claims',
+      label: 'Claim Summary',
+      icon: '📊',
+      content: <ResidentClaimSummary residentId={residentId} />
     },
     {
       id: 'transactions',
