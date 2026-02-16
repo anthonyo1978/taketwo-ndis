@@ -80,7 +80,7 @@ export default function HouseDetailPage() {
   const [occupancyLoading, setOccupancyLoading] = useState(true)
   
   // Tab state
-  const [activeTab, setActiveTab] = useState<'details' | 'ownership' | 'suppliers' | 'utilities'>('details')
+  const [activeTab, setActiveTab] = useState<'details' | 'finance' | 'ownership' | 'suppliers' | 'utilities'>('details')
   
   // Ownership & Lease state
   const [currentLease, setCurrentLease] = useState<HeadLease | null>(null)
@@ -315,6 +315,7 @@ export default function HouseDetailPage() {
           <nav className="-mb-px flex space-x-6">
             {([
               { key: 'details', label: 'Details & Residents' },
+              { key: 'finance', label: 'Finance Overview' },
               { key: 'ownership', label: 'Ownership & Lease' },
               { key: 'suppliers', label: 'Suppliers' },
               { key: 'utilities', label: 'Utilities & Charges' },
@@ -592,15 +593,20 @@ export default function HouseDetailPage() {
           </>
         )}
 
-        {/* ═══════════ Ownership & Lease Tab ═══════════ */}
-        {activeTab === 'ownership' && (
+        {/* ═══════════ Finance Overview Tab ═══════════ */}
+        {activeTab === 'finance' && (
           <div className="space-y-6">
-            {/* ── Income vs Expense Chart ── */}
             <IncomeVsExpenseChart
               houseId={id}
               refreshTrigger={expenseRefreshTrigger}
+              defaultPeriod="6m"
             />
+          </div>
+        )}
 
+        {/* ═══════════ Ownership & Lease Tab ═══════════ */}
+        {activeTab === 'ownership' && (
+          <div className="space-y-6">
             {leaseLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>

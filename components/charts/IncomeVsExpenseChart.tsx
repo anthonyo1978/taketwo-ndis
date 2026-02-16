@@ -29,6 +29,7 @@ interface FinancialData {
 interface IncomeVsExpenseChartProps {
   houseId: string
   refreshTrigger?: number
+  defaultPeriod?: TimePeriod
 }
 
 type TimePeriod = '6m' | '12m'
@@ -88,11 +89,11 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 /* ───── Component ───── */
-export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0 }: IncomeVsExpenseChartProps) {
+export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPeriod = '12m' }: IncomeVsExpenseChartProps) {
   const [data, setData] = useState<FinancialData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [period, setPeriod] = useState<TimePeriod>('12m')
+  const [period, setPeriod] = useState<TimePeriod>(defaultPeriod)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
