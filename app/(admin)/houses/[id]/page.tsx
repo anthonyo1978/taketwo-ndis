@@ -19,6 +19,7 @@ import { UtilitySnapshotsList } from "components/utilities/UtilitySnapshotsList"
 import { AddUtilitySnapshotModal } from "components/utilities/AddUtilitySnapshotModal"
 import { HouseExpensesList } from "components/expenses/HouseExpensesList"
 import { CreateExpenseModal } from "components/expenses/CreateExpenseModal"
+import { IncomeVsExpenseChart } from "components/charts/IncomeVsExpenseChart"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 import type { HeadLease } from "types/head-lease"
@@ -594,6 +595,12 @@ export default function HouseDetailPage() {
         {/* ═══════════ Ownership & Lease Tab ═══════════ */}
         {activeTab === 'ownership' && (
           <div className="space-y-6">
+            {/* ── Income vs Expense Chart ── */}
+            <IncomeVsExpenseChart
+              houseId={id}
+              refreshTrigger={expenseRefreshTrigger}
+            />
+
             {leaseLoading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
