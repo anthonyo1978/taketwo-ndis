@@ -445,10 +445,24 @@ export default function HouseDetailPage() {
                     {currentResidents.map((r) => {
                       const billingStatus = getResidentBillingStatus(r)
                       const ringClass = getBillingStatusRingClass(billingStatus.status)
+
+                      // Funding summary from joined funding_contracts
+                      const activeContracts = (r.funding_contracts || []).filter(c => c.contract_status === 'Active')
+                      const totalFunded = activeContracts.reduce((s, c) => s + (c.original_amount || 0), 0)
+                      const totalRemaining = activeContracts.reduce((s, c) => s + (c.current_balance || 0), 0)
+                      const totalSpent = totalFunded - totalRemaining
+                      const spentPct = totalFunded > 0 ? Math.min(100, Math.round((totalSpent / totalFunded) * 100)) : 0
+                      const hasFunding = totalFunded > 0
+
+                      const fmtK = (v: number) =>
+                        v >= 1000
+                          ? `$${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k`
+                          : `$${Math.round(v)}`
+
                       return (
                       <div
                         key={r.id}
-                        className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
+                        className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
                         onClick={() => router.push(`/residents/${r.id}`)}
                       >
                         {/* Avatar with billing status ring */}
@@ -465,17 +479,17 @@ export default function HouseDetailPage() {
                               <span className="text-xs font-medium text-gray-500">
                                 {r.firstName.charAt(0)}{r.lastName.charAt(0)}
                               </span>
-        </div>
+                            </div>
                           )}
                           {/* Billing status tooltip */}
                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                             {billingStatus.status === 'ready' ? 'Billing ready' : `Not billing: ${billingStatus.reasons.join(', ')}`}
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
-              </div>
-              </div>
+                          </div>
+                        </div>
 
                         {/* Name + Room + Move-in */}
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 w-36 flex-shrink-0">
                           <p className="text-sm font-medium text-gray-900 truncate leading-tight">
                             {r.firstName} {r.lastName}
                           </p>
@@ -487,24 +501,67 @@ export default function HouseDetailPage() {
                               <svg className="size-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
-                              Moved in {new Date(r.moveInDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                              {new Date(r.moveInDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
                           )}
-              </div>
+                        </div>
+
+                        {/* Funding summary — fills the middle space */}
+                        <div className="hidden sm:block flex-1 min-w-0 px-2">
+                          {hasFunding ? (
+                            <div className="space-y-1">
+                              {/* Progress bar */}
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      spentPct >= 90 ? 'bg-red-500' : spentPct >= 70 ? 'bg-amber-500' : 'bg-emerald-500'
+                                    }`}
+                                    style={{ width: `${spentPct}%` }}
+                                  />
+                                </div>
+                                <span className={`text-xs font-semibold tabular-nums ${
+                                  spentPct >= 90 ? 'text-red-600' : spentPct >= 70 ? 'text-amber-600' : 'text-emerald-600'
+                                }`}>
+                                  {spentPct}%
+                                </span>
+                              </div>
+                              {/* Numbers row */}
+                              <div className="flex items-center justify-between text-[11px] text-gray-500 leading-tight">
+                                <span>
+                                  <span className="text-gray-400">Funded </span>
+                                  <span className="font-medium text-gray-700">{fmtK(totalFunded)}</span>
+                                </span>
+                                <span>
+                                  <span className="text-gray-400">Spent </span>
+                                  <span className="font-medium text-gray-700">{fmtK(totalSpent)}</span>
+                                </span>
+                                <span>
+                                  <span className="text-gray-400">Left </span>
+                                  <span className={`font-semibold ${totalRemaining < 500 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                    {fmtK(totalRemaining)}
+                                  </span>
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-gray-400 italic">No active funding</p>
+                          )}
+                        </div>
 
                         {/* Quick info chips */}
-                        <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
+                        <div className="hidden md:flex items-center gap-2 flex-shrink-0">
                           {r.ndisId && (
                             <span className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                               NDIS
-                  </span>
+                            </span>
                           )}
                           {r.participantFundingLevelLabel && (
                             <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                               {r.participantFundingLevelLabel}
                             </span>
                           )}
-              </div>
+                        </div>
 
                         {/* Arrow */}
                         <svg className="size-4 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -513,7 +570,7 @@ export default function HouseDetailPage() {
                       </div>
                       )
                     })}
-              </div>
+                  </div>
               )}
           </div>
 

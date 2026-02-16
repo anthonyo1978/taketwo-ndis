@@ -172,7 +172,8 @@ export class ResidentService {
           funding_contracts (
             id,
             contract_status,
-            current_balance
+            current_balance,
+            original_amount
           ),
           plan_managers (
             id,
@@ -304,7 +305,8 @@ export class ResidentService {
           funding_contracts (
             id,
             contract_status,
-            current_balance
+            current_balance,
+            original_amount
           ),
           plan_managers (
             id,
