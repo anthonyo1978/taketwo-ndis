@@ -82,9 +82,35 @@ export async function generateTransactionsForEligibleContracts(
       }
     }
     
+    // ── Deduplication guard ──────────────────────────────────────────
+    // A resident may have multiple active contracts with automation
+    // enabled (e.g. an old contract that was never cleaned up).
+    // We only process ONE contract per resident per run to avoid
+    // doubling the drawdown.
+    const processedResidentIds = new Set<string>()
+    
     // Process each eligible contract
     for (const eligibleContract of eligibleContracts) {
       const residentName = `${eligibleContract.resident.first_name} ${eligibleContract.resident.last_name}`
+      const residentId = eligibleContract.resident.id
+      
+      // Skip if we already processed a contract for this resident
+      if (processedResidentIds.has(residentId)) {
+        console.warn(
+          `[TRANSACTION GEN] ⚠️ SKIPPING duplicate contract ${eligibleContract.contractId} ` +
+          `for ${residentName} — already processed a contract for this resident in this run`
+        )
+        results.errors.push({
+          contractId: eligibleContract.contractId,
+          residentId,
+          error: 'Skipped: duplicate contract for same resident',
+          details: { 
+            reason: 'Another contract for this resident was already processed in this automation run. ' +
+                    'Please disable automation on the duplicate contract.'
+          }
+        })
+        continue
+      }
       
       try {
         console.log(`[TRANSACTION GEN] Processing ${residentName} (contract: ${eligibleContract.contractId})`)
@@ -92,6 +118,7 @@ export async function generateTransactionsForEligibleContracts(
         
         if (transactionResult.success) {
           console.log(`[TRANSACTION GEN] ✅ Success for ${residentName}`)
+          processedResidentIds.add(residentId)
           results.successfulTransactions++
           results.transactions.push(transactionResult.transaction!)
           results.summary.totalAmount += transactionResult.transaction!.amount
@@ -206,6 +233,40 @@ export async function generateTransactionForContract(
         success: false,
         error: 'Insufficient contract balance',
         details: { currentBalance: contract.current_balance, transactionAmount }
+      }
+    }
+    
+    // ── Same-day duplicate guard ────────────────────────────────────
+    // Check if an automation transaction already exists for this
+    // resident today (regardless of contract). This prevents doubles
+    // if the cron runs twice or if multiple contracts are active.
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayEnd = new Date()
+    todayEnd.setHours(23, 59, 59, 999)
+    
+    const { data: existingTodayTxns, error: dupCheckError } = await supabase
+      .from('transactions')
+      .select('id, contract_id')
+      .eq('resident_id', resident.id)
+      .eq('created_by', 'automation-system')
+      .gte('occurred_at', todayStart.toISOString())
+      .lte('occurred_at', todayEnd.toISOString())
+    
+    if (!dupCheckError && existingTodayTxns && existingTodayTxns.length > 0) {
+      console.warn(
+        `[TRANSACTION] ⚠️ DUPLICATE PREVENTED: Resident ${resident.first_name} ${resident.last_name} ` +
+        `already has ${existingTodayTxns.length} automation transaction(s) today. ` +
+        `Existing: ${existingTodayTxns.map((t: { id: string; contract_id: string }) => `${t.id} (contract ${t.contract_id})`).join(', ')}`
+      )
+      return {
+        success: false,
+        error: 'Duplicate prevented: automation transaction already exists for this resident today',
+        details: { 
+          existingTransactions: existingTodayTxns,
+          contractId: contract.id,
+          residentId: resident.id
+        }
       }
     }
     
