@@ -17,6 +17,8 @@ import { HouseSuppliersList } from "components/suppliers/HouseSuppliersList"
 import { LinkSupplierModal } from "components/suppliers/LinkSupplierModal"
 import { UtilitySnapshotsList } from "components/utilities/UtilitySnapshotsList"
 import { AddUtilitySnapshotModal } from "components/utilities/AddUtilitySnapshotModal"
+import { HouseExpensesList } from "components/expenses/HouseExpensesList"
+import { CreateExpenseModal } from "components/expenses/CreateExpenseModal"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 import type { HeadLease } from "types/head-lease"
@@ -88,6 +90,10 @@ export default function HouseDetailPage() {
   // Suppliers state
   const [showLinkSupplierModal, setShowLinkSupplierModal] = useState(false)
   const [supplierRefreshTrigger, setSupplierRefreshTrigger] = useState(0)
+  
+  // Expenses state
+  const [showExpenseModal, setShowExpenseModal] = useState(false)
+  const [expenseRefreshTrigger, setExpenseRefreshTrigger] = useState(0)
   
   // Utilities state
   const [showElectricityModal, setShowElectricityModal] = useState(false)
@@ -625,6 +631,15 @@ export default function HouseDetailPage() {
                 </div>
               </div>
             )}
+
+            {/* ── Expenses / Outgoings ── */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <HouseExpensesList
+                houseId={id}
+                refreshTrigger={expenseRefreshTrigger}
+                onAddExpense={() => setShowExpenseModal(true)}
+              />
+            </div>
           </div>
         )}
 
@@ -746,6 +761,14 @@ export default function HouseDetailPage() {
           }}
           propertyId={id}
           utilityType="water"
+        />
+
+        <CreateExpenseModal
+          isOpen={showExpenseModal}
+          onClose={() => setShowExpenseModal(false)}
+          onSuccess={() => setExpenseRefreshTrigger(prev => prev + 1)}
+          houseId={id}
+          headLease={currentLease}
         />
       </div>
     </div>
