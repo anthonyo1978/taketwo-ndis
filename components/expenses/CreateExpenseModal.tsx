@@ -15,6 +15,20 @@ import {
   type ExpenseFrequency,
 } from 'types/house-expense'
 
+/** Data used to pre-fill the form when duplicating an existing expense */
+export interface DuplicateExpenseData {
+  category: ExpenseCategory
+  description: string
+  reference?: string
+  amount: number
+  frequency?: ExpenseFrequency
+  notes?: string
+  headLeaseId?: string
+  isSnapshot?: boolean
+  meterReading?: number
+  readingUnit?: string
+}
+
 interface CreateExpenseModalProps {
   isOpen: boolean
   onClose: () => void
@@ -28,6 +42,8 @@ interface CreateExpenseModalProps {
   showSupplierPicker?: boolean
   /** Enable the snapshot / meter-reading toggle (for utility expenses) */
   enableSnapshot?: boolean
+  /** Pre-fill the form from an existing expense (duplicate mode) */
+  duplicateFrom?: DuplicateExpenseData | null
 }
 
 export function CreateExpenseModal({
@@ -39,6 +55,7 @@ export function CreateExpenseModal({
   defaultCategory,
   showSupplierPicker,
   enableSnapshot,
+  duplicateFrom,
 }: CreateExpenseModalProps) {
   const {
     register,
@@ -89,22 +106,42 @@ export function CreateExpenseModal({
       const dd = String(today.getDate()).padStart(2, '0')
       const todayStr = `${yyyy}-${mm}-${dd}`
 
-      reset({
-        houseId,
-        status: 'draft',
-        category: defaultCategory || 'rent',
-        frequency: (showSupplierPicker || enableSnapshot) ? 'one_off' : 'weekly',
-        description: '',
-        reference: '',
-        notes: '',
-        documentUrl: '',
-        occurredAt: (showSupplierPicker || enableSnapshot) ? (todayStr as unknown as Date) : undefined,
-        isSnapshot: false,
-        meterReading: undefined,
-        readingUnit: '',
-      })
+      if (duplicateFrom) {
+        // Pre-fill from the expense being duplicated — leave date blank so user must set it
+        reset({
+          houseId,
+          status: 'draft',
+          category: duplicateFrom.category,
+          description: duplicateFrom.description,
+          reference: duplicateFrom.reference || '',
+          amount: duplicateFrom.amount,
+          frequency: duplicateFrom.frequency || 'one_off',
+          notes: duplicateFrom.notes || '',
+          documentUrl: '',
+          occurredAt: undefined,
+          headLeaseId: duplicateFrom.headLeaseId || undefined,
+          isSnapshot: duplicateFrom.isSnapshot || false,
+          meterReading: duplicateFrom.meterReading,
+          readingUnit: duplicateFrom.readingUnit || '',
+        })
+      } else {
+        reset({
+          houseId,
+          status: 'draft',
+          category: defaultCategory || 'rent',
+          frequency: (showSupplierPicker || enableSnapshot) ? 'one_off' : 'weekly',
+          description: '',
+          reference: '',
+          notes: '',
+          documentUrl: '',
+          occurredAt: (showSupplierPicker || enableSnapshot) ? (todayStr as unknown as Date) : undefined,
+          isSnapshot: false,
+          meterReading: undefined,
+          readingUnit: '',
+        })
+      }
     }
-  }, [isOpen, houseId, reset, defaultCategory, showSupplierPicker, enableSnapshot])
+  }, [isOpen, houseId, reset, defaultCategory, showSupplierPicker, enableSnapshot, duplicateFrom])
 
   // Pre-fill from head lease when category is 'rent'
   const prefillFromLease = () => {
@@ -169,7 +206,7 @@ export function CreateExpenseModal({
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-bold text-gray-900">New Expense</h2>
+          <h2 className="text-xl font-bold text-gray-900">{duplicateFrom ? 'Duplicate Expense' : 'New Expense'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600" type="button">
             <svg className="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -177,8 +214,20 @@ export function CreateExpenseModal({
           </button>
         </div>
 
+        {/* Duplicate banner */}
+        {duplicateFrom && (
+          <div className="mx-6 mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-2">
+            <svg className="size-4 text-purple-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <p className="text-sm text-purple-800">
+              Pre-filled from existing expense. <strong>Update the date</strong> and any other fields, then create.
+            </p>
+          </div>
+        )}
+
         {/* Quick-fill from lease */}
-        {headLease && headLease.rentAmount && !showSupplierPicker && (
+        {headLease && headLease.rentAmount && !showSupplierPicker && !duplicateFrom && (
           <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div className="text-sm text-blue-800">
               <strong>Head Lease:</strong> ${headLease.rentAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })} / {headLease.rentFrequency}

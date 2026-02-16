@@ -16,7 +16,8 @@ import { HeadLeaseModal } from "components/head-leases/HeadLeaseModal"
 import { HouseSuppliersList } from "components/suppliers/HouseSuppliersList"
 import { LinkSupplierModal } from "components/suppliers/LinkSupplierModal"
 import { HouseExpensesList } from "components/expenses/HouseExpensesList"
-import { CreateExpenseModal } from "components/expenses/CreateExpenseModal"
+import { CreateExpenseModal, type DuplicateExpenseData } from "components/expenses/CreateExpenseModal"
+import type { HouseExpense } from "types/house-expense"
 import { IncomeVsExpenseChart } from "components/charts/IncomeVsExpenseChart"
 import { getResidentBillingStatus, getBillingStatusRingClass } from "lib/utils/billing-status"
 import type { House } from "types/house"
@@ -92,6 +93,29 @@ export default function HouseDetailPage() {
   const [utilitySupplierRefreshTrigger, setUtilitySupplierRefreshTrigger] = useState(0)
   const [showUtilityExpenseModal, setShowUtilityExpenseModal] = useState(false)
   const [utilityExpenseRefreshTrigger, setUtilityExpenseRefreshTrigger] = useState(0)
+
+  // Duplicate expense state
+  const [duplicateExpenseData, setDuplicateExpenseData] = useState<DuplicateExpenseData | null>(null)
+
+  /** Convert a HouseExpense into a DuplicateExpenseData and open the appropriate modal */
+  const handleDuplicateExpense = (expense: HouseExpense, target: 'expense' | 'supplier' | 'utility') => {
+    const dup: DuplicateExpenseData = {
+      category: expense.category,
+      description: expense.description,
+      reference: expense.reference,
+      amount: expense.amount,
+      frequency: expense.frequency,
+      notes: expense.notes,
+      headLeaseId: expense.headLeaseId,
+      isSnapshot: expense.isSnapshot,
+      meterReading: expense.meterReading,
+      readingUnit: expense.readingUnit,
+    }
+    setDuplicateExpenseData(dup)
+    if (target === 'expense') setShowExpenseModal(true)
+    else if (target === 'supplier') setShowSupplierExpenseModal(true)
+    else setShowUtilityExpenseModal(true)
+  }
 
   useEffect(() => {
     const fetchHouse = async () => {
@@ -660,6 +684,7 @@ export default function HouseDetailPage() {
                 houseId={id}
                 refreshTrigger={expenseRefreshTrigger}
                 onAddExpense={() => setShowExpenseModal(true)}
+                onDuplicate={(exp) => handleDuplicateExpense(exp, 'expense')}
               />
             </div>
           </div>
@@ -715,6 +740,7 @@ export default function HouseDetailPage() {
                 onAddExpense={() => setShowSupplierExpenseModal(true)}
                 filterCategory="maintenance"
                 hideHeader
+                onDuplicate={(exp) => handleDuplicateExpense(exp, 'supplier')}
               />
             </div>
           </div>
@@ -785,6 +811,7 @@ export default function HouseDetailPage() {
                 onAddExpense={() => setShowUtilityExpenseModal(true)}
                 filterCategory="utilities"
                 hideHeader
+                onDuplicate={(exp) => handleDuplicateExpense(exp, 'utility')}
               />
             </div>
 
@@ -828,20 +855,22 @@ export default function HouseDetailPage() {
 
         <CreateExpenseModal
           isOpen={showExpenseModal}
-          onClose={() => setShowExpenseModal(false)}
+          onClose={() => { setShowExpenseModal(false); setDuplicateExpenseData(null) }}
           onSuccess={() => setExpenseRefreshTrigger(prev => prev + 1)}
           houseId={id}
           headLease={currentLease}
+          duplicateFrom={duplicateExpenseData}
         />
 
         {/* Supplier expense modal */}
         <CreateExpenseModal
           isOpen={showSupplierExpenseModal}
-          onClose={() => setShowSupplierExpenseModal(false)}
+          onClose={() => { setShowSupplierExpenseModal(false); setDuplicateExpenseData(null) }}
           onSuccess={() => setExpenseRefreshTrigger(prev => prev + 1)}
           houseId={id}
           defaultCategory="maintenance"
           showSupplierPicker
+          duplicateFrom={duplicateExpenseData}
         />
 
         {/* Utility supplier link modal */}
@@ -858,12 +887,13 @@ export default function HouseDetailPage() {
         {/* Utility expense modal (with snapshot support) */}
         <CreateExpenseModal
           isOpen={showUtilityExpenseModal}
-          onClose={() => setShowUtilityExpenseModal(false)}
+          onClose={() => { setShowUtilityExpenseModal(false); setDuplicateExpenseData(null) }}
           onSuccess={() => setUtilityExpenseRefreshTrigger(prev => prev + 1)}
           houseId={id}
           defaultCategory="utilities"
           showSupplierPicker
           enableSnapshot
+          duplicateFrom={duplicateExpenseData}
         />
       </div>
     </div>

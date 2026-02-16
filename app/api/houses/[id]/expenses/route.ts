@@ -13,7 +13,8 @@ export async function GET(
     const { id } = await params
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category') || undefined
-    const expenses = await houseExpenseService.getByHouseId(id, { category })
+    const sortOrder = (searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc') as 'asc' | 'desc'
+    const expenses = await houseExpenseService.getByHouseId(id, { category, sortOrder })
     return NextResponse.json({ success: true, data: expenses })
   } catch (error) {
     console.error('[API] Error fetching house expenses:', error)

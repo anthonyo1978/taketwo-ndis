@@ -38,18 +38,19 @@ export class HouseExpenseService {
     }
   }
 
-  /** Get all expenses for a specific house, ordered by most recent first */
-  async getByHouseId(houseId: string, filters?: { category?: string }): Promise<HouseExpense[]> {
+  /** Get all expenses for a specific house, ordered by date (default: newest first) */
+  async getByHouseId(houseId: string, filters?: { category?: string; sortOrder?: 'asc' | 'desc' }): Promise<HouseExpense[]> {
     const organizationId = await getCurrentUserOrganizationId()
     if (!organizationId) throw new Error('User organization not found')
 
     const supabase = await this.getSupabase()
+    const ascending = (filters?.sortOrder ?? 'desc') === 'asc'
     let query = supabase
       .from('house_expenses')
       .select('*')
       .eq('house_id', houseId)
       .eq('organization_id', organizationId)
-      .order('occurred_at', { ascending: false })
+      .order('occurred_at', { ascending })
 
     if (filters?.category) {
       query = query.eq('category', filters.category)

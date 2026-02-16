@@ -18,6 +18,8 @@ interface HouseExpensesListProps {
   filterCategory?: string
   /** If true, hide the header bar with title + New Expense button */
   hideHeader?: boolean
+  /** Callback when user clicks Duplicate on an expense */
+  onDuplicate?: (expense: HouseExpense) => void
 }
 
 const STATUS_COLORS: Record<ExpenseStatus, string> = {
@@ -38,21 +40,23 @@ const CATEGORY_ICONS: Record<string, string> = {
   other: '📄',
 }
 
-export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense, filterCategory, hideHeader }: HouseExpensesListProps) {
+export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense, filterCategory, hideHeader, onDuplicate }: HouseExpensesListProps) {
   const [expenses, setExpenses] = useState<HouseExpense[]>([])
   const [loading, setLoading] = useState(true)
   const [totalExpenses, setTotalExpenses] = useState(0)
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
 
   useEffect(() => {
     fetchExpenses()
-  }, [houseId, refreshTrigger, filterCategory])
+  }, [houseId, refreshTrigger, filterCategory, sortOrder])
 
   const fetchExpenses = async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
       if (filterCategory) params.set('category', filterCategory)
-      const url = `/api/houses/${houseId}/expenses${params.toString() ? `?${params}` : ''}`
+      params.set('sortOrder', sortOrder)
+      const url = `/api/houses/${houseId}/expenses?${params}`
       const response = await fetch(url)
       const result = await response.json() as { success: boolean; data?: HouseExpense[] }
       if (result.success && result.data) {
@@ -177,7 +181,23 @@ export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense, f
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    type="button"
+                    onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
+                    className="inline-flex items-center gap-1 hover:text-gray-700 transition-colors group"
+                    title={sortOrder === 'desc' ? 'Showing newest first — click for oldest first' : 'Showing oldest first — click for newest first'}
+                  >
+                    Date
+                    <svg className="size-3.5 text-gray-400 group-hover:text-gray-600 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      {sortOrder === 'desc' ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                      )}
+                    </svg>
+                  </button>
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
@@ -246,6 +266,15 @@ export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense, f
                     </td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1">
+                        {onDuplicate && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onDuplicate(expense) }}
+                            className="text-xs text-purple-600 hover:text-purple-800 px-2 py-1 rounded hover:bg-purple-50 transition-colors"
+                            title="Duplicate this expense"
+                          >
+                            Duplicate
+                          </button>
+                        )}
                         {!isSnapshot && expense.status === 'draft' && (
                           <button
                             onClick={() => handleStatusChange(expense.id, 'approved')}
