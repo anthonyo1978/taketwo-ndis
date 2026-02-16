@@ -80,6 +80,8 @@ export default function ResidentEditPage({ params }: ResidentEditPageProps) {
             phone: result.data.phone || '',
             email: result.data.email || '',
             ndisId: result.data.ndisId || '',
+            roomLabel: result.data.roomLabel || '',
+            moveInDate: result.data.moveInDate ? new Date(result.data.moveInDate) : undefined,
             detailedNotes: result.data.detailedNotes || '',
             preferences: {
               dietary: result.data.preferences?.dietary || [],
@@ -288,6 +290,25 @@ export default function ResidentEditPage({ params }: ResidentEditPageProps) {
                     error={form.formState.errors.ndisId?.message}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* House & Room */}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">House & Room</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  label="Room / Bed Label"
+                  placeholder="e.g. Bed 1, Room A"
+                  {...form.register("roomLabel")}
+                  error={form.formState.errors.roomLabel?.message}
+                />
+                <Input
+                  label="Move-in Date"
+                  type="date"
+                  {...form.register("moveInDate")}
+                  error={form.formState.errors.moveInDate?.message}
+                />
               </div>
             </div>
 

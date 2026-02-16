@@ -34,6 +34,10 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [houses, setHouses] = useState<House[]>([])
   const [selectedHouseId, setSelectedHouseId] = useState(resident.houseId || '')
+  const [roomLabel, setRoomLabel] = useState(resident.roomLabel || '')
+  const [moveInDate, setMoveInDate] = useState(
+    resident.moveInDate ? new Date(resident.moveInDate).toISOString().split('T')[0] : ''
+  )
 
   const {
     register,
@@ -81,6 +85,10 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
       setValue('ndisId', resident.ndisId || '')
       setValue('notes', resident.notes || '')
       setSelectedHouseId(resident.houseId || '')
+      setRoomLabel(resident.roomLabel || '')
+      setMoveInDate(
+        resident.moveInDate ? new Date(resident.moveInDate).toISOString().split('T')[0] : ''
+      )
     }
   }, [resident, setValue])
 
@@ -96,7 +104,9 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
         },
         body: JSON.stringify({
           ...data,
-          houseId: selectedHouseId || null
+          houseId: selectedHouseId || null,
+          roomLabel: roomLabel || undefined,
+          moveInDate: moveInDate || undefined
         })
       })
 
@@ -320,6 +330,40 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="roomLabel" className="block text-sm font-medium text-gray-700 mb-1">
+                  Room / Bed Label
+                </label>
+                <Input
+                  id="roomLabel"
+                  value={roomLabel}
+                  onChange={(e) => setRoomLabel(e.target.value)}
+                  placeholder="e.g. Bed 1, Room A"
+                  disabled={isSubmitting || !selectedHouseId}
+                />
+                {!selectedHouseId && (
+                  <p className="mt-1 text-xs text-gray-400">Assign a house first</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="moveInDate" className="block text-sm font-medium text-gray-700 mb-1">
+                  Move-in Date
+                </label>
+                <Input
+                  id="moveInDate"
+                  type="date"
+                  value={moveInDate}
+                  onChange={(e) => setMoveInDate(e.target.value)}
+                  disabled={isSubmitting || !selectedHouseId}
+                />
+                {!selectedHouseId && (
+                  <p className="mt-1 text-xs text-gray-400">Assign a house first</p>
+                )}
+              </div>
             </div>
           </div>
 

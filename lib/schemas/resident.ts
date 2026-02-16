@@ -256,6 +256,14 @@ export const residentUpdateSchema = z.object({
   gtaEndDate: z.coerce.date()
     .optional(),
   
+  roomLabel: z.string()
+    .max(50, "Room label must be no more than 50 characters")
+    .optional()
+    .or(z.literal('')),
+
+  moveInDate: z.coerce.date()
+    .optional(),
+
   detailedNotes: z.string()
     .max(5000, "Detailed notes must be no more than 5000 characters")
     .optional()
