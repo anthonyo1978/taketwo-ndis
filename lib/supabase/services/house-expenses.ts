@@ -28,9 +28,9 @@ export class HouseExpenseService {
       status: row.status,
       notes: row.notes || undefined,
       documentUrl: row.document_url || undefined,
-      isSnapshot: row.is_snapshot || false,
+      isSnapshot: row.is_snapshot ?? false,
       meterReading: row.meter_reading != null ? parseFloat(row.meter_reading) : undefined,
-      readingUnit: row.reading_unit || undefined,
+      readingUnit: row.reading_unit ?? undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
@@ -93,26 +93,34 @@ export class HouseExpenseService {
     if (!organizationId) throw new Error('User organization not found')
 
     const supabase = await this.getSupabase()
+
+    const row: Record<string, unknown> = {
+      organization_id: organizationId,
+      house_id: input.houseId,
+      head_lease_id: input.headLeaseId || null,
+      category: input.category,
+      description: input.description,
+      reference: input.reference || null,
+      amount: input.amount,
+      frequency: input.frequency || null,
+      occurred_at: input.occurredAt,
+      due_date: input.dueDate || null,
+      status: input.status || 'draft',
+      notes: input.notes || null,
+      document_url: input.documentUrl || null,
+    }
+
+    // Only include snapshot columns when explicitly creating a snapshot
+    // (avoids errors if migration 080 hasn't been applied yet)
+    if (input.isSnapshot) {
+      row.is_snapshot = true
+      row.meter_reading = input.meterReading ?? null
+      row.reading_unit = input.readingUnit || null
+    }
+
     const { data, error } = await supabase
       .from('house_expenses')
-      .insert([{
-        organization_id: organizationId,
-        house_id: input.houseId,
-        head_lease_id: input.headLeaseId || null,
-        category: input.category,
-        description: input.description,
-        reference: input.reference || null,
-        amount: input.amount,
-        frequency: input.frequency || null,
-        occurred_at: input.occurredAt,
-        due_date: input.dueDate || null,
-        status: input.status || 'draft',
-        notes: input.notes || null,
-        document_url: input.documentUrl || null,
-        is_snapshot: input.isSnapshot || false,
-        meter_reading: input.meterReading ?? null,
-        reading_unit: input.readingUnit || null,
-      }])
+      .insert([row])
       .select('*')
       .single()
 
