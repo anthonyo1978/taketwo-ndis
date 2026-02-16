@@ -215,21 +215,35 @@ export function ResidentClaimSummary({ residentId }: ResidentClaimSummaryProps) 
             </div>
           </div>
 
-          {/* Right: Period toggle */}
-          <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-0.5 self-start sm:self-auto">
-            {(['all', '6m', '3m'] as TimePeriod[]).map((p) => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                  period === p
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                {PERIOD_LABELS[p]}
-              </button>
-            ))}
+          {/* Right: Period toggle + View Transactions link */}
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-0.5">
+              {(['all', '6m', '3m'] as TimePeriod[]).map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    period === p
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {PERIOD_LABELS[p]}
+                </button>
+              ))}
+            </div>
+            <a
+              href={`/transactions?residentId=${residentId}&view=income`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+              title="Open full transactions page filtered to this resident"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Transactions
+            </a>
           </div>
         </div>
 
@@ -349,10 +363,22 @@ export function ResidentClaimSummary({ residentId }: ResidentClaimSummaryProps) 
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Avg / Claim
                   </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {[...chartData].reverse().map((m) => (
+                {[...chartData].reverse().map((m) => {
+                  // Build deep-link URL for this month's transactions
+                  const parts = m.month.split('-')
+                  const year = parts[0] || '2025'
+                  const month = parts[1] || '01'
+                  const dateFrom = `${year}-${month}-01`
+                  const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate()
+                  const dateTo = `${year}-${month}-${String(lastDay).padStart(2, '0')}`
+                  const txUrl = `/transactions?residentId=${residentId}&dateFrom=${dateFrom}&dateTo=${dateTo}&view=income`
+
+                  return (
                   <tr key={m.month} className={m.amount === 0 ? 'opacity-40' : 'hover:bg-gray-50'}>
                     <td className="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                       {m.label}
@@ -366,8 +392,25 @@ export function ResidentClaimSummary({ residentId }: ResidentClaimSummaryProps) 
                     <td className="px-6 py-3 whitespace-nowrap text-sm text-gray-500 text-right">
                       {m.count > 0 ? fmtCurrencyFull(m.amount / m.count) : '–'}
                     </td>
+                    <td className="px-6 py-3 whitespace-nowrap text-right">
+                      {m.count > 0 && (
+                        <a
+                          href={txUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                          title={`View ${m.count} transaction${m.count !== 1 ? 's' : ''} for ${m.label}`}
+                        >
+                          View
+                          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </a>
+                      )}
+                    </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
               <tfoot className="bg-gray-50">
                 <tr className="font-semibold">
@@ -382,6 +425,19 @@ export function ResidentClaimSummary({ residentId }: ResidentClaimSummaryProps) 
                     {totals.totalClaims > 0
                       ? fmtCurrencyFull(totals.totalAmount / totals.totalClaims)
                       : '–'}
+                  </td>
+                  <td className="px-6 py-3 text-right">
+                    <a
+                      href={`/transactions?residentId=${residentId}&view=income`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      View All
+                      <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
                   </td>
                 </tr>
               </tfoot>

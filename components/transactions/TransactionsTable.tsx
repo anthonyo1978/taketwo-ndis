@@ -221,6 +221,9 @@ export function TransactionsTable({ filters, onCreateTransaction, refreshTrigger
       if (filters.contractIds && filters.contractIds.length > 0) {
         params.append('contractIds', filters.contractIds.join(','))
       }
+      if (filters.houseIds && filters.houseIds.length > 0) {
+        params.append('houseIds', filters.houseIds.join(','))
+      }
       if (filters.statuses && filters.statuses.length > 0) {
         params.append('statuses', filters.statuses.join(','))
       }

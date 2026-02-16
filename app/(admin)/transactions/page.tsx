@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect, useCallback, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { TransactionsTable } from "components/transactions/TransactionsTable"
-import { StandardizedFiltersTransactions } from "components/ui/StandardizedFiltersTransactions"
+import { TransactionAdvancedFilters } from "components/transactions/TransactionAdvancedFilters"
 import { CreateTransactionDialog } from "components/transactions/CreateTransactionDialog"
 import { Button } from "components/Button/Button"
-import { type TransactionFilters as TxFilters } from "types/transaction"
+import { type TransactionFilters as TxFilters, type TransactionStatus } from "types/transaction"
 import type { HouseExpense } from "types/house-expense"
 import {
   EXPENSE_CATEGORY_LABELS,
@@ -25,17 +25,125 @@ const STATUS_COLORS: Record<ExpenseStatus, string> = {
   cancelled: 'bg-gray-100 text-gray-400',
 }
 
+/**
+ * Parse URL search params into TransactionFilters.
+ * Supports:
+ *   ?residentId=xxx           → residentIds: [xxx]
+ *   ?houseId=xxx              → houseIds: [xxx]
+ *   ?status=draft,paid        → statuses: ['draft','paid']
+ *   ?dateFrom=2025-01-01      → dateRange.from
+ *   ?dateTo=2025-06-30        → dateRange.to
+ *   ?serviceCode=SDA_RENT     → serviceCode
+ *   ?search=text              → search
+ *   ?view=income|expenses     → viewMode (handled separately)
+ */
+function parseUrlFilters(searchParams: URLSearchParams): { filters: TxFilters; viewMode?: ViewMode } {
+  const filters: TxFilters = {}
+
+  // Resident
+  const residentId = searchParams.get('residentId')
+  const residentIds = searchParams.get('residentIds')
+  if (residentId) {
+    filters.residentIds = [residentId]
+  } else if (residentIds) {
+    filters.residentIds = residentIds.split(',').filter(Boolean)
+  }
+
+  // House
+  const houseId = searchParams.get('houseId')
+  const houseIds = searchParams.get('houseIds')
+  if (houseId) {
+    filters.houseIds = [houseId]
+  } else if (houseIds) {
+    filters.houseIds = houseIds.split(',').filter(Boolean)
+  }
+
+  // Statuses
+  const statuses = searchParams.get('statuses') || searchParams.get('status')
+  if (statuses) {
+    filters.statuses = statuses.split(',').filter(Boolean) as TransactionStatus[]
+  }
+
+  // Date range
+  const dateFrom = searchParams.get('dateFrom')
+  const dateTo = searchParams.get('dateTo')
+  if (dateFrom || dateTo) {
+    filters.dateRange = {
+      from: dateFrom ? new Date(dateFrom) : new Date('2020-01-01'),
+      to: dateTo ? new Date(dateTo) : new Date(),
+    }
+  }
+
+  // Service code
+  const serviceCode = searchParams.get('serviceCode')
+  if (serviceCode) {
+    filters.serviceCode = serviceCode
+  }
+
+  // Search
+  const search = searchParams.get('search')
+  if (search) {
+    filters.search = search
+  }
+
+  // View mode
+  const view = searchParams.get('view') as ViewMode | null
+  const viewMode = view && ['all', 'income', 'expenses'].includes(view) ? view : undefined
+
+  return { filters, viewMode }
+}
+
+/**
+ * Serialize filters back to URL search params (preserving pagination etc.)
+ */
+function serializeFiltersToUrl(filters: TxFilters, viewMode: ViewMode, currentParams: URLSearchParams): string {
+  const params = new URLSearchParams()
+
+  // Preserve pagination
+  const page = currentParams.get('page')
+  const pageSize = currentParams.get('pageSize')
+  if (page) params.set('page', page)
+  if (pageSize) params.set('pageSize', pageSize)
+
+  // View mode
+  if (viewMode !== 'all') params.set('view', viewMode)
+
+  // Filters
+  if (filters.residentIds && filters.residentIds.length > 0) params.set('residentId', filters.residentIds[0] as string)
+  if (filters.houseIds && filters.houseIds.length > 0) params.set('houseId', filters.houseIds[0] as string)
+  if (filters.statuses && filters.statuses.length > 0) params.set('statuses', filters.statuses.join(','))
+  if (filters.dateRange?.from) params.set('dateFrom', filters.dateRange.from.toISOString().split('T')[0] as string)
+  if (filters.dateRange?.to) params.set('dateTo', filters.dateRange.to.toISOString().split('T')[0] as string)
+  if (filters.serviceCode) params.set('serviceCode', filters.serviceCode)
+  if (filters.search) params.set('search', filters.search)
+
+  return params.toString()
+}
+
 function TransactionsPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [filters, setFilters] = useState<TxFilters>({})
   const [refreshTrigger, setRefreshTrigger] = useState(0)
-  const [viewMode, setViewMode] = useState<ViewMode>('all')
+
+  // Parse initial filters and view mode from URL
+  const [initialParsed] = useState(() => parseUrlFilters(searchParams))
+  const [filters, setFilters] = useState<TxFilters>(initialParsed.filters)
+  const [viewMode, setViewMode] = useState<ViewMode>(initialParsed.viewMode || 'all')
 
   // Expense data for "All" and "Expenses" views
   const [expenses, setExpenses] = useState<(HouseExpense & { houseName?: string })[]>([])
   const [expensesLoading, setExpensesLoading] = useState(false)
-  const [expenseTotal, setExpenseTotal] = useState(0)
+
+  // Sync filters to URL (debounced)
+  useEffect(() => {
+    const url = serializeFiltersToUrl(filters, viewMode, searchParams)
+    const currentUrl = searchParams.toString()
+    if (url !== currentUrl) {
+      router.replace(`?${url}`, { scroll: false })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters, viewMode])
 
   // Fetch expenses when view mode includes them
   useEffect(() => {
@@ -51,7 +159,6 @@ function TransactionsPageContent() {
       const result = await response.json() as { success: boolean; data?: (HouseExpense & { houseName?: string })[]; pagination?: { total: number } }
       if (result.success && result.data) {
         setExpenses(result.data)
-        setExpenseTotal(result.pagination?.total || result.data.length)
       }
     } catch (error) {
       console.error('Error fetching expenses:', error)
@@ -59,6 +166,10 @@ function TransactionsPageContent() {
       setExpensesLoading(false)
     }
   }
+
+  const handleFiltersChange = useCallback((newFilters: TxFilters) => {
+    setFilters(newFilters)
+  }, [])
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(amount)
@@ -72,6 +183,16 @@ function TransactionsPageContent() {
     paid: expenses.filter(e => e.status === 'paid').reduce((sum, e) => sum + e.amount, 0),
     pending: expenses.filter(e => e.status === 'draft' || e.status === 'approved').reduce((sum, e) => sum + e.amount, 0),
   }
+
+  // Check if any filters are active (for the info banner)
+  const hasActiveFilters = Boolean(
+    filters.search ||
+    filters.residentIds?.length ||
+    filters.houseIds?.length ||
+    filters.statuses?.length ||
+    filters.dateRange ||
+    filters.serviceCode
+  )
   
   return (
     <div className="p-8">
@@ -119,6 +240,16 @@ function TransactionsPageContent() {
           ))}
         </div>
 
+        {/* ─── Deep-link info banner ─── */}
+        {hasActiveFilters && (
+          <div className="mb-4 flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+            <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Filters are active — showing a filtered view. Use the filter bar below to adjust or clear.
+          </div>
+        )}
+
         {/* ─── Income View (existing transactions table) ─── */}
         {(viewMode === 'income' || viewMode === 'all') && (
           <>
@@ -129,32 +260,19 @@ function TransactionsPageContent() {
               </div>
             )}
 
-            {/* Search and Filter */}
+            {/* Advanced Filters */}
             <div className="mb-4">
-              <StandardizedFiltersTransactions
+              <TransactionAdvancedFilters
                 filters={filters}
-                onFiltersChange={setFilters}
-                onSearchSubmit={(searchValue) => {
-                  console.log('Search submitted:', searchValue)
-                }}
-                onImport={() => {
-                  console.log('Import transactions')
-                  alert('Import functionality coming soon')
-                }}
+                onFiltersChange={handleFiltersChange}
                 onExport={() => {
                   const params = new URLSearchParams()
-                  if (filters.dateRange?.from) {
-                    params.append('dateFrom', filters.dateRange.from.toISOString())
-                  }
-                  if (filters.dateRange?.to) {
-                    params.append('dateTo', filters.dateRange.to.toISOString())
-                  }
-                  if (filters.statuses && filters.statuses.length > 0) {
-                    params.append('statuses', filters.statuses.join(','))
-                  }
-                  if (filters.search) {
-                    params.append('search', filters.search)
-                  }
+                  if (filters.dateRange?.from) params.append('dateFrom', filters.dateRange.from.toISOString())
+                  if (filters.dateRange?.to) params.append('dateTo', filters.dateRange.to.toISOString())
+                  if (filters.statuses?.length) params.append('statuses', filters.statuses.join(','))
+                  if (filters.search) params.append('search', filters.search)
+                  if (filters.residentIds?.length) params.append('residentIds', filters.residentIds.join(','))
+                  if (filters.houseIds?.length) params.append('houseIds', filters.houseIds.join(','))
                   window.open(`/api/transactions/export?${params}`, '_blank')
                 }}
               />
