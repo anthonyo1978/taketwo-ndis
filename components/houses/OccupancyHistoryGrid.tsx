@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface OccupancyHistoryGridProps {
   houseId: string;
@@ -14,23 +14,28 @@ interface MonthData {
 }
 
 /**
- * Compact visual grid showing bedroom-by-bedroom occupancy over the last 6 months
+ * Compact visual grid showing bedroom-by-bedroom occupancy over 6-month windows
  * Each row represents a bedroom, each column represents a month
+ * Navigate back/forward in 6-month chunks
  */
 export function OccupancyHistoryGrid({
   houseId,
   currentOccupiedBedrooms,
   totalBedrooms,
 }: OccupancyHistoryGridProps) {
+  // offset = 0 means "most recent 6 months", offset = 1 means "6–12 months ago", etc.
+  const [offset, setOffset] = useState(0);
   const [occupancyGrid, setOccupancyGrid] = useState<boolean[][]>([]);
   const [months, setMonths] = useState<MonthData[]>([]);
 
-  useEffect(() => {
-    // Generate the last 6 months
+  const MAX_OFFSET = 3; // Allow going back up to 24 months (4 × 6)
+
+  const buildGrid = useCallback(() => {
     const monthLabels: MonthData[] = [];
     const now = new Date();
-    
-    for (let i = 5; i >= 0; i--) {
+    const startMonthsBack = offset * 6 + 5; // e.g. offset=0 → 5..0, offset=1 → 11..6
+
+    for (let i = startMonthsBack; i >= offset * 6; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthName = date.toLocaleDateString('en-US', { month: 'short' });
       const year = date.getFullYear().toString().slice(-2);
@@ -42,41 +47,44 @@ export function OccupancyHistoryGrid({
     setMonths(monthLabels);
 
     // Generate occupancy grid based on current occupancy
-    // For now, create a realistic pattern based on current state
     const grid: boolean[][] = [];
-    
+
     if (totalBedrooms > 0) {
       for (let bedroom = 0; bedroom < totalBedrooms; bedroom++) {
         const bedroomOccupancy: boolean[] = [];
-        
+
         // Determine if this bedroom is currently occupied
         const isCurrentlyOccupied = bedroom < currentOccupiedBedrooms;
-        
+
         for (let month = 0; month < 6; month++) {
-          // Create a realistic pattern:
-          // - If currently occupied, likely occupied in recent months (90% chance)
-          // - If currently vacant, mix of occupied/vacant history (50% chance)
-          // - Add some variation to make it realistic
-          
-          if (isCurrentlyOccupied) {
-            // Currently occupied bedrooms: mostly occupied with occasional gaps
+          const monthsAgo = startMonthsBack - month; // how many months ago this cell represents
+
+          if (monthsAgo === 0) {
+            // Current month — use actual data
+            bedroomOccupancy.push(isCurrentlyOccupied);
+          } else if (isCurrentlyOccupied) {
+            // Currently occupied: mostly occupied with occasional gaps further back
             const randomFactor = Math.random();
-            const isOccupied = month >= 4 ? true : randomFactor > 0.1; // More recent = more likely occupied
-            bedroomOccupancy.push(isOccupied);
+            const gapProbability = 0.05 + (monthsAgo * 0.02); // more gaps further back
+            bedroomOccupancy.push(randomFactor > gapProbability);
           } else {
-            // Currently vacant bedrooms: mixed history
+            // Currently vacant: mixed history
             const randomFactor = Math.random();
-            const isOccupied = randomFactor > 0.6; // 40% occupied in history
-            bedroomOccupancy.push(isOccupied);
+            const occupiedProbability = 0.3 + (monthsAgo * 0.03); // slightly more likely occupied further back
+            bedroomOccupancy.push(randomFactor < occupiedProbability);
           }
         }
-        
+
         grid.push(bedroomOccupancy);
       }
     }
-    
+
     setOccupancyGrid(grid);
-  }, [houseId, currentOccupiedBedrooms, totalBedrooms]);
+  }, [houseId, currentOccupiedBedrooms, totalBedrooms, offset]);
+
+  useEffect(() => {
+    buildGrid();
+  }, [buildGrid]);
 
   if (totalBedrooms === 0) {
     return (
@@ -94,11 +102,42 @@ export function OccupancyHistoryGrid({
     return `Bedroom ${bedroom + 1} - ${monthLabel}: ${isOccupied ? 'Occupied' : 'Vacant'}`;
   };
 
+  const isLatest = offset === 0;
+  const isOldest = offset >= MAX_OFFSET;
+
+  // Build period label
+  const periodLabel = (() => {
+    if (months.length < 2) return '';
+    return `${months[0]?.fullLabel} – ${months[months.length - 1]?.fullLabel}`;
+  })();
+
   return (
     <div className="space-y-3">
-      {/* Header */}
+      {/* Header with navigation */}
       <div className="flex items-center justify-between">
-        <h4 className="text-sm font-medium text-gray-700">Last 6 Months</h4>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setOffset(prev => Math.min(prev + 1, MAX_OFFSET))}
+            disabled={isOldest}
+            className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title="Previous 6 months"
+          >
+            <svg className="size-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h4 className="text-sm font-medium text-gray-700 select-none">{periodLabel}</h4>
+          <button
+            onClick={() => setOffset(prev => Math.max(prev - 1, 0))}
+            disabled={isLatest}
+            className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            title="Next 6 months"
+          >
+            <svg className="size-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
         <div className="flex items-center gap-3 text-xs text-gray-600">
           <span className="flex items-center gap-1">
             <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>
@@ -140,7 +179,7 @@ export function OccupancyHistoryGrid({
                   {bedroomData.map((isOccupied, monthIdx) => {
                     const monthData = months[monthIdx];
                     if (!monthData) return null;
-                    
+
                     return (
                       <td key={monthIdx} className="p-1">
                         <div
@@ -164,4 +203,3 @@ export function OccupancyHistoryGrid({
     </div>
   );
 }
-

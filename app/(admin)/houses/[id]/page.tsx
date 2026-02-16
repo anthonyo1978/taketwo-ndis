@@ -18,6 +18,7 @@ import { LinkSupplierModal } from "components/suppliers/LinkSupplierModal"
 import { HouseExpensesList } from "components/expenses/HouseExpensesList"
 import { CreateExpenseModal } from "components/expenses/CreateExpenseModal"
 import { IncomeVsExpenseChart } from "components/charts/IncomeVsExpenseChart"
+import { getResidentBillingStatus, getBillingStatusRingClass } from "lib/utils/billing-status"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 import type { HeadLease } from "types/head-lease"
@@ -53,15 +54,6 @@ function DetailItem({ label, children }: { label: string; children: React.ReactN
   )
 }
 
-/* ── Calculate age helper ── */
-function calcAge(dob: Date): number {
-  const today = new Date()
-  const birth = new Date(dob)
-  let age = today.getFullYear() - birth.getFullYear()
-  const m = today.getMonth() - birth.getMonth()
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--
-  return age
-}
 
 export default function HouseDetailPage() {
   const params = useParams()
@@ -426,29 +418,37 @@ export default function HouseDetailPage() {
                   </div>
                 ) : (
                   <div className="space-y-1">
-                    {currentResidents.map((r) => (
+                    {currentResidents.map((r) => {
+                      const billingStatus = getResidentBillingStatus(r)
+                      const ringClass = getBillingStatusRingClass(billingStatus.status)
+                      return (
                       <div
                         key={r.id}
                         className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group"
                         onClick={() => router.push(`/residents/${r.id}`)}
                       >
-                        {/* Avatar */}
-                        <div className="flex-shrink-0">
+                        {/* Avatar with billing status ring */}
+                        <div className="flex-shrink-0 relative group/avatar">
                           {(r.photoUrl || r.photoBase64) ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={r.photoUrl || r.photoBase64}
                               alt={`${r.firstName} ${r.lastName}`}
-                              className="w-10 h-10 rounded-full object-cover ring-2 ring-gray-100"
-                />
-              ) : (
-                            <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center ring-2 ring-gray-100">
+                              className={`w-10 h-10 rounded-full object-cover ${ringClass}`}
+                            />
+                          ) : (
+                            <div className={`w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center ${ringClass}`}>
                               <span className="text-xs font-medium text-gray-500">
                                 {r.firstName.charAt(0)}{r.lastName.charAt(0)}
                               </span>
-                            </div>
-                          )}
         </div>
+                          )}
+                          {/* Billing status tooltip */}
+                          <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                            {billingStatus.status === 'ready' ? 'Billing ready' : `Not billing: ${billingStatus.reasons.join(', ')}`}
+                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
+              </div>
+              </div>
 
                         {/* Name + Room */}
                         <div className="min-w-0 flex-1">
@@ -458,16 +458,15 @@ export default function HouseDetailPage() {
                           <p className="text-xs text-gray-500 truncate mt-0.5">
                             {r.roomLabel || 'No room assigned'}
                             {r.moveInDate && ` · Since ${new Date(r.moveInDate).toLocaleDateString()}`}
-                      </p>
+                          </p>
               </div>
 
                         {/* Quick info chips */}
                         <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
-                          <span className="text-xs text-gray-400">{calcAge(r.dateOfBirth)}y</span>
                           {r.ndisId && (
                             <span className="text-xs font-mono text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
                               NDIS
-                            </span>
+                  </span>
                           )}
                           {r.participantFundingLevelLabel && (
                             <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
@@ -480,8 +479,9 @@ export default function HouseDetailPage() {
                         <svg className="size-4 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
-              </div>
-                    ))}
+                      </div>
+                      )
+                    })}
               </div>
               )}
           </div>
