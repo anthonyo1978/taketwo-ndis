@@ -6,12 +6,14 @@ import type { HouseExpenseCreateInput } from 'types/house-expense'
  * GET /api/houses/[id]/expenses — List all expenses for a house
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params
-    const expenses = await houseExpenseService.getByHouseId(id)
+    const { searchParams } = new URL(request.url)
+    const category = searchParams.get('category') || undefined
+    const expenses = await houseExpenseService.getByHouseId(id, { category })
     return NextResponse.json({ success: true, data: expenses })
   } catch (error) {
     console.error('[API] Error fetching house expenses:', error)

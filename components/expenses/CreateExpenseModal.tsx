@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast'
 import { houseExpenseSchema, type HouseExpenseSchemaType } from 'lib/schemas/house-expense'
 import { Input } from 'components/ui/Input'
 import type { HeadLease } from 'types/head-lease'
+import type { Supplier } from 'types/supplier'
 import {
   EXPENSE_CATEGORY_LABELS,
   EXPENSE_FREQUENCY_LABELS,
@@ -21,9 +22,13 @@ interface CreateExpenseModalProps {
   houseId: string
   /** If a head lease exists, pre-fill rent details */
   headLease?: HeadLease | null
+  /** If a supplier is provided, pre-fill maintenance/supplier details */
+  supplier?: Supplier | null
+  /** Default category override */
+  defaultCategory?: ExpenseCategory
 }
 
-export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLease }: CreateExpenseModalProps) {
+export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLease, supplier, defaultCategory }: CreateExpenseModalProps) {
   const {
     register,
     handleSubmit,
@@ -36,28 +41,59 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
     defaultValues: {
       houseId,
       status: 'draft',
-      category: 'rent',
+      category: defaultCategory || 'rent',
       frequency: 'weekly',
     },
   })
 
   const selectedCategory = watch('category')
 
-  // Reset form when modal opens
+  /** Map supplier type → expense category */
+  const supplierTypeToCategory = (type?: string): ExpenseCategory => {
+    if (!type) return 'maintenance'
+    const lower = type.toLowerCase()
+    if (lower.includes('cleaning')) return 'maintenance'
+    if (lower.includes('security')) return 'other'
+    return 'maintenance'
+  }
+
+  // Reset form when modal opens — pre-fill from supplier if provided
   useEffect(() => {
     if (isOpen) {
-      reset({
-        houseId,
-        status: 'draft',
-        category: 'rent',
-        frequency: 'weekly',
-        description: '',
-        reference: '',
-        notes: '',
-        documentUrl: '',
-      })
+      const today = new Date()
+      const yyyy = today.getFullYear()
+      const mm = String(today.getMonth() + 1).padStart(2, '0')
+      const dd = String(today.getDate()).padStart(2, '0')
+      const todayStr = `${yyyy}-${mm}-${dd}`
+
+      if (supplier) {
+        // Pre-fill from supplier context
+        const cat = defaultCategory || supplierTypeToCategory(supplier.supplierType)
+        reset({
+          houseId,
+          status: 'draft',
+          category: cat,
+          frequency: 'one_off',
+          description: `${supplier.supplierType || 'Service'} — ${supplier.name}`,
+          reference: '',
+          notes: '',
+          documentUrl: '',
+          occurredAt: todayStr as unknown as Date,
+        })
+      } else {
+        reset({
+          houseId,
+          status: 'draft',
+          category: defaultCategory || 'rent',
+          frequency: 'weekly',
+          description: '',
+          reference: '',
+          notes: '',
+          documentUrl: '',
+        })
+      }
     }
-  }, [isOpen, houseId, reset])
+  }, [isOpen, houseId, reset, supplier, defaultCategory])
 
   // Pre-fill from head lease when category is 'rent'
   const prefillFromLease = () => {
@@ -122,7 +158,7 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
         </div>
 
         {/* Quick-fill from lease */}
-        {headLease && headLease.rentAmount && (
+        {headLease && headLease.rentAmount && !supplier && (
           <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div className="text-sm text-blue-800">
               <strong>Head Lease:</strong> ${headLease.rentAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })} / {headLease.rentFrequency}
@@ -135,6 +171,22 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
             >
               Use Lease Details
             </button>
+          </div>
+        )}
+
+        {/* Supplier context banner */}
+        {supplier && (
+          <div className="mx-6 mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-3">
+            <div className="p-1.5 bg-purple-100 rounded-lg">
+              <svg className="size-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.42 15.17l-5.384-3.19A1.998 1.998 0 014 10.16V6a2 2 0 012-2h12a2 2 0 012 2v4.16c0 .712-.382 1.37-1.003 1.724l-5.384 3.19a2 2 0 01-2.043.042z" />
+              </svg>
+            </div>
+            <div className="text-sm text-purple-800">
+              <strong>{supplier.name}</strong>
+              {supplier.supplierType && <span className="text-purple-600 ml-1">({supplier.supplierType})</span>}
+              {supplier.contactName && <span className="text-purple-500 ml-1">· {supplier.contactName}</span>}
+            </div>
           </div>
         )}
 

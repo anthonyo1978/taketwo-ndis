@@ -23,6 +23,8 @@ import { IncomeVsExpenseChart } from "components/charts/IncomeVsExpenseChart"
 import type { House } from "types/house"
 import type { Resident } from "types/resident"
 import type { HeadLease } from "types/head-lease"
+import type { Supplier } from "types/supplier"
+import type { HouseSupplierWithDetails } from "types/house-supplier"
 
 interface OccupancyData {
   current: {
@@ -91,6 +93,9 @@ export default function HouseDetailPage() {
   // Suppliers state
   const [showLinkSupplierModal, setShowLinkSupplierModal] = useState(false)
   const [supplierRefreshTrigger, setSupplierRefreshTrigger] = useState(0)
+  const [linkedSuppliers, setLinkedSuppliers] = useState<HouseSupplierWithDetails[]>([])
+  const [showSupplierExpenseModal, setShowSupplierExpenseModal] = useState(false)
+  const [selectedSupplierForExpense, setSelectedSupplierForExpense] = useState<Supplier | null>(null)
   
   // Expenses state
   const [showExpenseModal, setShowExpenseModal] = useState(false)
@@ -154,6 +159,25 @@ export default function HouseDetailPage() {
       fetchLeaseData()
     }
   }, [activeTab, id])
+
+  // Fetch linked suppliers when suppliers tab is active
+  useEffect(() => {
+    if (activeTab === 'suppliers' && id) {
+      fetchLinkedSuppliers()
+    }
+  }, [activeTab, id, supplierRefreshTrigger])
+
+  const fetchLinkedSuppliers = async () => {
+    try {
+      const response = await fetch(`/api/houses/${id}/suppliers`)
+      const result = await response.json() as { success: boolean; data?: HouseSupplierWithDetails[] }
+      if (result.success && result.data) {
+        setLinkedSuppliers(result.data)
+      }
+    } catch (error) {
+      console.error('Error fetching linked suppliers:', error)
+    }
+  }
 
   const fetchLeaseData = async () => {
     setLeaseLoading(true)
@@ -400,7 +424,7 @@ export default function HouseDetailPage() {
                       </span>
                     )}
                   </h3>
-                  <button
+            <button
                     onClick={() => setShowResidentSelection(true)}
                     className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors inline-flex items-center gap-1.5"
                   >
@@ -408,7 +432,7 @@ export default function HouseDetailPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     Add Resident
-                  </button>
+            </button>
                 </div>
 
                 {currentResidents.length === 0 ? (
@@ -417,12 +441,12 @@ export default function HouseDetailPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-1.053M18 6.75a3 3 0 11-6 0 3 3 0 016 0zm-8.25 6a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
                     </svg>
                     <p className="mt-2 text-sm text-gray-400">No residents assigned yet</p>
-                    <button
+            <button
                       onClick={() => setShowResidentSelection(true)}
                       className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-800"
                     >
                       Assign a resident →
-                    </button>
+            </button>
                   </div>
                 ) : (
                   <div className="space-y-1">
@@ -448,7 +472,7 @@ export default function HouseDetailPage() {
                               </span>
                             </div>
                           )}
-                        </div>
+        </div>
 
                         {/* Name + Room */}
                         <div className="min-w-0 flex-1">
@@ -459,7 +483,7 @@ export default function HouseDetailPage() {
                             {r.roomLabel || 'No room assigned'}
                             {r.moveInDate && ` · Since ${new Date(r.moveInDate).toLocaleDateString()}`}
                       </p>
-                    </div>
+              </div>
 
                         {/* Quick info chips */}
                         <div className="hidden sm:flex items-center gap-2 flex-shrink-0">
@@ -474,50 +498,50 @@ export default function HouseDetailPage() {
                               {r.participantFundingLevelLabel}
                             </span>
                           )}
-                        </div>
+              </div>
 
                         {/* Arrow */}
                         <svg className="size-4 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
-                  </div>
+              </div>
                     ))}
-                </div>
+              </div>
               )}
-            </div>
+          </div>
 
               {/* House Image upload — takes 1/3 */}
               <div className="bg-white rounded-lg border border-gray-200 p-5">
-                <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-gray-700">House Image</h3>
-                  {house.imageUrl && (
-                    <button
-                      onClick={() => {
+                {house.imageUrl && (
+                  <button
+                    onClick={() => {
                         if (confirm('Remove this image?')) handleImageRemoved()
-                      }}
+                    }}
                       className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors"
-                    >
+                  >
                       Remove
-                    </button>
-                  )}
-                </div>
-                <HouseImageUpload
-                  houseId={house.id}
-                  currentImageUrl={house.imageUrl}
-                  onImageUploaded={handleImageUploaded}
-                  onImageRemoved={handleImageRemoved}
-                />
+                  </button>
+                )}
               </div>
+              <HouseImageUpload
+                houseId={house.id}
+                currentImageUrl={house.imageUrl}
+                onImageUploaded={handleImageUploaded}
+                onImageRemoved={handleImageRemoved}
+              />
             </div>
-            
+                </div>
+                
             {/* ── Notes (if any) ── */}
             {house.notes && (
               <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
                 <h3 className="text-sm font-semibold text-gray-700 mb-2">Notes</h3>
                 <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">{house.notes}</p>
-              </div>
-            )}
-
+                  </div>
+                )}
+                
             {/* Hidden ResidentTable for data loading */}
             <div className="hidden">
           <ResidentTable 
@@ -535,7 +559,7 @@ export default function HouseDetailPage() {
             }}
             onResidentRemoved={() => setResidentRefreshTrigger(prev => prev + 1)}
           />
-        </div>
+                      </div>
 
             {/* ── Occupancy History (green/red grid) ── */}
             <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
@@ -588,8 +612,8 @@ export default function HouseDetailPage() {
                     {new Date(house.updatedAt).toLocaleString()} by {house.updatedBy}
                   </span>
                 </div>
-              </div>
-        </div>
+            </div>
+          </div>
           </>
         )}
 
@@ -597,11 +621,11 @@ export default function HouseDetailPage() {
         {activeTab === 'finance' && (
           <div className="space-y-6">
             <IncomeVsExpenseChart
-              houseId={id}
+            houseId={id} 
               refreshTrigger={expenseRefreshTrigger}
               defaultPeriod="6m"
-            />
-          </div>
+          />
+        </div>
         )}
 
         {/* ═══════════ Ownership & Lease Tab ═══════════ */}
@@ -680,6 +704,66 @@ export default function HouseDetailPage() {
               refreshTrigger={supplierRefreshTrigger}
               onUpdate={() => setSupplierRefreshTrigger(prev => prev + 1)}
             />
+
+            {/* ── Supplier Expenses ── */}
+            <div className="border-t border-gray-200 pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900">Supplier Expenses</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">Bills and invoices from linked suppliers</p>
+          </div>
+                {linkedSuppliers.length > 0 ? (
+                  <div className="flex items-center gap-2">
+                    <select
+                      id="supplier-expense-picker"
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      value=""
+                      onChange={(e) => {
+                        const supplier = linkedSuppliers.find(s => s.supplierId === e.target.value)?.supplier
+                        if (supplier) {
+                          setSelectedSupplierForExpense(supplier)
+                          setShowSupplierExpenseModal(true)
+                        }
+                        // Reset select
+                        e.target.value = ''
+                      }}
+                    >
+                      <option value="" disabled>Select supplier…</option>
+                      {linkedSuppliers.map((link) => (
+                        <option key={link.supplierId} value={link.supplierId}>
+                          {link.supplier.name}{link.supplier.supplierType ? ` (${link.supplier.supplierType})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => {
+                        setSelectedSupplierForExpense(null)
+                        setShowSupplierExpenseModal(true)
+                      }}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium whitespace-nowrap"
+                    >
+                      <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      New Expense
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-gray-400">Link a supplier first</span>
+                )}
+              </div>
+
+              {/* Show maintenance/supplier expenses for this house */}
+              <HouseExpensesList
+                houseId={id}
+                refreshTrigger={expenseRefreshTrigger}
+                onAddExpense={() => {
+                  setSelectedSupplierForExpense(null)
+                  setShowSupplierExpenseModal(true)
+                }}
+                filterCategory="maintenance"
+              />
+            </div>
           </div>
         )}
 
@@ -782,6 +866,19 @@ export default function HouseDetailPage() {
           onSuccess={() => setExpenseRefreshTrigger(prev => prev + 1)}
           houseId={id}
           headLease={currentLease}
+        />
+
+        {/* Supplier expense modal */}
+        <CreateExpenseModal
+          isOpen={showSupplierExpenseModal}
+          onClose={() => {
+            setShowSupplierExpenseModal(false)
+            setSelectedSupplierForExpense(null)
+          }}
+          onSuccess={() => setExpenseRefreshTrigger(prev => prev + 1)}
+          houseId={id}
+          supplier={selectedSupplierForExpense}
+          defaultCategory="maintenance"
         />
       </div>
     </div>

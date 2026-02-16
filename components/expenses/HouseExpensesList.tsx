@@ -14,6 +14,10 @@ interface HouseExpensesListProps {
   houseId: string
   refreshTrigger?: number
   onAddExpense: () => void
+  /** If set, only show expenses matching this category */
+  filterCategory?: string
+  /** If true, hide the header bar with title + New Expense button */
+  hideHeader?: boolean
 }
 
 const STATUS_COLORS: Record<ExpenseStatus, string> = {
@@ -34,19 +38,22 @@ const CATEGORY_ICONS: Record<string, string> = {
   other: '📄',
 }
 
-export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense }: HouseExpensesListProps) {
+export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense, filterCategory, hideHeader }: HouseExpensesListProps) {
   const [expenses, setExpenses] = useState<HouseExpense[]>([])
   const [loading, setLoading] = useState(true)
   const [totalExpenses, setTotalExpenses] = useState(0)
 
   useEffect(() => {
     fetchExpenses()
-  }, [houseId, refreshTrigger])
+  }, [houseId, refreshTrigger, filterCategory])
 
   const fetchExpenses = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/houses/${houseId}/expenses`)
+      const params = new URLSearchParams()
+      if (filterCategory) params.set('category', filterCategory)
+      const url = `/api/houses/${houseId}/expenses${params.toString() ? `?${params}` : ''}`
+      const response = await fetch(url)
       const result = await response.json() as { success: boolean; data?: HouseExpense[] }
       if (result.success && result.data) {
         setExpenses(result.data)
@@ -120,25 +127,34 @@ export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense }:
   return (
     <div>
       {/* Summary bar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <h3 className="text-base font-semibold text-gray-900">Expenses</h3>
-          {expenses.length > 0 && (
-            <span className="text-sm text-gray-500">
-              {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} · Total: <strong className="text-gray-900">{formatCurrency(totalExpenses)}</strong>
-            </span>
-          )}
+      {!hideHeader && (
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-4">
+            <h3 className="text-base font-semibold text-gray-900">Expenses</h3>
+            {expenses.length > 0 && (
+              <span className="text-sm text-gray-500">
+                {expenses.length} transaction{expenses.length !== 1 ? 's' : ''} · Total: <strong className="text-gray-900">{formatCurrency(totalExpenses)}</strong>
+              </span>
+            )}
+          </div>
+          <button
+            onClick={onAddExpense}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
+          >
+            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Expense
+          </button>
         </div>
-        <button
-          onClick={onAddExpense}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
-        >
-          <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          New Expense
-        </button>
-      </div>
+      )}
+      {hideHeader && expenses.length > 0 && (
+        <div className="mb-3">
+          <span className="text-sm text-gray-500">
+            {expenses.length} expense{expenses.length !== 1 ? 's' : ''} · Total: <strong className="text-gray-900">{formatCurrency(totalExpenses)}</strong>
+          </span>
+        </div>
+      )}
 
       {expenses.length === 0 ? (
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
