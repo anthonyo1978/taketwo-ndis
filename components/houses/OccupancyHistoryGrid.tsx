@@ -25,7 +25,7 @@ interface MonthData {
 }
 
 /**
- * Compact visual grid showing bedroom-by-bedroom occupancy over 6-month windows.
+ * Compact visual grid showing bedroom-by-bedroom occupancy over 12-month windows.
  * Uses real move-in dates from residents when available.
  * Pagination is bounded by the house go-live date.
  */
@@ -47,15 +47,15 @@ export function OccupancyHistoryGrid({
 
   // Calculate max offset based on go-live date
   const maxOffset = useMemo(() => {
-    if (!goLive) return 3; // default fallback: 24 months
+    if (!goLive) return 2; // default fallback: ~36 months
     const now = new Date();
     const monthsDiff =
       (now.getFullYear() - goLive.getFullYear()) * 12 +
       (now.getMonth() - goLive.getMonth());
     // We want to allow going back to 1 month before go-live
     const totalMonthsBack = monthsDiff + 1;
-    // Each page is 6 months, so max offset is ceil(totalMonthsBack / 6) - 1
-    return Math.max(0, Math.ceil(totalMonthsBack / 6) - 1);
+    // Each page is 12 months, so max offset is ceil(totalMonthsBack / 12) - 1
+    return Math.max(0, Math.ceil(totalMonthsBack / 12) - 1);
   }, [goLive]);
 
   // Parse residents' move-in dates
@@ -73,9 +73,9 @@ export function OccupancyHistoryGrid({
   const months = useMemo(() => {
     const now = new Date();
     const result: MonthData[] = [];
-    const startMonthsBack = offset * 6 + 5;
+    const startMonthsBack = offset * 12 + 11;
 
-    for (let i = startMonthsBack; i >= offset * 6; i--) {
+    for (let i = startMonthsBack; i >= offset * 12; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthName = date.toLocaleDateString('en-US', { month: 'short' });
       const year = date.getFullYear().toString().slice(-2);
@@ -182,7 +182,7 @@ export function OccupancyHistoryGrid({
             onClick={() => setOffset(prev => Math.min(prev + 1, maxOffset))}
             disabled={isOldest}
             className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            title="Previous 6 months"
+            title="Previous 12 months"
           >
             <svg className="size-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -193,7 +193,7 @@ export function OccupancyHistoryGrid({
             onClick={() => setOffset(prev => Math.max(prev - 1, 0))}
             disabled={isLatest}
             className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            title="Next 6 months"
+            title="Next 12 months"
           >
             <svg className="size-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

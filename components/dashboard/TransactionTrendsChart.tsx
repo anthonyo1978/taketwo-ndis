@@ -22,7 +22,7 @@ interface TransactionTrendsChartProps {
 type TimePeriod = '7d' | '30d' | '6m' | '12m'
 
 export function TransactionTrendsChart({ data, isLoading = false }: TransactionTrendsChartProps) {
-  const [period, setPeriod] = useState<TimePeriod>('7d')
+  const [period, setPeriod] = useState<TimePeriod>('12m')
   
   // Get data based on selected period
   const getFilteredData = () => {

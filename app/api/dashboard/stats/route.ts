@@ -165,7 +165,7 @@ export async function GET(request: NextRequest) {
       { data: recentActivity, error: activityError },
       { data: housePerformance, error: houseError }
     ] = await Promise.all([
-      supabase.rpc('get_monthly_transaction_trends', { org_id: organizationId, months_back: 6 }),
+      supabase.rpc('get_monthly_transaction_trends', { org_id: organizationId, months_back: 12 }),
       supabase.rpc('get_daily_transaction_trends', { org_id: organizationId, days_back: 30 }),
       supabase.rpc('get_weekly_transaction_trends', { org_id: organizationId, weeks_back: 8 }),
       supabase.rpc('get_recent_activity', { org_id: organizationId, limit_count: 10 }),
