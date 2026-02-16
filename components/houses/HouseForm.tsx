@@ -8,6 +8,15 @@ import { Input } from "components/ui/Input"
 import { AUSTRALIAN_STATES, HOUSE_STATUSES } from "lib/constants"
 import { houseCreateSchema, type HouseCreateSchemaType } from "lib/schemas/house"
 
+/** Convert a Date or date-string to YYYY-MM-DD for HTML date inputs */
+function toDateInputValue(date: Date | string | undefined | null): string {
+  if (!date) return ''
+  const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return ''
+  const iso = d.toISOString()
+  return iso.split('T')[0] ?? ''
+}
+
 /**
  * Props for the HouseForm component.
  */
@@ -27,6 +36,19 @@ interface HouseFormProps {
  * @returns JSX element for the house form
  */
 export function HouseForm({ onSubmit, isLoading = false, className, initialData, mode = 'create', onCancel }: HouseFormProps) {
+  // Convert Date objects in initialData to YYYY-MM-DD strings for HTML date inputs
+  const resolvedDefaults = initialData
+    ? {
+        ...initialData,
+        goLiveDate: toDateInputValue(initialData.goLiveDate) as any,
+        enrolmentDate: toDateInputValue(initialData.enrolmentDate) as any,
+      }
+    : {
+        status: 'Active' as const,
+        goLiveDate: toDateInputValue(new Date()) as any,
+        hasOoa: false,
+      }
+
   const {
     register,
     handleSubmit,
@@ -35,11 +57,7 @@ export function HouseForm({ onSubmit, isLoading = false, className, initialData,
   } = useForm<HouseCreateSchemaType>({
     resolver: zodResolver(houseCreateSchema),
     mode: 'onChange',
-    defaultValues: initialData || {
-      status: 'Active',
-      goLiveDate: new Date(),
-      hasOoa: false,
-    },
+    defaultValues: resolvedDefaults,
   })
 
   const handleFormSubmit = async (data: HouseCreateSchemaType) => {
