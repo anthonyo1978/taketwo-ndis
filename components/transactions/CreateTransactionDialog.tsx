@@ -1,16 +1,13 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { Button } from "components/Button/Button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "components/ui/Dialog"
 import { Input } from "components/ui/Input"
-import { getHousesFromStorage } from "lib/utils/house-storage"
-import { getResidentsFromStorage } from "lib/utils/resident-storage"
-import { createTransaction } from "lib/utils/transaction-storage"
 import type { FundingInformation } from "types/resident"
 import type { TransactionCreateInput } from "types/transaction"
 
@@ -63,236 +60,117 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
     }
   })
 
-  // Function to filter residents based on eligibility criteria
-  const filterEligibleResidents = async (allResidents: any[], houses: any[]) => {
-    const eligibleResidents = []
-    
-    console.log(`🔍 Filtering ${allResidents.length} residents for transaction eligibility...`)
-    
-    for (const resident of allResidents) {
-      console.log(`\n👤 Checking resident: ${resident.firstName} ${resident.lastName} (ID: ${resident.id})`)
-      
-      // Check if resident has active status
-      if (resident.status !== 'Active') {
-        console.log(`❌ Filtered out - Status: ${resident.status} (required: Active)`)
-        continue
-      }
-      console.log(`✅ Status check passed: ${resident.status}`)
-      
-      // Check if resident is assigned to a house
-      if (!resident.houseId) {
-        console.log(`❌ Filtered out - No house assignment`)
-        continue
-      }
-      console.log(`✅ House assignment check passed: ${resident.houseId}`)
-      
-      // Verify the house exists
-      const house = houses.find(h => h.id === resident.houseId)
-      if (!house) {
-        console.log(`❌ Filtered out - House not found for ID: ${resident.houseId}`)
-        continue
-      }
-      console.log(`✅ House found: ${house.descriptor || house.address1}`)
-      
-      // Check if resident has at least one active contract with money and valid date range
-      try {
-        const response = await fetch(`/api/residents/${resident.id}/funding`)
-        const result = await response.json() as { success: boolean; data?: any[] }
-        
-        if (result.success && result.data) {
-          console.log(`📋 Found ${result.data.length} contracts for ${resident.firstName} ${resident.lastName}`)
-          
-          const now = new Date()
-          const eligibleContracts = result.data.filter((contract: any, index: number) => {
-            console.log(`\n  📄 Contract ${index + 1}: ${contract.type || 'Unknown Type'}`)
-            console.log(`     Status: ${contract.contractStatus}`)
-            console.log(`     Current Balance: $${contract.currentBalance || 0}`)
-            console.log(`     Start Date: ${contract.startDate || 'None'}`)
-            console.log(`     End Date: ${contract.endDate || 'None'}`)
-            
-            // Must be active
-            if (contract.contractStatus !== 'Active') {
-              console.log(`     ❌ Not eligible - Status is ${contract.contractStatus}, need Active`)
-              return false
-            }
-            
-            // Must have money (current balance > 0)
-            if (!contract.currentBalance || contract.currentBalance <= 0) {
-              console.log(`     ❌ Not eligible - No money (balance: $${contract.currentBalance || 0})`)
-              return false
-            }
-            
-            // Must be within date range (if end date exists)
-            if (contract.endDate) {
-              const endDate = new Date(contract.endDate)
-              if (endDate < now) {
-                console.log(`     ❌ Not eligible - Contract expired (end date: ${contract.endDate})`)
-                return false
-              }
-            }
-            
-            // Must have started (if start date exists)
-            if (contract.startDate) {
-              const startDate = new Date(contract.startDate)
-              if (startDate > now) {
-                console.log(`     ❌ Not eligible - Contract not started yet (start date: ${contract.startDate})`)
-                return false
-              }
-            }
-            
-            console.log(`     ✅ Contract is eligible!`)
-            return true
-          })
-          
-          if (eligibleContracts.length > 0) {
-            console.log(`🎉 Resident ${resident.firstName} ${resident.lastName} is ELIGIBLE - has ${eligibleContracts.length} active contracts with money within date range`)
-            eligibleResidents.push({
-              ...resident,
-              house: house // Add house info for easier access
-            })
-          } else {
-            console.log(`❌ Resident ${resident.firstName} ${resident.lastName} filtered out - no eligible contracts (active + money + within date range)`)
-          }
-        } else {
-          console.log(`❌ Resident ${resident.firstName} ${resident.lastName} filtered out - no funding data (API call failed or no data)`)
-        }
-      } catch (error) {
-        console.error(`Error checking contracts for resident ${resident.id}:`, error)
-        // Fallback to localStorage check
-        if (resident.fundingInformation && resident.fundingInformation.length > 0) {
-          const now = new Date()
-          const eligibleContracts = resident.fundingInformation.filter((contract: any) => {
-            // Must be active
-            if (contract.contractStatus !== 'Active') return false
-            
-            // Must have money (current balance > 0)
-            if (!contract.currentBalance || contract.currentBalance <= 0) return false
-            
-            // Must be within date range (if end date exists)
-            if (contract.endDate) {
-              const endDate = new Date(contract.endDate)
-              if (endDate < now) return false
-            }
-            
-            // Must have started (if start date exists)
-            if (contract.startDate) {
-              const startDate = new Date(contract.startDate)
-              if (startDate > now) return false
-            }
-            
-            return true
-          })
-          
-          if (eligibleContracts.length > 0) {
-            console.log(`Resident ${resident.firstName} ${resident.lastName} is eligible (fallback) - has ${eligibleContracts.length} eligible contracts`)
-            eligibleResidents.push({
-              ...resident,
-              house: house
-            })
-          }
-        }
-      }
-    }
-    
-    console.log(`\n🎯 FILTERING SUMMARY:`)
-    console.log(`📊 Total residents checked: ${allResidents.length}`)
-    console.log(`✅ Eligible residents found: ${eligibleResidents.length}`)
-    console.log(`📝 Eligible residents: ${eligibleResidents.map(r => `${r.firstName} ${r.lastName}`).join(', ')}`)
-    
-    return eligibleResidents
+  /**
+   * Filter residents client-side using the funding_contracts data
+   * that is already included in the /api/residents response.
+   * This avoids N+1 API calls to /api/residents/{id}/funding.
+   */
+  const filterEligibleResidents = (allResidents: any[], allHouses: any[]) => {
+    const now = new Date()
+
+    return allResidents.filter((resident) => {
+      // Must be active
+      if (resident.status !== 'Active') return false
+
+      // Must be assigned to a house that exists
+      if (!resident.houseId) return false
+      const house = allHouses.find((h: any) => h.id === resident.houseId)
+      if (!house) return false
+
+      // Must have at least one active funding contract with balance > 0
+      // The funding_contracts array comes from the DB join in getPaginated
+      const contracts = resident.funding_contracts || []
+      const hasEligibleContract = contracts.some((c: any) => {
+        if (c.contract_status !== 'Active') return false
+        if (!c.current_balance || c.current_balance <= 0) return false
+        return true
+      })
+
+      return hasEligibleContract
+    }).map((resident: any) => ({
+      ...resident,
+      house: allHouses.find((h: any) => h.id === resident.houseId),
+    }))
   }
 
-  // Fetch residents and houses from API with smart filtering
+  // Fetch residents and houses from API — single parallel fetch, no N+1
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [residentsResponse, housesResponse] = await Promise.all([
-          fetch('/api/residents'),
-          fetch('/api/houses?limit=1000') // Get ALL houses, not just first 10
+          fetch('/api/residents?limit=100'),
+          fetch('/api/houses?limit=100'),
         ])
-        
+
         const residentsData = await residentsResponse.json() as { success: boolean; data?: any[] }
         const housesData = await housesResponse.json() as { success: boolean; data?: any[] }
-        
+
         if (residentsData.success && housesData.success) {
-          console.log('Raw residents loaded:', residentsData.data)
-          console.log('All houses loaded (should be all houses, not just first 10):', housesData.data)
-          
-          // Filter residents to only show those who:
-          // 1. Have active status
-          // 2. Are assigned to a house
-          // 3. Have at least one active contract with money and valid date range
-          const eligibleResidents = await filterEligibleResidents(residentsData.data || [], housesData.data || [])
-          console.log('Eligible residents for transactions:', eligibleResidents)
-          
-          setResidents(eligibleResidents)
+          const eligible = filterEligibleResidents(
+            residentsData.data || [],
+            housesData.data || []
+          )
+          setResidents(eligible)
           setHouses(housesData.data || [])
         }
       } catch (error) {
         console.error('Error fetching data:', error)
-        // Fallback to localStorage with same filtering logic
-        try {
-          const allResidents = getResidentsFromStorage()
-          const allHouses = getHousesFromStorage()
-          console.log('Fallback - All residents from localStorage:', allResidents)
-          console.log('Fallback - All houses from localStorage:', allHouses)
-          
-          const eligibleResidents = await filterEligibleResidents(allResidents, allHouses)
-          console.log('Fallback - Eligible residents:', eligibleResidents)
-          
-          setResidents(eligibleResidents)
-          setHouses(allHouses)
-        } catch (localError) {
-          console.error('Error with localStorage fallback:', localError)
-        }
       } finally {
         setIsLoading(false)
       }
     }
-    
+
     fetchData()
   }, [])
 
   const [fundingContracts, setFundingContracts] = useState<Record<string, FundingInformation[]>>({})
 
-  const watchedValues = form.watch()
-  const selectedResident = residents.find(r => r.id === watchedValues.residentId)
+  const watchedResidentId = form.watch('residentId')
+  const watchedContractId = form.watch('contractId')
+  const watchedQuantity = form.watch('quantity')
+  const watchedUnitPrice = form.watch('unitPrice')
+  const watchedOccurredAt = form.watch('occurredAt')
+
+  const selectedResident = useMemo(
+    () => residents.find(r => r.id === watchedResidentId),
+    [residents, watchedResidentId]
+  )
   const selectedResidentContracts = selectedResident ? fundingContracts[selectedResident.id] || [] : []
-  const selectedContract = selectedResidentContracts.find(c => c.id === watchedValues.contractId)
+  const selectedContract = selectedResidentContracts.find(c => c.id === watchedContractId)
 
   // Get available contracts for selected resident (only active contracts)
   const availableContracts = selectedResidentContracts.filter(c => c.contractStatus === 'Active') || []
 
-  // Load funding contracts when resident is selected
+  // Load full funding contracts only when a resident is selected
   useEffect(() => {
-    if (watchedValues.residentId && !fundingContracts[watchedValues.residentId]) {
+    if (watchedResidentId && !fundingContracts[watchedResidentId]) {
       const loadFundingContracts = async () => {
         try {
-          const response = await fetch(`/api/residents/${watchedValues.residentId}/funding`)
+          const response = await fetch(`/api/residents/${watchedResidentId}/funding`)
           const result = await response.json() as { success: boolean; data?: any[] }
-          
+
           if (result.success && result.data) {
             setFundingContracts(prev => ({
               ...prev,
-              [watchedValues.residentId]: result.data || []
+              [watchedResidentId]: result.data || []
             }))
           }
         } catch (error) {
           console.error('Error loading funding contracts:', error)
         }
       }
-      
+
       loadFundingContracts()
     }
-  }, [watchedValues.residentId, fundingContracts])
+  }, [watchedResidentId, fundingContracts])
 
   // Calculate amount when quantity or unit price changes
   useEffect(() => {
-    if (watchedValues.quantity && watchedValues.unitPrice) {
-      const calculatedAmount = watchedValues.quantity * watchedValues.unitPrice
+    if (watchedQuantity && watchedUnitPrice) {
+      const calculatedAmount = watchedQuantity * watchedUnitPrice
       form.setValue('amount', calculatedAmount)
     }
-  }, [watchedValues.quantity, watchedValues.unitPrice, form])
+  }, [watchedQuantity, watchedUnitPrice, form])
 
   // Reset contract when resident changes
   useEffect(() => {
@@ -301,32 +179,31 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
     setDateConstraints({ minDate: null, maxDate: null })
     setIsDateOutOfBounds(false)
     setDateWarning(null)
-  }, [watchedValues.residentId, form])
+  }, [watchedResidentId, form])
 
   // Watch for date changes and validate against contract boundaries
   useEffect(() => {
-    if (watchedValues.occurredAt && selectedContractInfo) {
-      checkDateBounds(watchedValues.occurredAt, selectedContractInfo)
+    if (watchedOccurredAt && selectedContractInfo) {
+      checkDateBounds(watchedOccurredAt, selectedContractInfo)
     }
-  }, [watchedValues.occurredAt, selectedContractInfo])
+  }, [watchedOccurredAt, selectedContractInfo])
 
   // Handle contract selection to show contract details and set date constraints
   const handleContractChange = (contractId: string) => {
     if (selectedResident && contractId) {
       const contract = selectedResidentContracts.find((c: any) => c.id === contractId)
       setSelectedContractInfo(contract)
-      
+
       // Set date constraints based on contract dates
       if (contract) {
-        // Convert to local date format (YYYY-MM-DD) for HTML date input
         const minDate = contract.startDate ? new Date(contract.startDate).toLocaleDateString('en-CA') : null
         const maxDate = contract.endDate ? new Date(contract.endDate).toLocaleDateString('en-CA') : null
-        
-        setDateConstraints({ 
-          minDate: minDate || null, 
-          maxDate: maxDate || null 
+
+        setDateConstraints({
+          minDate: minDate || null,
+          maxDate: maxDate || null
         })
-        
+
         // Check if current date is out of bounds
         const currentDate = form.getValues('occurredAt')
         if (currentDate) {
@@ -344,15 +221,15 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
       setDateWarning(null)
     }
   }
-  
+
   // Check if selected date is within contract boundaries
   const checkDateBounds = (selectedDate: Date, contract: any) => {
     const contractStart = contract.startDate ? new Date(contract.startDate) : null
     const contractEnd = contract.endDate ? new Date(contract.endDate) : null
-    
+
     let isOutOfBounds = false
     let warning = null
-    
+
     if (contractStart && selectedDate < contractStart) {
       isOutOfBounds = true
       warning = `Transaction date is before contract start date (${contractStart.toLocaleDateString()}). This will create an orphaned transaction that won't draw down from the contract.`
@@ -360,7 +237,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
       isOutOfBounds = true
       warning = `Transaction date is after contract end date (${contractEnd.toLocaleDateString()}). This will create an orphaned transaction that won't draw down from the contract.`
     }
-    
+
     setIsDateOutOfBounds(isOutOfBounds)
     setDateWarning(warning)
   }
@@ -372,15 +249,12 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
     try {
       // Ensure amount is calculated if not provided
       const calculatedAmount = data.amount || (data.quantity * data.unitPrice)
-      
+
       const input: TransactionCreateInput = {
         ...data,
-        // Ensure date is properly formatted
         occurredAt: data.occurredAt instanceof Date ? data.occurredAt : new Date(data.occurredAt),
         amount: calculatedAmount,
-        // Ensure serviceCode is defined if provided
         serviceCode: data.serviceCode || '',
-        // Pass the orphaned status from frontend validation
         isOrphaned: isDateOutOfBounds
       }
 
@@ -399,7 +273,6 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
         throw new Error(result.error || 'Failed to create transaction')
       }
 
-      console.log('Created transaction:', result.data)
       onSuccess()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create transaction')
@@ -458,7 +331,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
                 const house = houses.find(h => h.id === resident.houseId)
                 return (
                   <option key={resident.id} value={resident.id}>
-                    {resident.firstName} {resident.lastName} - {house?.address1 || 'Unknown House'}
+                    {resident.firstName} {resident.lastName} - {house?.address1 || house?.descriptor || 'Unknown House'}
                   </option>
                 )
               })}
@@ -493,7 +366,9 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
               ) : (
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <p className="text-sm text-yellow-800">
-                    No active contracts available for this resident.
+                    {fundingContracts[selectedResident.id] === undefined
+                      ? 'Loading contracts…'
+                      : 'No active contracts available for this resident.'}
                   </p>
                 </div>
               )}
@@ -543,7 +418,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
                 </div>
                 <div>
                   <span className="text-gray-500">House:</span>
-                  <p className="font-medium">{residentHouse.address1}</p>
+                  <p className="font-medium">{residentHouse.address1 || residentHouse.descriptor}</p>
                 </div>
                 {selectedContract && (
                   <>
@@ -574,27 +449,24 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
                 min={dateConstraints.minDate || undefined}
                 max={dateConstraints.maxDate || undefined}
               />
-              
+
               {/* Contract Date Range Display */}
               {selectedContractInfo && (selectedContractInfo.startDate || selectedContractInfo.endDate) && (
                 <div className="text-sm text-gray-600">
                   <p className="font-medium">Contract Date Range:</p>
                   <p>
-                    {selectedContractInfo.startDate 
+                    {selectedContractInfo.startDate
                       ? `From: ${new Date(selectedContractInfo.startDate).toLocaleDateString()}`
                       : 'From: No start date'
                     }
-                    {selectedContractInfo.endDate 
+                    {selectedContractInfo.endDate
                       ? ` To: ${new Date(selectedContractInfo.endDate).toLocaleDateString()}`
                       : ' To: Ongoing (no end date)'
                     }
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Date picker constraints: min={dateConstraints.minDate || 'none'}, max={dateConstraints.maxDate || 'none'}
-                  </p>
                 </div>
               )}
-              
+
               {/* Date Out of Bounds Warning */}
               {isDateOutOfBounds && dateWarning && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
@@ -634,7 +506,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
           {mode === 'drawdown' && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h4 className="font-semibold text-blue-800 mb-4">🎯 NDIS Drawing Down Requirements</h4>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* NDIS Service Item Code */}
                 <div className="space-y-2">
@@ -849,10 +721,10 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
             <Button
               type="submit"
               disabled={isSubmitting}
-              className={mode === 'drawdown' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-blue-600 text-white hover:bg-blue-700'}
+              className="bg-blue-600 text-white hover:bg-blue-700"
             >
-              {isSubmitting 
-                ? (mode === 'drawdown' ? 'Creating Drawing Down Transaction...' : 'Creating...') 
+              {isSubmitting
+                ? (mode === 'drawdown' ? 'Creating Drawing Down Transaction...' : 'Creating...')
                 : (mode === 'drawdown' ? 'Create Drawing Down Transaction' : 'Create Transaction')
               }
             </Button>
