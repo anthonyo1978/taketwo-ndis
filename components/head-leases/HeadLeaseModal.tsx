@@ -24,6 +24,35 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
   const [loadingOwners, setLoadingOwners] = useState(false)
   const [showOwnerModal, setShowOwnerModal] = useState(false)
 
+  /**
+   * Convert a Date object or ISO string to YYYY-MM-DD for HTML date inputs.
+   * Returns undefined if the value is falsy.
+   */
+  const toDateInputValue = (date: Date | string | undefined | null): string | undefined => {
+    if (!date) return undefined
+    const d = new Date(date)
+    if (isNaN(d.getTime())) return undefined
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  /** Build the form values object from a lease */
+  const leaseToFormValues = (l: HeadLease) => ({
+    houseId: l.houseId,
+    ownerId: l.ownerId,
+    reference: l.reference || '',
+    startDate: toDateInputValue(l.startDate) as unknown as Date,
+    endDate: toDateInputValue(l.endDate) as unknown as Date | undefined,
+    status: l.status,
+    rentAmount: l.rentAmount ?? undefined,
+    rentFrequency: l.rentFrequency,
+    reviewDate: toDateInputValue(l.reviewDate) as unknown as Date | undefined,
+    notes: l.notes || '',
+    documentUrl: l.documentUrl || ''
+  })
+
   const {
     register,
     handleSubmit,
@@ -33,23 +62,13 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
     watch
   } = useForm<HeadLeaseSchemaType>({
     resolver: zodResolver(headLeaseSchema),
-    defaultValues: lease ? {
-      houseId: lease.houseId,
-      ownerId: lease.ownerId,
-      reference: lease.reference || '',
-      startDate: lease.startDate,
-      endDate: lease.endDate || undefined,
-      status: lease.status,
-      rentAmount: lease.rentAmount || undefined,
-      rentFrequency: lease.rentFrequency,
-      reviewDate: lease.reviewDate || undefined,
-      notes: lease.notes || '',
-      documentUrl: lease.documentUrl || ''
-    } : {
-      houseId: houseId || '',
-      status: 'active',
-      rentFrequency: 'weekly'
-    }
+    defaultValues: lease
+      ? leaseToFormValues(lease)
+      : {
+          houseId: houseId || '',
+          status: 'active',
+          rentFrequency: 'weekly'
+        }
   })
 
   // Fetch owners
@@ -75,21 +94,16 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
     }
   }
 
+  // Re-set the ownerId after owners list has loaded so the dropdown selects the right option
+  useEffect(() => {
+    if (owners.length > 0 && lease?.ownerId) {
+      setValue('ownerId', lease.ownerId)
+    }
+  }, [owners, lease, setValue])
+
   useEffect(() => {
     if (isOpen && lease) {
-      reset({
-        houseId: lease.houseId,
-        ownerId: lease.ownerId,
-        reference: lease.reference || '',
-        startDate: lease.startDate,
-        endDate: lease.endDate || undefined,
-        status: lease.status,
-        rentAmount: lease.rentAmount || undefined,
-        rentFrequency: lease.rentFrequency,
-        reviewDate: lease.reviewDate || undefined,
-        notes: lease.notes || '',
-        documentUrl: lease.documentUrl || ''
-      })
+      reset(leaseToFormValues(lease))
     } else if (isOpen && !lease) {
       reset({
         houseId: houseId || '',
