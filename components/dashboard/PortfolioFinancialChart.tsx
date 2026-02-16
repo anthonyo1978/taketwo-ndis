@@ -4,11 +4,16 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   BarChart,
   Bar,
+  AreaChart,
+  Area,
+  ComposedChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
   Cell,
 } from 'recharts'
 
@@ -19,6 +24,7 @@ interface MonthData {
   shortLabel: string
   income: number
   expenses: number
+  net?: number
 }
 
 interface HouseBreakdown {
@@ -29,13 +35,45 @@ interface HouseBreakdown {
   net: number
 }
 
+interface Notable {
+  month: string
+  type: 'income' | 'expense'
+  amount: number
+  description?: string
+  category?: string
+}
+
 interface FinancialData {
   months: MonthData[]
   totals: { income: number; expenses: number; net: number }
   byHouse: HouseBreakdown[]
+  notables?: Notable[]
 }
 
-type TimePeriod = '6m' | '12m'
+type TimePeriod = 'all' | '12m' | '6m'
+type ChartMode = 'bars' | 'lines'
+
+const PERIOD_LABELS: Record<TimePeriod, string> = {
+  all: 'All Time',
+  '12m': '12M',
+  '6m': '6M',
+}
+
+const PERIOD_MONTHS: Record<TimePeriod, number> = {
+  all: 0,
+  '12m': 12,
+  '6m': 6,
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  rent: 'Rent',
+  maintenance: 'Maintenance',
+  insurance: 'Insurance',
+  utilities: 'Utilities',
+  rates: 'Rates',
+  management_fee: 'Management Fee',
+  other: 'Other',
+}
 
 /* ───── Helpers ───── */
 const fmtCurrency = (v: number) =>
@@ -96,14 +134,15 @@ export function PortfolioFinancialChart() {
   const [data, setData] = useState<FinancialData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [period, setPeriod] = useState<TimePeriod>('12m')
+  const [period, setPeriod] = useState<TimePeriod>('all')
   const [selectedHouseId, setSelectedHouseId] = useState<string | ''>('')
+  const [chartMode, setChartMode] = useState<ChartMode>('bars')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const months = period === '6m' ? 6 : 12
+      const months = PERIOD_MONTHS[period]
       const houseParam = selectedHouseId ? `&houseId=${selectedHouseId}` : ''
       const res = await fetch(`/api/dashboard/financials?months=${months}${houseParam}`)
       const json = await res.json() as { success: boolean; data?: FinancialData; error?: string }
@@ -137,9 +176,21 @@ export function PortfolioFinancialChart() {
     fetchData()
   }, [fetchData])
 
-  const chartData = data?.months || []
+  const chartData: MonthData[] = (data?.months || []).map(m => ({
+    ...m,
+    net: m.income - m.expenses,
+  }))
   const totals = data?.totals || { income: 0, expenses: 0, net: 0 }
+  const notables = data?.notables || []
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0)
+
+  // Calculate averages for reference lines
+  const avgIncome = chartData.length > 0
+    ? chartData.reduce((s, m) => s + m.income, 0) / chartData.length
+    : 0
+  const avgExpenses = chartData.length > 0
+    ? chartData.reduce((s, m) => s + m.expenses, 0) / chartData.length
+    : 0
 
   /* ── Loading ── */
   if (loading) {
@@ -150,6 +201,7 @@ export function PortfolioFinancialChart() {
             <div className="h-5 bg-gray-200 rounded w-48" />
             <div className="flex gap-2">
               <div className="h-8 w-24 bg-gray-200 rounded-lg" />
+              <div className="h-8 w-16 bg-gray-200 rounded-lg" />
               <div className="h-8 w-12 bg-gray-200 rounded-lg" />
               <div className="h-8 w-12 bg-gray-200 rounded-lg" />
             </div>
@@ -167,6 +219,31 @@ export function PortfolioFinancialChart() {
         <button onClick={fetchData} className="mt-2 text-sm text-blue-600 hover:underline">Retry</button>
       </div>
     )
+  }
+
+  // Shared chart props
+  const xAxisProps = {
+    dataKey: 'shortLabel' as const,
+    tick: { fill: '#6b7280', fontSize: 12 },
+    tickLine: false,
+    axisLine: { stroke: '#e5e7eb' },
+    dy: 8,
+    interval: chartData.length > 12 ? Math.floor(chartData.length / 12) : 0,
+  }
+
+  const yAxisProps = {
+    tick: { fill: '#6b7280', fontSize: 12 },
+    tickLine: false,
+    axisLine: false,
+    tickFormatter: (v: number) =>
+      v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`,
+    width: 55,
+  }
+
+  const gridProps = {
+    strokeDasharray: '3 3',
+    stroke: '#e5e7eb',
+    vertical: false,
   }
 
   return (
@@ -200,7 +277,7 @@ export function PortfolioFinancialChart() {
         </div>
 
         {/* Right: Controls */}
-        <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0">
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-shrink-0 flex-wrap">
           {/* House filter */}
           <select
             value={selectedHouseId}
@@ -213,9 +290,39 @@ export function PortfolioFinancialChart() {
             ))}
           </select>
 
+          {/* Chart mode toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+            <button
+              onClick={() => setChartMode('bars')}
+              className={`p-1.5 rounded-md transition-colors ${
+                chartMode === 'bars'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+              title="Bar chart"
+            >
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h2v8H3zM8 9h2v12H8zM13 5h2v16h-2zM18 1h2v20h-2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => setChartMode('lines')}
+              className={`p-1.5 rounded-md transition-colors ${
+                chartMode === 'lines'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+              title="Line chart"
+            >
+              <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l6-6 4 4 8-8" />
+              </svg>
+            </button>
+          </div>
+
           {/* Period toggle */}
           <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
-            {(['6m', '12m'] as TimePeriod[]).map((p) => (
+            {(['all', '12m', '6m'] as TimePeriod[]).map((p) => (
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
@@ -225,7 +332,7 @@ export function PortfolioFinancialChart() {
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {p === '6m' ? '6M' : '12M'}
+                {PERIOD_LABELS[p]}
               </button>
             ))}
           </div>
@@ -236,47 +343,153 @@ export function PortfolioFinancialChart() {
       <div className="px-2 pb-4">
         {hasData ? (
           <ResponsiveContainer width="100%" height={360}>
-            <BarChart
-              data={chartData}
-              margin={{ top: 5, right: 20, left: 10, bottom: 0 }}
-              barCategoryGap="20%"
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#e5e7eb"
-                vertical={false}
-              />
-              <XAxis
-                dataKey="shortLabel"
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickLine={false}
-                axisLine={{ stroke: '#e5e7eb' }}
-                dy={8}
-              />
-              <YAxis
-                tick={{ fill: '#6b7280', fontSize: 12 }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(v) =>
-                  v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
-                }
-                width={55}
-              />
-              <Tooltip
-                content={<ChartTooltip />}
-                cursor={{ fill: 'rgba(0,0,0,0.04)' }}
-              />
-              <Bar dataKey="income" name="Income" radius={[4, 4, 0, 0]} maxBarSize={28}>
-                {chartData.map((_, i) => (
-                  <Cell key={i} fill="#10b981" />
-                ))}
-              </Bar>
-              <Bar dataKey="expenses" name="Expenses" radius={[4, 4, 0, 0]} maxBarSize={28}>
-                {chartData.map((_, i) => (
-                  <Cell key={i} fill="#fb7185" />
-                ))}
-              </Bar>
-            </BarChart>
+            {chartMode === 'bars' ? (
+              <ComposedChart
+                data={chartData}
+                margin={{ top: 5, right: 20, left: 10, bottom: 0 }}
+                barCategoryGap="20%"
+              >
+                <CartesianGrid {...gridProps} />
+                <XAxis {...xAxisProps} />
+                <YAxis {...yAxisProps} />
+                <Tooltip
+                  content={<ChartTooltip />}
+                  cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                />
+
+                {/* Average reference lines */}
+                {avgIncome > 0 && (
+                  <ReferenceLine
+                    y={avgIncome}
+                    stroke="#10b981"
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.5}
+                    label={{
+                      value: `Avg income ${fmtCurrency(avgIncome)}`,
+                      position: 'insideTopRight',
+                      fill: '#10b981',
+                      fontSize: 10,
+                      fontWeight: 600,
+                    }}
+                  />
+                )}
+                {avgExpenses > 0 && (
+                  <ReferenceLine
+                    y={avgExpenses}
+                    stroke="#fb7185"
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.5}
+                    label={{
+                      value: `Avg expenses ${fmtCurrency(avgExpenses)}`,
+                      position: 'insideBottomRight',
+                      fill: '#fb7185',
+                      fontSize: 10,
+                      fontWeight: 600,
+                    }}
+                  />
+                )}
+
+                <Bar dataKey="income" name="Income" radius={[4, 4, 0, 0]} maxBarSize={28}>
+                  {chartData.map((_, i) => (
+                    <Cell key={i} fill="#10b981" />
+                  ))}
+                </Bar>
+                <Bar dataKey="expenses" name="Expenses" radius={[4, 4, 0, 0]} maxBarSize={28}>
+                  {chartData.map((_, i) => (
+                    <Cell key={i} fill="#fb7185" />
+                  ))}
+                </Bar>
+
+                {/* Net line overlaid on bars */}
+                <Line
+                  type="monotone"
+                  dataKey="net"
+                  name="Net"
+                  stroke="#6366f1"
+                  strokeWidth={2}
+                  dot={chartData.length <= 12 ? { r: 3, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 } : false}
+                  activeDot={{ r: 5, fill: '#6366f1', stroke: '#fff', strokeWidth: 2 }}
+                />
+              </ComposedChart>
+            ) : (
+              <AreaChart
+                data={chartData}
+                margin={{ top: 5, right: 20, left: 10, bottom: 0 }}
+              >
+                <defs>
+                  <linearGradient id="portfolioIncomeGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity={0.02} />
+                  </linearGradient>
+                  <linearGradient id="portfolioExpenseGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fb7185" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#fb7185" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid {...gridProps} />
+                <XAxis {...xAxisProps} />
+                <YAxis {...yAxisProps} />
+                <Tooltip
+                  content={<ChartTooltip />}
+                  cursor={{ stroke: '#d1d5db', strokeWidth: 1 }}
+                />
+
+                {/* Average reference lines */}
+                {avgIncome > 0 && (
+                  <ReferenceLine
+                    y={avgIncome}
+                    stroke="#10b981"
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.5}
+                    label={{
+                      value: `Avg ${fmtCurrency(avgIncome)}`,
+                      position: 'insideTopRight',
+                      fill: '#10b981',
+                      fontSize: 10,
+                      fontWeight: 600,
+                    }}
+                  />
+                )}
+                {avgExpenses > 0 && (
+                  <ReferenceLine
+                    y={avgExpenses}
+                    stroke="#fb7185"
+                    strokeDasharray="6 4"
+                    strokeOpacity={0.5}
+                    label={{
+                      value: `Avg ${fmtCurrency(avgExpenses)}`,
+                      position: 'insideBottomRight',
+                      fill: '#fb7185',
+                      fontSize: 10,
+                      fontWeight: 600,
+                    }}
+                  />
+                )}
+
+                <Area
+                  type="monotone"
+                  dataKey="income"
+                  name="Income"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  fill="url(#portfolioIncomeGrad)"
+                  dot={chartData.length <= 12 ? { r: 3, fill: '#10b981', stroke: '#fff', strokeWidth: 2 } : false}
+                  activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+                />
+
+                <Area
+                  type="monotone"
+                  dataKey="expenses"
+                  name="Expenses"
+                  stroke="#fb7185"
+                  strokeWidth={2}
+                  fill="url(#portfolioExpenseGrad)"
+                  dot={chartData.length <= 12 ? { r: 3, fill: '#fb7185', stroke: '#fff', strokeWidth: 2 } : false}
+                  activeDot={{ r: 5, fill: '#fb7185', stroke: '#fff', strokeWidth: 2 }}
+                />
+              </AreaChart>
+            )}
           </ResponsiveContainer>
         ) : (
           <div className="h-[360px] flex items-center justify-center text-gray-400">
@@ -290,7 +503,52 @@ export function PortfolioFinancialChart() {
           </div>
         )}
       </div>
+
+      {/* ── Notable items footnotes ── */}
+      {notables.length > 0 && (
+        <div className="px-6 pb-5 border-t border-gray-100">
+          <div className="pt-3 space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              Notable Months
+            </p>
+            {notables.map((n, idx) => (
+              <div key={idx} className="flex items-start gap-2 text-xs">
+                <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
+                  n.type === 'expense' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'
+                }`}>
+                  {n.type === 'expense' ? (
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01M12 3l9.66 16.5H2.34L12 3z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <span className="font-medium text-gray-700">{n.month}</span>
+                  <span className="text-gray-400 mx-1">·</span>
+                  <span className={`font-semibold ${n.type === 'expense' ? 'text-amber-700' : 'text-blue-700'}`}>
+                    {fmtCurrency(n.amount)} {n.type === 'expense' ? 'in expenses' : 'income'}
+                  </span>
+                  {n.description && (
+                    <>
+                      <span className="text-gray-400 mx-1">—</span>
+                      <span className="text-gray-500">
+                        {n.description}
+                        {n.category && n.category !== 'other' && (
+                          <span className="ml-1 text-gray-400">({CATEGORY_LABELS[n.category] || n.category})</span>
+                        )}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
-

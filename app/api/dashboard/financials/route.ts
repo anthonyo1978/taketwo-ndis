@@ -8,7 +8,7 @@ import { getCurrentUserOrganizationId } from 'lib/utils/organization'
  * Returns org-wide monthly income vs expenses, optionally filtered by house.
  *
  * Query params:
- *   months  – number of months to look back (default 12)
+ *   months  – number of months to look back. 0 or omitted = all time.
  *   houseId – optional, filter to a single house
  *
  * Response:
@@ -17,7 +17,8 @@ import { getCurrentUserOrganizationId } from 'lib/utils/organization'
  *   data: {
  *     months: [{ month, label, shortLabel, income, expenses }],
  *     totals: { income, expenses, net },
- *     byHouse: [{ houseId, houseName, income, expenses, net }]   // portfolio breakdown
+ *     byHouse: [{ houseId, houseName, income, expenses, net }],
+ *     notables: [{ month, type, amount, description, category }]
  *   }
  * }
  */
@@ -29,15 +30,19 @@ export async function GET(request: NextRequest) {
     }
 
     const searchParams = request.nextUrl.searchParams
-    const monthsBack = parseInt(searchParams.get('months') || '12', 10)
+    const monthsParam = searchParams.get('months')
+    const monthsBack = monthsParam ? parseInt(monthsParam, 10) : 0 // 0 = all time
     const filterHouseId = searchParams.get('houseId') || null
 
     const supabase = await createClient()
 
-    // Date range
+    // Date range — 0 means all time (no lower bound)
     const now = new Date()
-    const startDate = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 1)
-    const startISO = startDate.toISOString()
+    let startISO: string | null = null
+    if (monthsBack > 0) {
+      const startDate = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 1)
+      startISO = startDate.toISOString()
+    }
 
     // ── 1. Get all houses in the org ──
     let housesQuery = supabase
@@ -59,7 +64,6 @@ export async function GET(request: NextRequest) {
     // ── 2. Income: transactions for residents in those houses ──
     let incomeRows: { occurred_at: string; amount: string; house_id: string | null }[] = []
     if (houseIds.length > 0) {
-      // Get residents in scope houses
       let residentsQuery = supabase
         .from('residents')
         .select('id, house_id')
@@ -79,16 +83,20 @@ export async function GET(request: NextRequest) {
       }
 
       if (residentIds.length > 0) {
-        // Fetch in batches if needed (Supabase has a limit on IN clauses)
         const batchSize = 100
         for (let i = 0; i < residentIds.length; i += batchSize) {
           const batch = residentIds.slice(i, i + batchSize)
-          const { data: txns } = await supabase
+          let txnQuery = supabase
             .from('transactions')
             .select('occurred_at, amount, resident_id')
             .in('resident_id', batch)
-            .gte('occurred_at', startISO)
             .not('status', 'in', '("rejected")')
+
+          if (startISO) {
+            txnQuery = txnQuery.gte('occurred_at', startISO)
+          }
+
+          const { data: txns } = await txnQuery
 
           for (const tx of (txns || [])) {
             incomeRows.push({
@@ -101,13 +109,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 3. Expenses: house_expenses for those houses ──
+    // ── 3. Expenses: house_expenses (with description + category for notables) ──
     let expenseQuery = supabase
       .from('house_expenses')
-      .select('occurred_at, amount, house_id')
+      .select('occurred_at, amount, house_id, description, category')
       .eq('organization_id', organizationId)
-      .gte('occurred_at', startISO)
       .not('status', 'eq', 'cancelled')
+
+    if (startISO) {
+      expenseQuery = expenseQuery.gte('occurred_at', startISO)
+    }
 
     if (filterHouseId) {
       expenseQuery = expenseQuery.eq('house_id', filterHouseId)
@@ -115,14 +126,33 @@ export async function GET(request: NextRequest) {
 
     const { data: expenseRows } = await expenseQuery
 
-    // ── 4. Build monthly buckets ──
+    // ── 4. Determine effective start month ──
+    let effectiveStart: Date
+    if (monthsBack > 0) {
+      effectiveStart = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 1)
+    } else {
+      // All time: find the earliest data point
+      let earliest = now
+      for (const row of incomeRows) {
+        const d = new Date(row.occurred_at)
+        if (d < earliest) earliest = d
+      }
+      for (const row of (expenseRows || [])) {
+        const d = new Date(row.occurred_at)
+        if (d < earliest) earliest = d
+      }
+      effectiveStart = new Date(earliest.getFullYear(), earliest.getMonth(), 1)
+    }
+
+    // ── 5. Build monthly buckets ──
     const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     const monthMap = new Map<string, { income: number; expenses: number }>()
 
-    for (let i = 0; i < monthsBack; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1 + i, 1)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const cursor = new Date(effectiveStart)
+    while (cursor <= now) {
+      const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
       monthMap.set(key, { income: 0, expenses: 0 })
+      cursor.setMonth(cursor.getMonth() + 1)
     }
 
     // Per-house aggregation
@@ -196,11 +226,68 @@ export async function GET(request: NextRequest) {
         expenses: Math.round(vals.expenses * 100) / 100,
         net: Math.round((vals.income - vals.expenses) * 100) / 100,
       }))
-      .sort((a, b) => b.net - a.net) // Best-performing first
+      .sort((a, b) => b.net - a.net)
+
+    // ── 6. Detect notable items ──
+    const notables: {
+      month: string
+      type: 'income' | 'expense'
+      amount: number
+      description?: string
+      category?: string
+    }[] = []
+
+    const avgIncome = months.length > 0
+      ? months.reduce((s, m) => s + m.income, 0) / months.length
+      : 0
+    const avgExpenses = months.length > 0
+      ? months.reduce((s, m) => s + m.expenses, 0) / months.length
+      : 0
+
+    for (const m of months) {
+      // Notable high income
+      if (m.income > 0 && avgIncome > 0 && m.income >= avgIncome * 2 && m.income >= 500) {
+        notables.push({
+          month: m.label,
+          type: 'income',
+          amount: m.income,
+          description: `Income was ${Math.round(m.income / avgIncome)}× the monthly average`,
+        })
+      }
+      // Notable high expense
+      if (m.expenses > 0 && avgExpenses > 0 && m.expenses >= avgExpenses * 2 && m.expenses >= 500) {
+        const monthKey = m.month
+        let biggestExpense: { amount: number; description: string; category: string } | null = null
+        for (const row of (expenseRows || [])) {
+          const d = new Date(row.occurred_at)
+          const rowKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+          if (rowKey === monthKey) {
+            const amt = parseFloat(row.amount) || 0
+            if (!biggestExpense || amt > biggestExpense.amount) {
+              biggestExpense = {
+                amount: amt,
+                description: row.description || 'Expense',
+                category: row.category || 'other',
+              }
+            }
+          }
+        }
+
+        notables.push({
+          month: m.label,
+          type: 'expense',
+          amount: m.expenses,
+          description: biggestExpense
+            ? `Largest item: ${biggestExpense.description} ($${biggestExpense.amount.toLocaleString('en-AU', { minimumFractionDigits: 0 })})`
+            : `Expenses were ${Math.round(m.expenses / avgExpenses)}× the monthly average`,
+          category: biggestExpense?.category,
+        })
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      data: { months, totals, byHouse },
+      data: { months, totals, byHouse, notables },
     })
   } catch (error) {
     console.error('[Dashboard Financials] Error:', error)
@@ -210,4 +297,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
