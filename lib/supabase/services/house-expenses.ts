@@ -28,6 +28,9 @@ export class HouseExpenseService {
       status: row.status,
       notes: row.notes || undefined,
       documentUrl: row.document_url || undefined,
+      isSnapshot: row.is_snapshot || false,
+      meterReading: row.meter_reading != null ? parseFloat(row.meter_reading) : undefined,
+      readingUnit: row.reading_unit || undefined,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
       createdBy: row.created_by,
@@ -106,6 +109,9 @@ export class HouseExpenseService {
         status: input.status || 'draft',
         notes: input.notes || null,
         document_url: input.documentUrl || null,
+        is_snapshot: input.isSnapshot || false,
+        meter_reading: input.meterReading ?? null,
+        reading_unit: input.readingUnit || null,
       }])
       .select('*')
       .single()

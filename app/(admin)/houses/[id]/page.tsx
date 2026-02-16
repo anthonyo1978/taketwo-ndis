@@ -102,6 +102,10 @@ export default function HouseDetailPage() {
   const [showWaterModal, setShowWaterModal] = useState(false)
   const [electricityRefreshTrigger, setElectricityRefreshTrigger] = useState(0)
   const [waterRefreshTrigger, setWaterRefreshTrigger] = useState(0)
+  const [showUtilityLinkSupplierModal, setShowUtilityLinkSupplierModal] = useState(false)
+  const [utilitySupplierRefreshTrigger, setUtilitySupplierRefreshTrigger] = useState(0)
+  const [showUtilityExpenseModal, setShowUtilityExpenseModal] = useState(false)
+  const [utilityExpenseRefreshTrigger, setUtilityExpenseRefreshTrigger] = useState(0)
 
   useEffect(() => {
     const fetchHouse = async () => {
@@ -716,35 +720,120 @@ export default function HouseDetailPage() {
         {/* ═══════════ Utilities & Charges Tab ═══════════ */}
         {activeTab === 'utilities' && house && house.id && (
           <div className="space-y-6">
-            {/* Electricity */}
+
+            {/* ── Utility Suppliers ── */}
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <h2 className="text-base font-semibold text-gray-900">Electricity</h2>
-                  {house.electricityNmi && (
-                    <p className="text-sm text-gray-500 mt-0.5">NMI: {house.electricityNmi}</p>
-                  )}
+                  <h2 className="text-base font-semibold text-gray-900">Utility Suppliers</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">Electricity, water, gas, broadband and other utility providers</p>
                 </div>
+                <button
+                  onClick={() => setShowUtilityLinkSupplierModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
+                >
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Link Supplier
+                </button>
               </div>
-              <UtilitySnapshotsList
-                propertyId={house.id}
-                utilityType="electricity"
-                onAddSnapshot={() => setShowElectricityModal(true)}
-                refreshTrigger={electricityRefreshTrigger}
+
+              <HouseSuppliersList
+                houseId={id}
+                refreshTrigger={utilitySupplierRefreshTrigger}
+                onUpdate={() => setUtilitySupplierRefreshTrigger(prev => prev + 1)}
               />
             </div>
 
-            {/* Water */}
+            {/* ── Utility Charges & Expenses ── */}
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold text-gray-900">Water</h2>
+                <div>
+                  <h2 className="text-base font-semibold text-gray-900">Utility Charges</h2>
+                  <p className="text-sm text-gray-500 mt-0.5">Bills, invoices and meter readings from utility providers</p>
+                </div>
+                <button
+                  onClick={() => setShowUtilityExpenseModal(true)}
+                  className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
+                >
+                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  New Charge
+                </button>
               </div>
-              <UtilitySnapshotsList
-                propertyId={house.id}
-                utilityType="water"
-                onAddSnapshot={() => setShowWaterModal(true)}
-                refreshTrigger={waterRefreshTrigger}
+
+              {/* Legend for snapshot rows */}
+              <div className="flex items-center gap-4 mb-3 text-xs text-gray-500">
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal-500" />
+                  Snapshot / meter reading
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-400" />
+                  Regular charge
+                </span>
+              </div>
+
+              <HouseExpensesList
+                houseId={id}
+                refreshTrigger={utilityExpenseRefreshTrigger}
+                onAddExpense={() => setShowUtilityExpenseModal(true)}
+                filterCategory="utilities"
+                hideHeader
               />
+            </div>
+
+            {/* ── Legacy Snapshots (Electricity / Water) ── */}
+            <div className="bg-white rounded-lg border border-gray-200 p-5">
+              <div className="mb-4">
+                <h2 className="text-base font-semibold text-gray-900">Legacy Meter Snapshots</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Historic electricity and water readings</p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Electricity */}
+                <details className="group">
+                  <summary className="flex items-center justify-between cursor-pointer py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-gray-700">⚡ Electricity</span>
+                      {house.electricityNmi && (
+                        <span className="text-xs text-gray-400">NMI: {house.electricityNmi}</span>
+                      )}
+                    </div>
+                    <svg className="size-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="pt-3">
+                    <UtilitySnapshotsList
+                      propertyId={house.id}
+                      utilityType="electricity"
+                      onAddSnapshot={() => setShowElectricityModal(true)}
+                      refreshTrigger={electricityRefreshTrigger}
+                    />
+                  </div>
+                </details>
+
+                {/* Water */}
+                <details className="group">
+                  <summary className="flex items-center justify-between cursor-pointer py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                    <span className="text-sm font-medium text-gray-700">💧 Water</span>
+                    <svg className="size-4 text-gray-400 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </summary>
+                  <div className="pt-3">
+                    <UtilitySnapshotsList
+                      propertyId={house.id}
+                      utilityType="water"
+                      onAddSnapshot={() => setShowWaterModal(true)}
+                      refreshTrigger={waterRefreshTrigger}
+                    />
+                  </div>
+                </details>
+              </div>
             </div>
           </div>
         )}
@@ -822,6 +911,28 @@ export default function HouseDetailPage() {
           houseId={id}
           defaultCategory="maintenance"
           showSupplierPicker
+        />
+
+        {/* Utility supplier link modal */}
+        <LinkSupplierModal
+          isOpen={showUtilityLinkSupplierModal}
+          onClose={() => setShowUtilityLinkSupplierModal(false)}
+          onSuccess={() => {
+            setShowUtilityLinkSupplierModal(false)
+            setUtilitySupplierRefreshTrigger(prev => prev + 1)
+          }}
+          houseId={id}
+        />
+
+        {/* Utility expense modal (with snapshot support) */}
+        <CreateExpenseModal
+          isOpen={showUtilityExpenseModal}
+          onClose={() => setShowUtilityExpenseModal(false)}
+          onSuccess={() => setUtilityExpenseRefreshTrigger(prev => prev + 1)}
+          houseId={id}
+          defaultCategory="utilities"
+          showSupplierPicker
+          enableSnapshot
         />
       </div>
     </div>

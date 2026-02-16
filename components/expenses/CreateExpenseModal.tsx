@@ -26,6 +26,8 @@ interface CreateExpenseModalProps {
   defaultCategory?: ExpenseCategory
   /** Show a supplier picker dropdown in the form (fetches linked suppliers for this house) */
   showSupplierPicker?: boolean
+  /** Enable the snapshot / meter-reading toggle (for utility expenses) */
+  enableSnapshot?: boolean
 }
 
 export function CreateExpenseModal({
@@ -36,6 +38,7 @@ export function CreateExpenseModal({
   headLease,
   defaultCategory,
   showSupplierPicker,
+  enableSnapshot,
 }: CreateExpenseModalProps) {
   const {
     register,
@@ -55,6 +58,7 @@ export function CreateExpenseModal({
   })
 
   const selectedCategory = watch('category')
+  const watchIsSnapshot = watch('isSnapshot')
 
   // Linked suppliers for the picker
   const [linkedSuppliers, setLinkedSuppliers] = useState<HouseSupplierWithDetails[]>([])
@@ -89,15 +93,18 @@ export function CreateExpenseModal({
         houseId,
         status: 'draft',
         category: defaultCategory || 'rent',
-        frequency: showSupplierPicker ? 'one_off' : 'weekly',
+        frequency: (showSupplierPicker || enableSnapshot) ? 'one_off' : 'weekly',
         description: '',
         reference: '',
         notes: '',
         documentUrl: '',
-        occurredAt: showSupplierPicker ? (todayStr as unknown as Date) : undefined,
+        occurredAt: (showSupplierPicker || enableSnapshot) ? (todayStr as unknown as Date) : undefined,
+        isSnapshot: false,
+        meterReading: undefined,
+        readingUnit: '',
       })
     }
-  }, [isOpen, houseId, reset, defaultCategory, showSupplierPicker])
+  }, [isOpen, houseId, reset, defaultCategory, showSupplierPicker, enableSnapshot])
 
   // Pre-fill from head lease when category is 'rent'
   const prefillFromLease = () => {
@@ -127,7 +134,7 @@ export function CreateExpenseModal({
     if (link) {
       const supplier = link.supplier
       setValue('description', `${supplier.supplierType || 'Service'} — ${supplier.name}`)
-      setValue('category', 'maintenance')
+      setValue('category', enableSnapshot ? 'utilities' : 'maintenance')
       setValue('frequency', 'one_off')
     }
   }
@@ -373,6 +380,60 @@ export function CreateExpenseModal({
               disabled={isSubmitting}
             />
           </div>
+
+          {/* Snapshot / Meter Reading toggle — only for utility expenses */}
+          {enableSnapshot && (
+            <div className="border border-teal-200 bg-teal-50/50 rounded-lg p-4 space-y-3">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register('isSnapshot')}
+                  className="h-4 w-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                  disabled={isSubmitting}
+                />
+                <div>
+                  <span className="text-sm font-medium text-teal-900">Include Meter Reading</span>
+                  <p className="text-xs text-teal-600">Capture a point-in-time measurement (e.g. electricity meter, water meter)</p>
+                </div>
+              </label>
+
+              {watchIsSnapshot && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label htmlFor="meterReading" className="block text-xs font-medium text-teal-800 mb-1">
+                      Reading Value
+                    </label>
+                    <Input
+                      id="meterReading"
+                      type="number"
+                      step="0.01"
+                      {...register('meterReading')}
+                      placeholder="e.g. 12345.67"
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="readingUnit" className="block text-xs font-medium text-teal-800 mb-1">
+                      Unit
+                    </label>
+                    <select
+                      id="readingUnit"
+                      {...register('readingUnit')}
+                      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500"
+                      disabled={isSubmitting}
+                    >
+                      <option value="">Select unit…</option>
+                      <option value="kWh">kWh (Electricity)</option>
+                      <option value="kL">kL (Water)</option>
+                      <option value="MJ">MJ (Gas)</option>
+                      <option value="GB">GB (Internet)</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">

@@ -59,6 +59,12 @@ export interface HouseExpense {
   status: ExpenseStatus
   notes?: string
   documentUrl?: string
+  /** Whether this expense is a point-in-time snapshot/reading (e.g. meter reading) */
+  isSnapshot?: boolean
+  /** Meter reading value at time of expense */
+  meterReading?: number
+  /** Unit of measurement for meter reading (e.g. kWh, kL, GB) */
+  readingUnit?: string
   createdAt: Date
   updatedAt: Date
   createdBy?: string
@@ -81,6 +87,9 @@ export interface HouseExpenseCreateInput {
   status?: ExpenseStatus
   notes?: string
   documentUrl?: string
+  isSnapshot?: boolean
+  meterReading?: number
+  readingUnit?: string
 }
 
 /**

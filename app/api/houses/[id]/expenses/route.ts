@@ -35,7 +35,7 @@ export async function POST(
     const { id } = await params
     const body = await request.json() as Omit<HouseExpenseCreateInput, 'houseId'>
 
-    if (!body.category || !body.description || !body.amount || !body.occurredAt) {
+    if (!body.category || !body.description || body.amount == null || !body.occurredAt) {
       return NextResponse.json(
         { success: false, error: 'Category, description, amount, and date are required' },
         { status: 400 }

@@ -8,13 +8,16 @@ export const houseExpenseSchema = z.object({
   }),
   description: z.string().min(1, 'Description is required').max(500),
   reference: z.string().max(100).optional().or(z.literal('')),
-  amount: z.coerce.number().min(0.01, 'Amount must be greater than 0'),
+  amount: z.coerce.number().min(0, 'Amount cannot be negative'),
   frequency: z.enum(['one_off', 'weekly', 'fortnightly', 'monthly', 'quarterly', 'annually']).optional(),
   occurredAt: z.coerce.date({ errorMap: () => ({ message: 'Please select a date' }) }),
   dueDate: z.coerce.date().optional().nullable(),
   status: z.enum(['draft', 'approved', 'paid', 'overdue', 'cancelled']),
   notes: z.string().max(1000).optional().or(z.literal('')),
   documentUrl: z.string().url('Invalid URL').optional().or(z.literal('')),
+  isSnapshot: z.boolean().optional(),
+  meterReading: z.coerce.number().min(0, 'Reading cannot be negative').optional().nullable(),
+  readingUnit: z.string().max(20).optional().or(z.literal('')),
 })
 
 export type HouseExpenseSchemaType = z.infer<typeof houseExpenseSchema>

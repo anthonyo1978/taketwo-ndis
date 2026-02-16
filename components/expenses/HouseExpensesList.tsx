@@ -187,67 +187,97 @@ export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense, f
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {expenses.map((expense) => (
-                <tr key={expense.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
-                    {formatDate(expense.occurredAt)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span>{CATEGORY_ICONS[expense.category] || '📄'}</span>
-                      {EXPENSE_CATEGORY_LABELS[expense.category]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 max-w-[200px] truncate">
-                    {expense.description}
-                    {expense.reference && (
-                      <span className="text-xs text-gray-400 ml-1.5">({expense.reference})</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-                    {expense.frequency ? EXPENSE_FREQUENCY_LABELS[expense.frequency] : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 text-right whitespace-nowrap">
-                    {formatCurrency(expense.amount)}
-                  </td>
-                  <td className="px-4 py-3 text-center whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[expense.status]}`}>
-                      {EXPENSE_STATUS_LABELS[expense.status]}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right whitespace-nowrap">
-                    <div className="flex items-center justify-end gap-1">
-                      {expense.status === 'draft' && (
-                        <button
-                          onClick={() => handleStatusChange(expense.id, 'approved')}
-                          className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
-                          title="Approve"
-                        >
-                          Approve
-                        </button>
+              {expenses.map((expense) => {
+                const isSnapshot = expense.isSnapshot
+                return (
+                  <tr
+                    key={expense.id}
+                    className={`transition-colors ${isSnapshot ? 'bg-teal-50/40 hover:bg-teal-50' : 'hover:bg-gray-50'}`}
+                  >
+                    <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        {isSnapshot && (
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-teal-500 flex-shrink-0" title="Snapshot / Reading" />
+                        )}
+                        {formatDate(expense.occurredAt)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span>{CATEGORY_ICONS[expense.category] || '📄'}</span>
+                        {EXPENSE_CATEGORY_LABELS[expense.category]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 max-w-[200px]">
+                      <div className="truncate">
+                        {expense.description}
+                        {expense.reference && (
+                          <span className="text-xs text-gray-400 ml-1.5">({expense.reference})</span>
+                        )}
+                      </div>
+                      {isSnapshot && expense.meterReading != null && (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-teal-700 bg-teal-100 px-1.5 py-0.5 rounded">
+                            📊 {expense.meterReading.toLocaleString()}{expense.readingUnit ? ` ${expense.readingUnit}` : ''}
+                          </span>
+                        </div>
                       )}
-                      {(expense.status === 'draft' || expense.status === 'approved') && (
-                        <button
-                          onClick={() => handleStatusChange(expense.id, 'paid')}
-                          className="text-xs text-green-600 hover:text-green-800 px-2 py-1 rounded hover:bg-green-50 transition-colors"
-                          title="Mark as Paid"
-                        >
-                          Pay
-                        </button>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                      {expense.frequency ? EXPENSE_FREQUENCY_LABELS[expense.frequency] : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium text-right whitespace-nowrap">
+                      {expense.amount === 0 && isSnapshot ? (
+                        <span className="text-teal-600 text-xs font-medium">Reading only</span>
+                      ) : (
+                        <span className="text-gray-900">{formatCurrency(expense.amount)}</span>
                       )}
-                      {expense.status !== 'cancelled' && expense.status !== 'paid' && (
-                        <button
-                          onClick={() => handleDelete(expense.id)}
-                          className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
-                          title="Delete"
-                        >
-                          Delete
-                        </button>
+                    </td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      {isSnapshot ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-700">
+                          Snapshot
+                        </span>
+                      ) : (
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[expense.status]}`}>
+                          {EXPENSE_STATUS_LABELS[expense.status]}
+                        </span>
                       )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-1">
+                        {!isSnapshot && expense.status === 'draft' && (
+                          <button
+                            onClick={() => handleStatusChange(expense.id, 'approved')}
+                            className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                            title="Approve"
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {!isSnapshot && (expense.status === 'draft' || expense.status === 'approved') && (
+                          <button
+                            onClick={() => handleStatusChange(expense.id, 'paid')}
+                            className="text-xs text-green-600 hover:text-green-800 px-2 py-1 rounded hover:bg-green-50 transition-colors"
+                            title="Mark as Paid"
+                          >
+                            Pay
+                          </button>
+                        )}
+                        {(isSnapshot || (expense.status !== 'cancelled' && expense.status !== 'paid')) && (
+                          <button
+                            onClick={() => handleDelete(expense.id)}
+                            className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                            title="Delete"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
