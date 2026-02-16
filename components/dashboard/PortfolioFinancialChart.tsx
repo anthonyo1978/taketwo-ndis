@@ -13,7 +13,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
   Cell,
 } from 'recharts'
 
@@ -35,19 +34,10 @@ interface HouseBreakdown {
   net: number
 }
 
-interface Notable {
-  month: string
-  type: 'income' | 'expense'
-  amount: number
-  description?: string
-  category?: string
-}
-
 interface FinancialData {
   months: MonthData[]
   totals: { income: number; expenses: number; net: number }
   byHouse: HouseBreakdown[]
-  notables?: Notable[]
 }
 
 type TimePeriod = 'all' | '12m' | '6m'
@@ -63,16 +53,6 @@ const PERIOD_MONTHS: Record<TimePeriod, number> = {
   all: 0,
   '12m': 12,
   '6m': 6,
-}
-
-const CATEGORY_LABELS: Record<string, string> = {
-  rent: 'Rent',
-  maintenance: 'Maintenance',
-  insurance: 'Insurance',
-  utilities: 'Utilities',
-  rates: 'Rates',
-  management_fee: 'Management Fee',
-  other: 'Other',
 }
 
 /* ───── Helpers ───── */
@@ -178,19 +158,10 @@ export function PortfolioFinancialChart() {
 
   const chartData: MonthData[] = (data?.months || []).map(m => ({
     ...m,
-    net: m.income - m.expenses,
+    net: Math.max(0, m.income - m.expenses),
   }))
   const totals = data?.totals || { income: 0, expenses: 0, net: 0 }
-  const notables = data?.notables || []
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0)
-
-  // Calculate averages for reference lines
-  const avgIncome = chartData.length > 0
-    ? chartData.reduce((s, m) => s + m.income, 0) / chartData.length
-    : 0
-  const avgExpenses = chartData.length > 0
-    ? chartData.reduce((s, m) => s + m.expenses, 0) / chartData.length
-    : 0
 
   /* ── Loading ── */
   if (loading) {
@@ -238,6 +209,7 @@ export function PortfolioFinancialChart() {
     tickFormatter: (v: number) =>
       v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`,
     width: 55,
+    domain: [0, 'auto'] as [number, string],
   }
 
   const gridProps = {
@@ -357,38 +329,6 @@ export function PortfolioFinancialChart() {
                   cursor={{ fill: 'rgba(0,0,0,0.04)' }}
                 />
 
-                {/* Average reference lines */}
-                {avgIncome > 0 && (
-                  <ReferenceLine
-                    y={avgIncome}
-                    stroke="#10b981"
-                    strokeDasharray="6 4"
-                    strokeOpacity={0.5}
-                    label={{
-                      value: `Avg income ${fmtCurrency(avgIncome)}`,
-                      position: 'insideTopRight',
-                      fill: '#10b981',
-                      fontSize: 10,
-                      fontWeight: 600,
-                    }}
-                  />
-                )}
-                {avgExpenses > 0 && (
-                  <ReferenceLine
-                    y={avgExpenses}
-                    stroke="#fb7185"
-                    strokeDasharray="6 4"
-                    strokeOpacity={0.5}
-                    label={{
-                      value: `Avg expenses ${fmtCurrency(avgExpenses)}`,
-                      position: 'insideBottomRight',
-                      fill: '#fb7185',
-                      fontSize: 10,
-                      fontWeight: 600,
-                    }}
-                  />
-                )}
-
                 <Bar dataKey="income" name="Income" radius={[4, 4, 0, 0]} maxBarSize={28}>
                   {chartData.map((_, i) => (
                     <Cell key={i} fill="#10b981" />
@@ -435,38 +375,6 @@ export function PortfolioFinancialChart() {
                   cursor={{ stroke: '#d1d5db', strokeWidth: 1 }}
                 />
 
-                {/* Average reference lines */}
-                {avgIncome > 0 && (
-                  <ReferenceLine
-                    y={avgIncome}
-                    stroke="#10b981"
-                    strokeDasharray="6 4"
-                    strokeOpacity={0.5}
-                    label={{
-                      value: `Avg ${fmtCurrency(avgIncome)}`,
-                      position: 'insideTopRight',
-                      fill: '#10b981',
-                      fontSize: 10,
-                      fontWeight: 600,
-                    }}
-                  />
-                )}
-                {avgExpenses > 0 && (
-                  <ReferenceLine
-                    y={avgExpenses}
-                    stroke="#fb7185"
-                    strokeDasharray="6 4"
-                    strokeOpacity={0.5}
-                    label={{
-                      value: `Avg ${fmtCurrency(avgExpenses)}`,
-                      position: 'insideBottomRight',
-                      fill: '#fb7185',
-                      fontSize: 10,
-                      fontWeight: 600,
-                    }}
-                  />
-                )}
-
                 <Area
                   type="monotone"
                   dataKey="income"
@@ -504,51 +412,6 @@ export function PortfolioFinancialChart() {
         )}
       </div>
 
-      {/* ── Notable items footnotes ── */}
-      {notables.length > 0 && (
-        <div className="px-6 pb-5 border-t border-gray-100">
-          <div className="pt-3 space-y-1.5">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Notable Months
-            </p>
-            {notables.map((n, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-xs">
-                <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
-                  n.type === 'expense' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'
-                }`}>
-                  {n.type === 'expense' ? (
-                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01M12 3l9.66 16.5H2.34L12 3z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  )}
-                </span>
-                <div className="min-w-0">
-                  <span className="font-medium text-gray-700">{n.month}</span>
-                  <span className="text-gray-400 mx-1">·</span>
-                  <span className={`font-semibold ${n.type === 'expense' ? 'text-amber-700' : 'text-blue-700'}`}>
-                    {fmtCurrency(n.amount)} {n.type === 'expense' ? 'in expenses' : 'income'}
-                  </span>
-                  {n.description && (
-                    <>
-                      <span className="text-gray-400 mx-1">—</span>
-                      <span className="text-gray-500">
-                        {n.description}
-                        {n.category && n.category !== 'other' && (
-                          <span className="ml-1 text-gray-400">({CATEGORY_LABELS[n.category] || n.category})</span>
-                        )}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
