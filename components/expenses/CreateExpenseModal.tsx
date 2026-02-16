@@ -1,13 +1,13 @@
 "use client"
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'react-hot-toast'
 import { houseExpenseSchema, type HouseExpenseSchemaType } from 'lib/schemas/house-expense'
 import { Input } from 'components/ui/Input'
 import type { HeadLease } from 'types/head-lease'
-import type { Supplier } from 'types/supplier'
+import type { HouseSupplierWithDetails } from 'types/house-supplier'
 import {
   EXPENSE_CATEGORY_LABELS,
   EXPENSE_FREQUENCY_LABELS,
@@ -22,13 +22,21 @@ interface CreateExpenseModalProps {
   houseId: string
   /** If a head lease exists, pre-fill rent details */
   headLease?: HeadLease | null
-  /** If a supplier is provided, pre-fill maintenance/supplier details */
-  supplier?: Supplier | null
   /** Default category override */
   defaultCategory?: ExpenseCategory
+  /** Show a supplier picker dropdown in the form (fetches linked suppliers for this house) */
+  showSupplierPicker?: boolean
 }
 
-export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLease, supplier, defaultCategory }: CreateExpenseModalProps) {
+export function CreateExpenseModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  houseId,
+  headLease,
+  defaultCategory,
+  showSupplierPicker,
+}: CreateExpenseModalProps) {
   const {
     register,
     handleSubmit,
@@ -48,16 +56,27 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
 
   const selectedCategory = watch('category')
 
-  /** Map supplier type → expense category */
-  const supplierTypeToCategory = (type?: string): ExpenseCategory => {
-    if (!type) return 'maintenance'
-    const lower = type.toLowerCase()
-    if (lower.includes('cleaning')) return 'maintenance'
-    if (lower.includes('security')) return 'other'
-    return 'maintenance'
-  }
+  // Linked suppliers for the picker
+  const [linkedSuppliers, setLinkedSuppliers] = useState<HouseSupplierWithDetails[]>([])
+  const [suppliersLoading, setSuppliersLoading] = useState(false)
 
-  // Reset form when modal opens — pre-fill from supplier if provided
+  // Fetch linked suppliers when the modal opens with showSupplierPicker
+  useEffect(() => {
+    if (isOpen && showSupplierPicker) {
+      setSuppliersLoading(true)
+      fetch(`/api/houses/${houseId}/suppliers`)
+        .then(res => res.json() as Promise<{ success: boolean; data?: HouseSupplierWithDetails[] }>)
+        .then((result) => {
+          if (result.success) {
+            setLinkedSuppliers(result.data || [])
+          }
+        })
+        .catch(err => console.error('Error fetching suppliers:', err))
+        .finally(() => setSuppliersLoading(false))
+    }
+  }, [isOpen, showSupplierPicker, houseId])
+
+  // Reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       const today = new Date()
@@ -66,34 +85,19 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
       const dd = String(today.getDate()).padStart(2, '0')
       const todayStr = `${yyyy}-${mm}-${dd}`
 
-      if (supplier) {
-        // Pre-fill from supplier context
-        const cat = defaultCategory || supplierTypeToCategory(supplier.supplierType)
-        reset({
-          houseId,
-          status: 'draft',
-          category: cat,
-          frequency: 'one_off',
-          description: `${supplier.supplierType || 'Service'} — ${supplier.name}`,
-          reference: '',
-          notes: '',
-          documentUrl: '',
-          occurredAt: todayStr as unknown as Date,
-        })
-      } else {
-        reset({
-          houseId,
-          status: 'draft',
-          category: defaultCategory || 'rent',
-          frequency: 'weekly',
-          description: '',
-          reference: '',
-          notes: '',
-          documentUrl: '',
-        })
-      }
+      reset({
+        houseId,
+        status: 'draft',
+        category: defaultCategory || 'rent',
+        frequency: showSupplierPicker ? 'one_off' : 'weekly',
+        description: '',
+        reference: '',
+        notes: '',
+        documentUrl: '',
+        occurredAt: showSupplierPicker ? (todayStr as unknown as Date) : undefined,
+      })
     }
-  }, [isOpen, houseId, reset, supplier, defaultCategory])
+  }, [isOpen, houseId, reset, defaultCategory, showSupplierPicker])
 
   // Pre-fill from head lease when category is 'rent'
   const prefillFromLease = () => {
@@ -102,7 +106,6 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
     setValue('description', `Rent — ${headLease.reference || 'Head Lease'}`)
     setValue('amount', headLease.rentAmount || 0)
     setValue('headLeaseId', headLease.id)
-    // Map lease frequency to expense frequency
     const freqMap: Record<string, ExpenseFrequency> = {
       weekly: 'weekly',
       fortnightly: 'fortnightly',
@@ -111,12 +114,22 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
     if (headLease.rentFrequency && freqMap[headLease.rentFrequency]) {
       setValue('frequency', freqMap[headLease.rentFrequency])
     }
-    // Set occurred_at to today
     const today = new Date()
     const yyyy = today.getFullYear()
     const mm = String(today.getMonth() + 1).padStart(2, '0')
     const dd = String(today.getDate()).padStart(2, '0')
     setValue('occurredAt', `${yyyy}-${mm}-${dd}` as unknown as Date)
+  }
+
+  // Handle supplier selection — auto-fill description
+  const handleSupplierChange = (supplierId: string) => {
+    const link = linkedSuppliers.find(s => s.supplierId === supplierId)
+    if (link) {
+      const supplier = link.supplier
+      setValue('description', `${supplier.supplierType || 'Service'} — ${supplier.name}`)
+      setValue('category', 'maintenance')
+      setValue('frequency', 'one_off')
+    }
   }
 
   const onSubmit = async (data: HouseExpenseSchemaType) => {
@@ -158,7 +171,7 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
         </div>
 
         {/* Quick-fill from lease */}
-        {headLease && headLease.rentAmount && !supplier && (
+        {headLease && headLease.rentAmount && !showSupplierPicker && (
           <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
             <div className="text-sm text-blue-800">
               <strong>Head Lease:</strong> ${headLease.rentAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })} / {headLease.rentFrequency}
@@ -174,26 +187,45 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
           </div>
         )}
 
-        {/* Supplier context banner */}
-        {supplier && (
-          <div className="mx-6 mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-center gap-3">
-            <div className="p-1.5 bg-purple-100 rounded-lg">
-              <svg className="size-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.42 15.17l-5.384-3.19A1.998 1.998 0 014 10.16V6a2 2 0 012-2h12a2 2 0 012 2v4.16c0 .712-.382 1.37-1.003 1.724l-5.384 3.19a2 2 0 01-2.043.042z" />
-              </svg>
-            </div>
-            <div className="text-sm text-purple-800">
-              <strong>{supplier.name}</strong>
-              {supplier.supplierType && <span className="text-purple-600 ml-1">({supplier.supplierType})</span>}
-              {supplier.contactName && <span className="text-purple-500 ml-1">· {supplier.contactName}</span>}
-            </div>
-          </div>
-        )}
-
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
           <input type="hidden" {...register('houseId')} />
           <input type="hidden" {...register('headLeaseId')} />
+
+          {/* Supplier picker — only when showSupplierPicker is true */}
+          {showSupplierPicker && (
+            <div>
+              <label htmlFor="supplierPicker" className="block text-sm font-medium text-gray-700 mb-1">
+                Supplier
+              </label>
+              {suppliersLoading ? (
+                <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                  Loading suppliers…
+                </div>
+              ) : linkedSuppliers.length > 0 ? (
+                <select
+                  id="supplierPicker"
+                  className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  defaultValue=""
+                  onChange={(e) => handleSupplierChange(e.target.value)}
+                  disabled={isSubmitting}
+                >
+                  <option value="">— None (general expense) —</option>
+                  {linkedSuppliers.map((link) => (
+                    <option key={link.supplierId} value={link.supplierId}>
+                      {link.supplier.name}{link.supplier.supplierType ? ` (${link.supplier.supplierType})` : ''}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-gray-400 italic py-1">No suppliers linked to this house yet.</p>
+              )}
+              <p className="mt-1 text-xs text-gray-500">
+                Selecting a supplier auto-fills the description. You can still edit all fields.
+              </p>
+            </div>
+          )}
 
           {/* Category + Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -282,7 +314,7 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
             </div>
           </div>
 
-          {/* Date + Reference */}
+          {/* Date + Due Date */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="occurredAt" className="block text-sm font-medium text-gray-700 mb-1">
@@ -365,4 +397,3 @@ export function CreateExpenseModal({ isOpen, onClose, onSuccess, houseId, headLe
     </div>
   )
 }
-

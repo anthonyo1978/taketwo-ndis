@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
-import { Wrench, Mail, Phone, User, FileText } from 'lucide-react'
+import { Wrench, ChevronDown, ChevronUp } from 'lucide-react'
 import type { HouseSupplierWithDetails } from 'types/house-supplier'
 
 interface HouseSuppliersListProps {
@@ -14,6 +14,7 @@ interface HouseSuppliersListProps {
 export function HouseSuppliersList({ houseId, refreshTrigger, onUpdate }: HouseSuppliersListProps) {
   const [suppliers, setSuppliers] = useState<HouseSupplierWithDetails[]>([])
   const [loading, setLoading] = useState(true)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editingNotes, setEditingNotes] = useState<string | null>(null)
   const [notesValue, setNotesValue] = useState('')
 
@@ -61,11 +62,6 @@ export function HouseSuppliersList({ houseId, refreshTrigger, onUpdate }: HouseS
     }
   }
 
-  const handleStartEditNotes = (linkId: string, currentNotes?: string) => {
-    setEditingNotes(linkId)
-    setNotesValue(currentNotes || '')
-  }
-
   const handleSaveNotes = async (linkId: string) => {
     try {
       const response = await fetch(`/api/house-suppliers/${linkId}`, {
@@ -80,7 +76,7 @@ export function HouseSuppliersList({ houseId, refreshTrigger, onUpdate }: HouseS
         throw new Error(result.error || 'Failed to update notes')
       }
 
-      toast.success('Notes updated successfully')
+      toast.success('Notes updated')
       setEditingNotes(null)
       onUpdate()
     } catch (error) {
@@ -89,139 +85,165 @@ export function HouseSuppliersList({ houseId, refreshTrigger, onUpdate }: HouseS
     }
   }
 
-  const handleCancelEdit = () => {
-    setEditingNotes(null)
-    setNotesValue('')
-  }
-
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="ml-3 text-gray-600">Loading suppliers...</p>
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+        <p className="ml-2 text-sm text-gray-400">Loading suppliers…</p>
       </div>
     )
   }
 
   if (suppliers.length === 0) {
     return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
-        <Wrench className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-4 text-lg font-medium text-gray-900">No Suppliers Linked</h3>
-        <p className="mt-2 text-sm text-gray-500">
-          This property doesn't have any suppliers linked yet. Click "Link Supplier" above to get started.
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
+        <Wrench className="mx-auto h-10 w-10 text-gray-400" />
+        <h3 className="mt-2 text-sm font-medium text-gray-900">No Suppliers Linked</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Click "Link Supplier" above to add maintenance and service providers.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {suppliers.map((link) => (
-        <div key={link.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-          {/* Header */}
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Wrench className="size-5 text-blue-600" />
-              </div>
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {suppliers.map((link) => {
+            const isExpanded = expandedId === link.id
+            return (
+              <tr key={link.id} className="group">
+                <td className="px-4 py-3">
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : link.id)}
+                    className="flex items-center gap-2 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                  >
+                    {isExpanded ? <ChevronUp className="size-3.5 text-gray-400" /> : <ChevronDown className="size-3.5 text-gray-400" />}
+                    {link.supplier.name}
+                  </button>
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                  {link.supplier.supplierType ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                      {link.supplier.supplierType}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                  {link.supplier.contactName || <span className="text-gray-400">—</span>}
+                </td>
+                <td className="px-4 py-3 text-sm whitespace-nowrap">
+                  {link.supplier.phone ? (
+                    <a href={`tel:${link.supplier.phone}`} className="text-gray-600 hover:text-blue-600">
+                      {link.supplier.phone}
+                    </a>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right whitespace-nowrap">
+                  <button
+                    onClick={() => handleUnlink(link.id, link.supplier.name)}
+                    className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    Unlink
+                  </button>
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+
+      {/* Expanded detail panel — rendered below the table */}
+      {expandedId && (() => {
+        const link = suppliers.find(s => s.id === expandedId)
+        if (!link) return null
+        return (
+          <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              {/* Contact details */}
               <div>
-                <h3 className="font-semibold text-gray-900">{link.supplier.name}</h3>
-                {link.supplier.supplierType && (
-                  <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                    {link.supplier.supplierType}
-                  </span>
+                <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">Contact Details</h4>
+                <div className="space-y-1">
+                  {link.supplier.contactName && <p className="text-gray-700">{link.supplier.contactName}</p>}
+                  {link.supplier.phone && (
+                    <p><a href={`tel:${link.supplier.phone}`} className="text-blue-600 hover:underline">{link.supplier.phone}</a></p>
+                  )}
+                  {link.supplier.email && (
+                    <p><a href={`mailto:${link.supplier.email}`} className="text-blue-600 hover:underline">{link.supplier.email}</a></p>
+                  )}
+                  {!link.supplier.contactName && !link.supplier.phone && !link.supplier.email && (
+                    <p className="text-gray-400 italic">No contact info</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Supplier notes */}
+              {link.supplier.notes && (
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">Supplier Notes</h4>
+                  <p className="text-gray-600">{link.supplier.notes}</p>
+                </div>
+              )}
+
+              {/* Property-specific notes */}
+              <div>
+                <h4 className="text-xs font-medium text-gray-500 uppercase mb-1">Property Notes</h4>
+                {editingNotes === link.id ? (
+                  <div className="space-y-2">
+                    <textarea
+                      value={notesValue}
+                      onChange={(e) => setNotesValue(e.target.value)}
+                      rows={2}
+                      placeholder="Notes about this supplier for this property…"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleSaveNotes(link.id)}
+                        className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => { setEditingNotes(null); setNotesValue('') }}
+                        className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between">
+                    <p className="text-gray-600">
+                      {link.notes || <span className="italic text-gray-400">No notes</span>}
+                    </p>
+                    <button
+                      onClick={() => { setEditingNotes(link.id); setNotesValue(link.notes || '') }}
+                      className="text-xs text-blue-600 hover:text-blue-700 ml-2 whitespace-nowrap"
+                    >
+                      {link.notes ? 'Edit' : 'Add'}
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
           </div>
-
-          {/* Contact Info */}
-          <div className="space-y-2 mb-4">
-            {link.supplier.contactName && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <User className="size-4 text-gray-400" />
-                <span>{link.supplier.contactName}</span>
-              </div>
-            )}
-            {link.supplier.phone && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Phone className="size-4 text-gray-400" />
-                <a href={`tel:${link.supplier.phone}`} className="hover:text-blue-600">
-                  {link.supplier.phone}
-                </a>
-              </div>
-            )}
-            {link.supplier.email && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Mail className="size-4 text-gray-400" />
-                <a href={`mailto:${link.supplier.email}`} className="hover:text-blue-600">
-                  {link.supplier.email}
-                </a>
-              </div>
-            )}
-          </div>
-
-          {/* Notes Section */}
-          <div className="border-t border-gray-200 pt-4">
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <FileText className="size-4" />
-                <span>Property Notes</span>
-              </div>
-              {editingNotes !== link.id && (
-                <button
-                  onClick={() => handleStartEditNotes(link.id, link.notes)}
-                  className="text-xs text-blue-600 hover:text-blue-700"
-                >
-                  {link.notes ? 'Edit' : 'Add Note'}
-                </button>
-              )}
-            </div>
-            
-            {editingNotes === link.id ? (
-              <div className="space-y-2">
-                <textarea
-                  value={notesValue}
-                  onChange={(e) => setNotesValue(e.target.value)}
-                  rows={3}
-                  placeholder="Add notes about this supplier's involvement..."
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => handleSaveNotes(link.id)}
-                    className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                  >
-                    Save
-                  </button>
-                  <button
-                    onClick={handleCancelEdit}
-                    className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-gray-600">
-                {link.notes || <span className="italic text-gray-400">No notes added</span>}
-              </p>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="border-t border-gray-200 pt-4 mt-4">
-            <button
-              onClick={() => handleUnlink(link.id, link.supplier.name)}
-              className="text-sm text-red-600 hover:text-red-700 font-medium"
-            >
-              Unlink Supplier
-            </button>
-          </div>
-        </div>
-      ))}
+        )
+      })()}
     </div>
   )
 }
-
