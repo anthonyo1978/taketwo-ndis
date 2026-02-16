@@ -29,7 +29,8 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
-    setValue
+    setValue,
+    watch
   } = useForm<HeadLeaseSchemaType>({
     resolver: zodResolver(headLeaseSchema),
     defaultValues: lease ? {
@@ -127,6 +128,21 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
   const handleOwnerCreated = () => {
     fetchOwners()
     setShowOwnerModal(false)
+  }
+
+  /**
+   * Increment a date field by a given number of months or years.
+   * If the field is empty, starts from today.
+   */
+  const incrementDate = (field: 'startDate' | 'endDate' | 'reviewDate', months: number) => {
+    const current = watch(field)
+    const base = current ? new Date(current) : new Date()
+    base.setMonth(base.getMonth() + months)
+    // Format as YYYY-MM-DD for the date input
+    const yyyy = base.getFullYear()
+    const mm = String(base.getMonth() + 1).padStart(2, '0')
+    const dd = String(base.getDate()).padStart(2, '0')
+    setValue(field, `${yyyy}-${mm}-${dd}` as unknown as Date, { shouldValidate: true })
   }
 
   if (!isOpen) return null
@@ -233,13 +249,19 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
                 <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
                   Start Date <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  id="startDate"
-                  type="date"
-                  {...register('startDate')}
-                  className={errors.startDate ? 'border-red-500' : ''}
-                  disabled={isSubmitting}
-                />
+                <div className="flex items-center gap-1.5">
+                  <div className="flex-1">
+                    <Input
+                      id="startDate"
+                      type="date"
+                      {...register('startDate')}
+                      className={errors.startDate ? 'border-red-500' : ''}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <button type="button" onClick={() => incrementDate('startDate', 1)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 month">+1M</button>
+                  <button type="button" onClick={() => incrementDate('startDate', 12)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 year">+1Y</button>
+                </div>
                 {errors.startDate && (
                   <p className="mt-1 text-sm text-red-600">{errors.startDate.message}</p>
                 )}
@@ -249,13 +271,19 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
                 <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">
                   End Date
                 </label>
-                <Input
-                  id="endDate"
-                  type="date"
-                  {...register('endDate')}
-                  className={errors.endDate ? 'border-red-500' : ''}
-                  disabled={isSubmitting}
-                />
+                <div className="flex items-center gap-1.5">
+                  <div className="flex-1">
+                    <Input
+                      id="endDate"
+                      type="date"
+                      {...register('endDate')}
+                      className={errors.endDate ? 'border-red-500' : ''}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <button type="button" onClick={() => incrementDate('endDate', 1)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 month">+1M</button>
+                  <button type="button" onClick={() => incrementDate('endDate', 12)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 year">+1Y</button>
+                </div>
                 <p className="mt-1 text-xs text-gray-500">Leave empty for ongoing</p>
                 {errors.endDate && (
                   <p className="mt-1 text-sm text-red-600">{errors.endDate.message}</p>
@@ -266,13 +294,19 @@ export function HeadLeaseModal({ isOpen, onClose, onSuccess, lease, houseId, mod
                 <label htmlFor="reviewDate" className="block text-sm font-medium text-gray-700 mb-1">
                   Review Date
                 </label>
-                <Input
-                  id="reviewDate"
-                  type="date"
-                  {...register('reviewDate')}
-                  className={errors.reviewDate ? 'border-red-500' : ''}
-                  disabled={isSubmitting}
-                />
+                <div className="flex items-center gap-1.5">
+                  <div className="flex-1">
+                    <Input
+                      id="reviewDate"
+                      type="date"
+                      {...register('reviewDate')}
+                      className={errors.reviewDate ? 'border-red-500' : ''}
+                      disabled={isSubmitting}
+                    />
+                  </div>
+                  <button type="button" onClick={() => incrementDate('reviewDate', 1)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 month">+1M</button>
+                  <button type="button" onClick={() => incrementDate('reviewDate', 12)} disabled={isSubmitting} className="px-2 py-2 text-xs font-medium text-gray-600 bg-gray-100 border border-gray-300 rounded-lg hover:bg-gray-200 transition-colors whitespace-nowrap" title="Add 1 year">+1Y</button>
+                </div>
                 {errors.reviewDate && (
                   <p className="mt-1 text-sm text-red-600">{errors.reviewDate.message}</p>
                 )}
