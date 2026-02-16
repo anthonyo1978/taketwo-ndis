@@ -1,90 +1,143 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+
+interface ResidentInfo {
+  id: string;
+  firstName: string;
+  lastName: string;
+  moveInDate?: Date | string | null;
+  roomLabel?: string;
+}
 
 interface OccupancyHistoryGridProps {
   houseId: string;
   currentOccupiedBedrooms: number;
   totalBedrooms: number;
+  residents?: ResidentInfo[];
+  goLiveDate?: Date | string | null;
 }
 
 interface MonthData {
   label: string;
   fullLabel: string;
+  date: Date; // first day of that month
 }
 
 /**
- * Compact visual grid showing bedroom-by-bedroom occupancy over 6-month windows
- * Each row represents a bedroom, each column represents a month
- * Navigate back/forward in 6-month chunks
+ * Compact visual grid showing bedroom-by-bedroom occupancy over 6-month windows.
+ * Uses real move-in dates from residents when available.
+ * Pagination is bounded by the house go-live date.
  */
 export function OccupancyHistoryGrid({
   houseId,
   currentOccupiedBedrooms,
   totalBedrooms,
+  residents = [],
+  goLiveDate,
 }: OccupancyHistoryGridProps) {
-  // offset = 0 means "most recent 6 months", offset = 1 means "6–12 months ago", etc.
   const [offset, setOffset] = useState(0);
-  const [occupancyGrid, setOccupancyGrid] = useState<boolean[][]>([]);
-  const [months, setMonths] = useState<MonthData[]>([]);
 
-  const MAX_OFFSET = 3; // Allow going back up to 24 months (4 × 6)
+  // Parse go-live date
+  const goLive = useMemo(() => {
+    if (!goLiveDate) return null;
+    const d = new Date(goLiveDate);
+    return isNaN(d.getTime()) ? null : d;
+  }, [goLiveDate]);
 
-  const buildGrid = useCallback(() => {
-    const monthLabels: MonthData[] = [];
+  // Calculate max offset based on go-live date
+  const maxOffset = useMemo(() => {
+    if (!goLive) return 3; // default fallback: 24 months
     const now = new Date();
-    const startMonthsBack = offset * 6 + 5; // e.g. offset=0 → 5..0, offset=1 → 11..6
+    const monthsDiff =
+      (now.getFullYear() - goLive.getFullYear()) * 12 +
+      (now.getMonth() - goLive.getMonth());
+    // We want to allow going back to 1 month before go-live
+    const totalMonthsBack = monthsDiff + 1;
+    // Each page is 6 months, so max offset is ceil(totalMonthsBack / 6) - 1
+    return Math.max(0, Math.ceil(totalMonthsBack / 6) - 1);
+  }, [goLive]);
+
+  // Parse residents' move-in dates
+  const residentMoveIns = useMemo(() => {
+    return residents
+      .filter(r => r.moveInDate)
+      .map(r => ({
+        ...r,
+        moveIn: new Date(r.moveInDate!),
+      }))
+      .sort((a, b) => a.moveIn.getTime() - b.moveIn.getTime());
+  }, [residents]);
+
+  // Build months for the current window
+  const months = useMemo(() => {
+    const now = new Date();
+    const result: MonthData[] = [];
+    const startMonthsBack = offset * 6 + 5;
 
     for (let i = startMonthsBack; i >= offset * 6; i--) {
       const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthName = date.toLocaleDateString('en-US', { month: 'short' });
       const year = date.getFullYear().toString().slice(-2);
-      monthLabels.push({
+      result.push({
         label: monthName,
-        fullLabel: `${monthName} ${year}`
+        fullLabel: `${monthName} ${year}`,
+        date,
       });
     }
-    setMonths(monthLabels);
+    return result;
+  }, [offset]);
 
-    // Generate occupancy grid based on current occupancy
-    const grid: boolean[][] = [];
+  // Build the occupancy grid using real move-in dates
+  const occupancyGrid = useMemo(() => {
+    const grid: { isOccupied: boolean; residentName?: string; isPreGoLive?: boolean }[][] = [];
 
-    if (totalBedrooms > 0) {
-      for (let bedroom = 0; bedroom < totalBedrooms; bedroom++) {
-        const bedroomOccupancy: boolean[] = [];
+    if (totalBedrooms === 0) return grid;
 
-        // Determine if this bedroom is currently occupied
-        const isCurrentlyOccupied = bedroom < currentOccupiedBedrooms;
+    // Sort residents by move-in date (earliest first) for bed assignment
+    const sortedResidents = [...residentMoveIns];
 
-        for (let month = 0; month < 6; month++) {
-          const monthsAgo = startMonthsBack - month; // how many months ago this cell represents
+    for (let bedroom = 0; bedroom < totalBedrooms; bedroom++) {
+      const bedroomRow: { isOccupied: boolean; residentName?: string; isPreGoLive?: boolean }[] = [];
+      // Assign resident to this bedroom slot (by order of move-in)
+      const assignedResident = sortedResidents[bedroom] || null;
 
-          if (monthsAgo === 0) {
-            // Current month — use actual data
-            bedroomOccupancy.push(isCurrentlyOccupied);
-          } else if (isCurrentlyOccupied) {
-            // Currently occupied: mostly occupied with occasional gaps further back
-            const randomFactor = Math.random();
-            const gapProbability = 0.05 + (monthsAgo * 0.02); // more gaps further back
-            bedroomOccupancy.push(randomFactor > gapProbability);
-          } else {
-            // Currently vacant: mixed history
-            const randomFactor = Math.random();
-            const occupiedProbability = 0.3 + (monthsAgo * 0.03); // slightly more likely occupied further back
-            bedroomOccupancy.push(randomFactor < occupiedProbability);
-          }
+      for (const month of months) {
+        const monthStart = month.date;
+        const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
+
+        // Check if this month is before go-live
+        const isPreGoLive = goLive ? monthEnd < goLive : false;
+
+        if (assignedResident) {
+          // Resident is assigned to this bed — occupied if month >= move-in month
+          const moveInMonth = new Date(
+            assignedResident.moveIn.getFullYear(),
+            assignedResident.moveIn.getMonth(),
+            1
+          );
+          const isOccupied = monthStart >= moveInMonth;
+          bedroomRow.push({
+            isOccupied,
+            residentName: isOccupied
+              ? `${assignedResident.firstName} ${assignedResident.lastName}`
+              : undefined,
+            isPreGoLive,
+          });
+        } else {
+          // No resident for this bed — vacant
+          bedroomRow.push({
+            isOccupied: false,
+            isPreGoLive,
+          });
         }
-
-        grid.push(bedroomOccupancy);
       }
+
+      grid.push(bedroomRow);
     }
 
-    setOccupancyGrid(grid);
-  }, [houseId, currentOccupiedBedrooms, totalBedrooms, offset]);
-
-  useEffect(() => {
-    buildGrid();
-  }, [buildGrid]);
+    return grid;
+  }, [totalBedrooms, residentMoveIns, months, goLive]);
 
   if (totalBedrooms === 0) {
     return (
@@ -94,18 +147,27 @@ export function OccupancyHistoryGrid({
     );
   }
 
-  const getCellColor = (isOccupied: boolean) => {
-    return isOccupied ? 'bg-emerald-500' : 'bg-rose-400';
+  const getCellColor = (cell: { isOccupied: boolean; isPreGoLive?: boolean }) => {
+    if (cell.isPreGoLive) return 'bg-gray-200'; // Pre go-live: neutral
+    return cell.isOccupied ? 'bg-emerald-500' : 'bg-rose-400';
   };
 
-  const getCellTooltip = (bedroom: number, monthLabel: string, isOccupied: boolean) => {
-    return `Bedroom ${bedroom + 1} - ${monthLabel}: ${isOccupied ? 'Occupied' : 'Vacant'}`;
+  const getCellTooltip = (
+    bedroom: number,
+    monthLabel: string,
+    cell: { isOccupied: boolean; residentName?: string; isPreGoLive?: boolean }
+  ) => {
+    if (cell.isPreGoLive) return `Bed ${bedroom + 1} - ${monthLabel}: Pre go-live`;
+    if (cell.isOccupied && cell.residentName) {
+      return `Bed ${bedroom + 1} - ${monthLabel}: ${cell.residentName}`;
+    }
+    return `Bed ${bedroom + 1} - ${monthLabel}: ${cell.isOccupied ? 'Occupied' : 'Vacant'}`;
   };
 
   const isLatest = offset === 0;
-  const isOldest = offset >= MAX_OFFSET;
+  const isOldest = offset >= maxOffset;
 
-  // Build period label
+  // Period label
   const periodLabel = (() => {
     if (months.length < 2) return '';
     return `${months[0]?.fullLabel} – ${months[months.length - 1]?.fullLabel}`;
@@ -117,7 +179,7 @@ export function OccupancyHistoryGrid({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setOffset(prev => Math.min(prev + 1, MAX_OFFSET))}
+            onClick={() => setOffset(prev => Math.min(prev + 1, maxOffset))}
             disabled={isOldest}
             className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             title="Previous 6 months"
@@ -147,6 +209,12 @@ export function OccupancyHistoryGrid({
             <span className="w-2.5 h-2.5 rounded-sm bg-rose-400"></span>
             Vacant
           </span>
+          {goLive && (
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-sm bg-gray-200"></span>
+              Pre go-live
+            </span>
+          )}
         </div>
       </div>
 
@@ -171,34 +239,56 @@ export function OccupancyHistoryGrid({
               </tr>
             </thead>
             <tbody>
-              {occupancyGrid.map((bedroomData, bedroomIdx) => (
-                <tr key={bedroomIdx}>
-                  <td className="text-xs font-medium text-gray-700 py-1 pr-3">
-                    Bed {bedroomIdx + 1}
-                  </td>
-                  {bedroomData.map((isOccupied, monthIdx) => {
-                    const monthData = months[monthIdx];
-                    if (!monthData) return null;
+              {occupancyGrid.map((bedroomData, bedroomIdx) => {
+                // Find resident assigned to this bed slot
+                const assignedResident = residentMoveIns[bedroomIdx];
+                const bedLabel = assignedResident
+                  ? `${assignedResident.firstName.charAt(0)}${assignedResident.lastName.charAt(0)}`
+                  : `Bed ${bedroomIdx + 1}`;
 
-                    return (
-                      <td key={monthIdx} className="p-1">
-                        <div
-                          className={`h-8 rounded transition-all duration-150 hover:ring-2 hover:ring-gray-400 hover:ring-offset-1 cursor-help ${getCellColor(isOccupied)}`}
-                          title={getCellTooltip(bedroomIdx, monthData.fullLabel, isOccupied)}
-                        />
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
+                return (
+                  <tr key={bedroomIdx}>
+                    <td className="text-xs font-medium text-gray-700 py-1 pr-3" title={assignedResident ? `${assignedResident.firstName} ${assignedResident.lastName}` : `Bedroom ${bedroomIdx + 1}`}>
+                      <div className="flex items-center gap-1.5">
+                        {assignedResident ? (
+                          <>
+                            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-[9px] font-bold text-blue-700 flex-shrink-0">
+                              {bedLabel}
+                            </span>
+                            <span className="truncate max-w-[60px]">{assignedResident.firstName}</span>
+                          </>
+                        ) : (
+                          <span>Bed {bedroomIdx + 1}</span>
+                        )}
+                      </div>
+                    </td>
+                    {bedroomData.map((cell, monthIdx) => {
+                      const monthData = months[monthIdx];
+                      if (!monthData) return null;
+
+                      return (
+                        <td key={monthIdx} className="p-1">
+                          <div
+                            className={`h-8 rounded transition-all duration-150 hover:ring-2 hover:ring-gray-400 hover:ring-offset-1 cursor-help ${getCellColor(cell)}`}
+                            title={getCellTooltip(bedroomIdx, monthData.fullLabel, cell)}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* Summary */}
-      <div className="text-xs text-gray-500 italic">
-        Visual history showing bedroom-level occupancy patterns over time
+      <div className="text-xs text-gray-500 italic flex items-center justify-between">
+        <span>Occupancy based on resident move-in dates</span>
+        {goLive && (
+          <span>Go-live: {goLive.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+        )}
       </div>
     </div>
   );

@@ -41,7 +41,7 @@ export function ResidentSelectionModal({
   const [statusFilter, setStatusFilter] = useState<string>("all")
   const [selectedResident, setSelectedResident] = useState<Resident | null>(null)
   const [roomLabel, setRoomLabel] = useState("")
-  const [moveInDate, setMoveInDate] = useState("")
+  const [moveInDate, setMoveInDate] = useState(() => new Date().toISOString().split('T')[0])
 
   // Fetch residents and houses data
   useEffect(() => {
@@ -139,13 +139,14 @@ export function ResidentSelectionModal({
     // Reset state
     setSelectedResident(null)
     setRoomLabel("")
-    setMoveInDate("")
+    setMoveInDate(new Date().toISOString().split('T')[0])
   }
 
   // Handle canceling the selection
   const handleCancelSelection = () => {
     setSelectedResident(null)
     setRoomLabel("")
+    setMoveInDate(new Date().toISOString().split('T')[0])
   }
 
   if (!open) return null
@@ -265,7 +266,7 @@ export function ResidentSelectionModal({
               {/* Move-in Date Input */}
               <div>
                 <label htmlFor="moveInDate" className="block text-sm font-medium text-gray-700 mb-2">
-                  Move-in Date <span className="text-gray-500">(Optional)</span>
+                  Move-in Date
                 </label>
                 <input
                   id="moveInDate"
@@ -275,7 +276,7 @@ export function ResidentSelectionModal({
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 />
                 <p className="mt-2 text-xs text-gray-500">
-                  Optional: Record when this resident moved into the property
+                  When this resident moved (or will move) into the property. Defaults to today.
                 </p>
               </div>
 

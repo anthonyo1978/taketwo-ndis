@@ -450,15 +450,22 @@ export default function HouseDetailPage() {
               </div>
               </div>
 
-                        {/* Name + Room */}
+                        {/* Name + Room + Move-in */}
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium text-gray-900 truncate leading-tight">
                             {r.firstName} {r.lastName}
                           </p>
                           <p className="text-xs text-gray-500 truncate mt-0.5">
                             {r.roomLabel || 'No room assigned'}
-                            {r.moveInDate && ` · Since ${new Date(r.moveInDate).toLocaleDateString()}`}
                           </p>
+                          {r.moveInDate && (
+                            <p className="text-xs text-blue-600 mt-0.5 flex items-center gap-1">
+                              <svg className="size-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              Moved in {new Date(r.moveInDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          )}
               </div>
 
                         {/* Quick info chips */}
@@ -559,6 +566,8 @@ export default function HouseDetailPage() {
                   houseId={house.id}
                   currentOccupiedBedrooms={occupancyData.current.occupied_bedrooms}
                   totalBedrooms={occupancyData.current.total_bedrooms}
+                  residents={currentResidents}
+                  goLiveDate={house.goLiveDate}
                 />
               ) : (
                 <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
