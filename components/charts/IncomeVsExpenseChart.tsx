@@ -78,6 +78,94 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: 'Other',
 }
 
+/* ── Distinct colors for milestone lines ── */
+const MILESTONE_COLORS = [
+  '#f59e0b', // amber – always used for go-live
+  '#8b5cf6', // violet
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#10b981', // emerald
+  '#f97316', // orange
+  '#6366f1', // indigo
+  '#14b8a6', // teal
+]
+
+/* ── Custom ReferenceLine label: renders a hoverable dot at the top ── */
+function MilestoneDot({ viewBox, milestoneLabel, milestoneDate, color, icon }: any) {
+  const [hovered, setHovered] = useState(false)
+  const x = viewBox?.x ?? 0
+  const y = (viewBox?.y ?? 0) + 2 // near top of chart
+
+  return (
+    <g>
+      {/* Hover target – slightly larger invisible circle for easier hover */}
+      <circle
+        cx={x}
+        cy={y}
+        r={12}
+        fill="transparent"
+        style={{ cursor: 'pointer' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      />
+      {/* Visible dot */}
+      <circle
+        cx={x}
+        cy={y}
+        r={7}
+        fill={color}
+        stroke="#fff"
+        strokeWidth={2}
+        style={{ cursor: 'pointer', filter: hovered ? `drop-shadow(0 0 4px ${color})` : 'none' }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      />
+      {/* Icon text inside dot */}
+      <text
+        x={x}
+        y={y + 1}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={8}
+        fill="#fff"
+        fontWeight={700}
+        style={{ pointerEvents: 'none' }}
+      >
+        {icon}
+      </text>
+      {/* Tooltip on hover */}
+      {hovered && (
+        <foreignObject
+          x={x - 80}
+          y={y + 14}
+          width={160}
+          height={60}
+          style={{ overflow: 'visible', pointerEvents: 'none' }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              border: `2px solid ${color}`,
+              borderRadius: 8,
+              padding: '6px 10px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              textAlign: 'center',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#111827' }}>
+              {milestoneLabel}
+            </div>
+            <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
+              {milestoneDate}
+            </div>
+          </div>
+        </foreignObject>
+      )}
+    </g>
+  )
+}
+
 /* ───── Helpers ───── */
 const fmtCurrency = (v: number) =>
   new Intl.NumberFormat('en-AU', {
@@ -301,14 +389,20 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
   const useFullLabel = chartData.length > 12
   const xDataKey = useFullLabel ? 'label' : 'shortLabel'
 
-  // Map milestones to the chart's axis label
+  // Map milestones to the chart's axis label, assigning distinct colors
+  let moveInColorIdx = 1 // 0 is reserved for go-live
   const milestoneMarkers = milestones.map(m => {
     const d = new Date(m.date)
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const match = chartData.find(cd => cd.month === key)
     const axisLabel = match ? (useFullLabel ? match.label : match.shortLabel) : null
-    return axisLabel ? { ...m, axisLabel, monthKey: key } : null
-  }).filter(Boolean) as (Milestone & { axisLabel: string; monthKey: string })[]
+    if (!axisLabel) return null
+    const color = m.type === 'go-live'
+      ? MILESTONE_COLORS[0]
+      : MILESTONE_COLORS[moveInColorIdx++ % MILESTONE_COLORS.length]
+    const dateStr = d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+    return { ...m, axisLabel, monthKey: key, color, dateStr }
+  }).filter(Boolean) as (Milestone & { axisLabel: string; monthKey: string; color: string; dateStr: string })[]
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -482,21 +576,23 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
                 activeDot={{ r: 5, fill: '#80CAEE', stroke: '#fff', strokeWidth: 2 }}
               />
 
-              {/* Milestone reference lines */}
+              {/* Milestone reference lines with hoverable dots */}
               {showMilestones && milestoneMarkers.map((m, idx) => (
                 <ReferenceLine
                   key={`milestone-${idx}`}
                   x={m.axisLabel}
-                  stroke={m.type === 'go-live' ? '#f59e0b' : '#8b5cf6'}
+                  stroke={m.color}
                   strokeDasharray="4 3"
-                  strokeWidth={2}
-                  label={{
-                    value: m.type === 'go-live' ? '🏠 Go-Live' : `👤 ${m.label}`,
-                    position: 'top',
-                    fill: m.type === 'go-live' ? '#b45309' : '#6d28d9',
-                    fontSize: 10,
-                    fontWeight: 600,
-                  }}
+                  strokeWidth={1.5}
+                  strokeOpacity={0.7}
+                  label={
+                    <MilestoneDot
+                      milestoneLabel={m.type === 'go-live' ? '🏠 House Go-Live' : `👤 ${m.label} moved in`}
+                      milestoneDate={m.dateStr}
+                      color={m.color}
+                      icon={m.type === 'go-live' ? '⌂' : m.label.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    />
+                  }
                 />
               ))}
             </AreaChart>
@@ -517,18 +613,20 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
       {/* ── Milestones legend ── */}
       {showMilestones && milestoneMarkers.length > 0 && (
         <div className="px-6 pb-4 border-t border-gray-100">
-          <div className="pt-3 flex flex-wrap gap-x-5 gap-y-1.5">
+          <div className="pt-3 flex flex-wrap gap-x-5 gap-y-2">
             {milestoneMarkers.map((m, idx) => (
-              <div key={idx} className="flex items-center gap-1.5 text-xs">
+              <div key={idx} className="flex items-center gap-2 text-xs">
                 <span
-                  className={`w-3 h-0.5 rounded ${m.type === 'go-live' ? 'bg-amber-500' : 'bg-violet-500'}`}
-                  style={{ borderTop: '2px dashed' }}
-                />
-                <span className={`font-medium ${m.type === 'go-live' ? 'text-amber-700' : 'text-violet-700'}`}>
+                  className="w-3 h-3 rounded-full flex items-center justify-center text-white text-[7px] font-bold flex-shrink-0"
+                  style={{ backgroundColor: m.color }}
+                >
+                  {m.type === 'go-live' ? '⌂' : m.label.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </span>
+                <span className="font-medium text-gray-700">
                   {m.type === 'go-live' ? '🏠 Go-Live' : `👤 ${m.label}`}
                 </span>
                 <span className="text-gray-400">
-                  {new Date(m.date).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })}
+                  {m.dateStr}
                 </span>
               </div>
             ))}
