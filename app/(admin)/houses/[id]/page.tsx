@@ -426,7 +426,7 @@ export default function HouseDetailPage() {
                     Add Resident
             </button>
                 </div>
-
+                
                 {currentResidents.length === 0 ? (
                   <div className="py-8 text-center">
                     <svg className="mx-auto h-10 w-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -479,14 +479,14 @@ export default function HouseDetailPage() {
                               <span className="text-xs font-medium text-gray-500">
                                 {r.firstName.charAt(0)}{r.lastName.charAt(0)}
                               </span>
-                            </div>
-                          )}
+                  </div>
+                )}
                           {/* Billing status tooltip */}
                           <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 group-hover/avatar:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
                             {billingStatus.status === 'ready' ? 'Billing ready' : `Not billing: ${billingStatus.reasons.join(', ')}`}
                             <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900" />
-                          </div>
-                        </div>
+                  </div>
+            </div>
 
                         {/* Name + Room + Move-in */}
                         <div className="min-w-0 w-36 flex-shrink-0">
@@ -500,11 +500,11 @@ export default function HouseDetailPage() {
                             <p className="text-xs text-blue-600 mt-0.5 flex items-center gap-1">
                               <svg className="size-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
+                    </svg>
                               {new Date(r.moveInDate).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                             </p>
-                          )}
-                        </div>
+              )}
+            </div>
 
                         {/* Funding summary — fills the middle space */}
                         <div className="hidden sm:block flex-1 min-w-0 px-2">
@@ -519,13 +519,13 @@ export default function HouseDetailPage() {
                                     }`}
                                     style={{ width: `${spentPct}%` }}
                                   />
-                                </div>
+                </div>
                                 <span className={`text-xs font-semibold tabular-nums ${
                                   spentPct >= 90 ? 'text-red-600' : spentPct >= 70 ? 'text-amber-600' : 'text-emerald-600'
                                 }`}>
                                   {spentPct}%
                                 </span>
-                              </div>
+                </div>
                               {/* Numbers row */}
                               <div className="flex items-center justify-between text-[11px] text-gray-500 leading-tight">
                                 <span>
@@ -542,12 +542,12 @@ export default function HouseDetailPage() {
                                     {fmtK(totalRemaining)}
                                   </span>
                                 </span>
-                              </div>
-                            </div>
+            </div>
+          </div>
                           ) : (
                             <p className="text-xs text-gray-400 italic">No active funding</p>
                           )}
-                        </div>
+        </div>
 
                         {/* Quick info chips */}
                         <div className="hidden md:flex items-center gap-2 flex-shrink-0">
@@ -561,17 +561,17 @@ export default function HouseDetailPage() {
                               {r.participantFundingLevelLabel}
                             </span>
                           )}
-                        </div>
-
+              </div>
+              
                         {/* Arrow */}
                         <svg className="size-4 text-gray-300 group-hover:text-gray-500 flex-shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
-                      </div>
+            </div>
                       )
                     })}
-                  </div>
-              )}
+          </div>
+        )}
           </div>
 
               {/* House Image upload — takes 1/3 */}
@@ -579,14 +579,14 @@ export default function HouseDetailPage() {
               <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-semibold text-gray-700">House Image</h3>
                 {house.imageUrl && (
-                  <button
+            <button
                     onClick={() => {
                         if (confirm('Remove this image?')) handleImageRemoved()
                     }}
                       className="text-red-500 hover:text-red-700 text-xs font-medium transition-colors"
                   >
                       Remove
-                  </button>
+            </button>
                 )}
               </div>
               <HouseImageUpload
@@ -596,8 +596,8 @@ export default function HouseDetailPage() {
                 onImageRemoved={handleImageRemoved}
               />
             </div>
-                </div>
-                
+          </div>
+          
             {/* ── Notes (if any) ── */}
             {house.notes && (
               <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
@@ -623,7 +623,7 @@ export default function HouseDetailPage() {
             }}
             onResidentRemoved={() => setResidentRefreshTrigger(prev => prev + 1)}
           />
-                      </div>
+        </div>
 
             {/* ── Occupancy History (green/red grid) ── */}
             <div className="bg-white rounded-lg border border-gray-200 p-5 mb-6">
@@ -679,7 +679,7 @@ export default function HouseDetailPage() {
                   </span>
                 </div>
             </div>
-          </div>
+        </div>
           </>
         )}
 
@@ -687,10 +687,10 @@ export default function HouseDetailPage() {
         {activeTab === 'finance' && (
           <div className="space-y-6">
             <IncomeVsExpenseChart
-            houseId={id} 
+              houseId={id} 
               refreshTrigger={expenseRefreshTrigger}
-              defaultPeriod="6m"
-          />
+              defaultPeriod="all"
+            />
         </div>
         )}
 
