@@ -140,9 +140,10 @@ function DetailedTooltip({ active, payload, label, chartData, isHouseFiltered }:
   const expenses = payload.find((p: any) => p.dataKey === 'expenses')?.value ?? 0
   const net = income - expenses
 
-  // Find the full month data to get breakdowns
+  // Find the full month data – match by month key first (most reliable), then label
+  const payloadMonth = payload[0]?.payload?.month
   const monthData: MonthData | undefined = (chartData || []).find(
-    (d: MonthData) => d.label === label || d.shortLabel === label
+    (d: MonthData) => d.month === payloadMonth || d.label === label || d.shortLabel === label
   )
 
   const incomeBreakdown = monthData?.incomeBreakdown || []
@@ -248,7 +249,7 @@ export function PortfolioFinancialChart() {
   const [period, setPeriod] = useState<TimePeriod>('all')
   const [selectedHouseId, setSelectedHouseId] = useState<string | ''>('')
   const [chartMode, setChartMode] = useState<ChartMode>('lines')
-  const [detailedMode, setDetailedMode] = useState(false)
+  const [detailedMode, setDetailedMode] = useState(true)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -295,6 +296,8 @@ export function PortfolioFinancialChart() {
   }))
   const totals = data?.totals || { income: 0, expenses: 0, net: 0 }
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0)
+  const useFullLabel = chartData.length > 12
+  const xDataKey = useFullLabel ? 'label' : 'shortLabel'
 
   /* ── Loading ── */
   if (loading) {
@@ -327,12 +330,14 @@ export function PortfolioFinancialChart() {
 
   // Shared chart props
   const xAxisProps = {
-    dataKey: 'shortLabel' as const,
-    tick: { fill: '#6b7280', fontSize: 12 },
-    tickLine: false,
+    dataKey: xDataKey,
+    tick: { fill: '#6b7280', fontSize: useFullLabel ? 10 : 12 },
+    tickLine: false as const,
     axisLine: { stroke: '#e5e7eb' },
     dy: 8,
     interval: chartData.length > 12 ? Math.floor(chartData.length / 12) : 0,
+    angle: useFullLabel && chartData.length > 18 ? -35 : 0,
+    textAnchor: (useFullLabel && chartData.length > 18 ? 'end' : 'middle') as 'end' | 'middle',
   }
 
   const yAxisProps = {
@@ -402,9 +407,9 @@ export function PortfolioFinancialChart() {
           {/* Insights toggle */}
           <button
             onClick={() => setDetailedMode(!detailedMode)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${
               detailedMode
-                ? 'bg-indigo-50 border-indigo-200 text-indigo-700'
+                ? 'bg-amber-50 border-amber-300 text-amber-700 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
                 : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
             title={detailedMode
@@ -414,7 +419,7 @@ export function PortfolioFinancialChart() {
                 : 'Enable detailed tooltips with per-house income & expense category breakdowns'
             }
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className={`w-3.5 h-3.5 transition-colors ${detailedMode ? 'text-amber-500' : ''}`} fill={detailedMode ? 'currentColor' : 'none'} viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
             {detailedMode ? 'Insights On' : 'Insights'}
