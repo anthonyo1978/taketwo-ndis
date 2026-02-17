@@ -247,7 +247,7 @@ export function PortfolioFinancialChart() {
   const [error, setError] = useState<string | null>(null)
   const [period, setPeriod] = useState<TimePeriod>('all')
   const [selectedHouseId, setSelectedHouseId] = useState<string | ''>('')
-  const [chartMode, setChartMode] = useState<ChartMode>('bars')
+  const [chartMode, setChartMode] = useState<ChartMode>('lines')
   const [detailedMode, setDetailedMode] = useState(false)
 
   const fetchData = useCallback(async () => {

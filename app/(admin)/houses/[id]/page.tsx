@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 
 import { ResidentSelectionModal } from "components/residents/ResidentSelectionModal"
 import { ResidentTable } from "components/residents/ResidentTable"
@@ -96,6 +96,24 @@ export default function HouseDetailPage() {
 
   // Duplicate expense state
   const [duplicateExpenseData, setDuplicateExpenseData] = useState<DuplicateExpenseData | null>(null)
+
+  // Build milestones for the financial chart
+  const chartMilestones = useMemo(() => {
+    const milestones: { date: Date; label: string; type: 'go-live' | 'move-in' }[] = []
+    if (house?.goLiveDate) {
+      milestones.push({ date: new Date(house.goLiveDate), label: 'Go-Live', type: 'go-live' })
+    }
+    for (const r of currentResidents) {
+      if (r.moveInDate) {
+        milestones.push({
+          date: new Date(r.moveInDate),
+          label: `${r.firstName} ${r.lastName}`.trim(),
+          type: 'move-in',
+        })
+      }
+    }
+    return milestones
+  }, [house, currentResidents])
 
   /** Convert a HouseExpense into a DuplicateExpenseData and open the appropriate modal */
   const handleDuplicateExpense = (expense: HouseExpense, target: 'expense' | 'supplier' | 'utility') => {
@@ -690,6 +708,7 @@ export default function HouseDetailPage() {
               houseId={id} 
               refreshTrigger={expenseRefreshTrigger}
               defaultPeriod="all"
+              milestones={chartMilestones}
             />
         </div>
         )}

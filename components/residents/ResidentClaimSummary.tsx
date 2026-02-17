@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   ComposedChart,
+  AreaChart,
+  Area,
   Bar,
   Line,
   XAxis,
@@ -32,6 +34,7 @@ interface ResidentClaimSummaryProps {
 }
 
 type TimePeriod = 'all' | '6m' | '3m'
+type ChartMode = 'area' | 'bars'
 
 const PERIOD_LABELS: Record<TimePeriod, string> = {
   all: 'All Time',
@@ -106,6 +109,7 @@ export function ResidentClaimSummary({ residentId }: ResidentClaimSummaryProps) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [period, setPeriod] = useState<TimePeriod>('all')
+  const [chartMode, setChartMode] = useState<ChartMode>('area')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -215,8 +219,38 @@ export function ResidentClaimSummary({ residentId }: ResidentClaimSummaryProps) 
             </div>
           </div>
 
-          {/* Right: Period toggle + View Transactions link */}
+          {/* Right: Chart mode + Period toggle + View Transactions link */}
           <div className="flex items-center gap-3 self-start sm:self-auto">
+            {/* Chart mode toggle */}
+            <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setChartMode('area')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  chartMode === 'area'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+                title="Area chart"
+              >
+                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 17l6-6 4 4 8-8" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setChartMode('bars')}
+                className={`p-1.5 rounded-md transition-colors ${
+                  chartMode === 'bars'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-400 hover:text-gray-600'
+                }`}
+                title="Bar chart"
+              >
+                <svg className="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 13h2v8H3zM8 9h2v12H8zM13 5h2v16h-2zM18 1h2v20h-2z" />
+                </svg>
+              </button>
+            </div>
+
             <div className="flex items-center space-x-1 bg-gray-100 rounded-lg p-0.5">
               {(['all', '6m', '3m'] as TimePeriod[]).map((p) => (
                 <button
@@ -251,69 +285,140 @@ export function ResidentClaimSummary({ residentId }: ResidentClaimSummaryProps) 
         <div className="px-2 pb-4">
           {hasData ? (
             <ResponsiveContainer width="100%" height={340}>
-              <ComposedChart
-                data={chartData}
-                margin={{ top: 5, right: 20, left: 10, bottom: 0 }}
-                barCategoryGap="20%"
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  stroke="#e5e7eb"
-                  vertical={false}
-                />
-                <XAxis {...xAxisProps} />
-                <YAxis
-                  yAxisId="amount"
-                  tick={{ fill: '#6b7280', fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v: number) =>
-                    v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
-                  }
-                  width={55}
-                  domain={[0, 'auto']}
-                />
-                <YAxis
-                  yAxisId="count"
-                  orientation="right"
-                  tick={{ fill: '#8b5cf6', fontSize: 11 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v: number) => `${v}`}
-                  width={35}
-                  allowDecimals={false}
-                  domain={[0, 'auto']}
-                />
-                <Tooltip
-                  content={<ChartTooltip />}
-                  cursor={{ fill: 'rgba(0,0,0,0.04)' }}
-                />
-
-                {/* Amount bars */}
-                <Bar
-                  yAxisId="amount"
-                  dataKey="amount"
-                  name="Amount"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={32}
+              {chartMode === 'area' ? (
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 0 }}
                 >
-                  {chartData.map((_, i) => (
-                    <Cell key={i} fill="#3b82f6" />
-                  ))}
-                </Bar>
+                  <defs>
+                    <linearGradient id="claimAmountGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e5e7eb"
+                    vertical={false}
+                  />
+                  <XAxis {...xAxisProps} />
+                  <YAxis
+                    yAxisId="amount"
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: number) =>
+                      v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
+                    }
+                    width={55}
+                    domain={[0, 'auto']}
+                  />
+                  <YAxis
+                    yAxisId="count"
+                    orientation="right"
+                    tick={{ fill: '#8b5cf6', fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: number) => `${v}`}
+                    width={35}
+                    allowDecimals={false}
+                    domain={[0, 'auto']}
+                  />
+                  <Tooltip
+                    content={<ChartTooltip />}
+                    cursor={{ stroke: '#d1d5db', strokeWidth: 1 }}
+                  />
 
-                {/* Claim count line */}
-                <Line
-                  yAxisId="count"
-                  type="monotone"
-                  dataKey="count"
-                  name="Claims"
-                  stroke="#8b5cf6"
-                  strokeWidth={2}
-                  dot={chartData.length <= 12 ? { r: 3, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 } : false}
-                  activeDot={{ r: 5, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }}
-                />
-              </ComposedChart>
+                  {/* Amount as area */}
+                  <Area
+                    yAxisId="amount"
+                    type="monotone"
+                    dataKey="amount"
+                    name="Amount"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fill="url(#claimAmountGrad)"
+                    dot={chartData.length <= 12 ? { r: 3, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 } : false}
+                    activeDot={{ r: 5, fill: '#3b82f6', stroke: '#fff', strokeWidth: 2 }}
+                  />
+
+                  {/* Claim count line */}
+                  <Line
+                    yAxisId="count"
+                    type="monotone"
+                    dataKey="count"
+                    name="Claims"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dot={chartData.length <= 12 ? { r: 3, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 } : false}
+                    activeDot={{ r: 5, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }}
+                  />
+                </ComposedChart>
+              ) : (
+                <ComposedChart
+                  data={chartData}
+                  margin={{ top: 5, right: 20, left: 10, bottom: 0 }}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e5e7eb"
+                    vertical={false}
+                  />
+                  <XAxis {...xAxisProps} />
+                  <YAxis
+                    yAxisId="amount"
+                    tick={{ fill: '#6b7280', fontSize: 12 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: number) =>
+                      v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
+                    }
+                    width={55}
+                    domain={[0, 'auto']}
+                  />
+                  <YAxis
+                    yAxisId="count"
+                    orientation="right"
+                    tick={{ fill: '#8b5cf6', fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: number) => `${v}`}
+                    width={35}
+                    allowDecimals={false}
+                    domain={[0, 'auto']}
+                  />
+                  <Tooltip
+                    content={<ChartTooltip />}
+                    cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                  />
+
+                  {/* Amount bars */}
+                  <Bar
+                    yAxisId="amount"
+                    dataKey="amount"
+                    name="Amount"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={32}
+                  >
+                    {chartData.map((_, i) => (
+                      <Cell key={i} fill="#3b82f6" />
+                    ))}
+                  </Bar>
+
+                  {/* Claim count line */}
+                  <Line
+                    yAxisId="count"
+                    type="monotone"
+                    dataKey="count"
+                    name="Claims"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    dot={chartData.length <= 12 ? { r: 3, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 } : false}
+                    activeDot={{ r: 5, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }}
+                  />
+                </ComposedChart>
+              )}
             </ResponsiveContainer>
           ) : (
             <div className="h-[340px] flex items-center justify-center text-gray-400">

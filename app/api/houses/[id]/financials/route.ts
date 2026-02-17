@@ -262,63 +262,9 @@ export async function GET(
     totals.expenses = Math.round(totals.expenses * 100) / 100
     totals.net = Math.round(totals.net * 100) / 100
 
-    // ── 6. Notable items ──
-    const notables: {
-      month: string
-      type: 'income' | 'expense'
-      amount: number
-      description?: string
-      category?: string
-    }[] = []
-
-    const avgIncome = months.length > 0
-      ? months.reduce((s, m) => s + m.income, 0) / months.length
-      : 0
-    const avgExpenses = months.length > 0
-      ? months.reduce((s, m) => s + m.expenses, 0) / months.length
-      : 0
-
-    for (const m of months) {
-      if (m.income > 0 && avgIncome > 0 && m.income >= avgIncome * 2 && m.income >= 500) {
-        notables.push({
-          month: m.label,
-          type: 'income',
-          amount: m.income,
-          description: `Income was ${Math.round(m.income / avgIncome)}× the monthly average`,
-        })
-      }
-      if (m.expenses > 0 && avgExpenses > 0 && m.expenses >= avgExpenses * 2 && m.expenses >= 500) {
-        const monthKey = m.month
-        let biggestExpense: { amount: number; description: string; category: string } | null = null
-        for (const row of (expenseRows || [])) {
-          const d = new Date(row.occurred_at)
-          const rowKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-          if (rowKey === monthKey) {
-            const amt = parseFloat(row.amount) || 0
-            if (!biggestExpense || amt > biggestExpense.amount) {
-              biggestExpense = {
-                amount: amt,
-                description: row.description || 'Expense',
-                category: row.category || 'other',
-              }
-            }
-          }
-        }
-        notables.push({
-          month: m.label,
-          type: 'expense',
-          amount: m.expenses,
-          description: biggestExpense
-            ? `Largest item: ${biggestExpense.description} ($${biggestExpense.amount.toLocaleString('en-AU', { minimumFractionDigits: 0 })})`
-            : `Expenses were ${Math.round(m.expenses / avgExpenses)}× the monthly average`,
-          category: biggestExpense?.category,
-        })
-      }
-    }
-
     return NextResponse.json({
       success: true,
-      data: { months, totals, notables },
+      data: { months, totals },
     })
   } catch (error) {
     console.error('[API] Error fetching house financials:', error)

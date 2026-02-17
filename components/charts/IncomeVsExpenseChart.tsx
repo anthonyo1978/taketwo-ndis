@@ -9,6 +9,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts'
 
 /* ───── Types ───── */
@@ -33,24 +34,22 @@ interface MonthData {
   expenseBreakdown?: ExpenseBreakdown[]
 }
 
-interface Notable {
-  month: string
-  type: 'income' | 'expense'
-  amount: number
-  description?: string
-  category?: string
-}
-
 interface FinancialData {
   months: MonthData[]
   totals: { income: number; expenses: number; net: number }
-  notables?: Notable[]
+}
+
+interface Milestone {
+  date: Date
+  label: string
+  type: 'go-live' | 'move-in'
 }
 
 interface IncomeVsExpenseChartProps {
   houseId: string
   refreshTrigger?: number
   defaultPeriod?: TimePeriod
+  milestones?: Milestone[]
 }
 
 type TimePeriod = 'all' | '12m' | '6m' | '3m'
@@ -231,12 +230,13 @@ function DetailedTooltip({ active, payload, label, chartData }: any) {
 }
 
 /* ───── Component ───── */
-export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPeriod = 'all' }: IncomeVsExpenseChartProps) {
+export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPeriod = 'all', milestones = [] }: IncomeVsExpenseChartProps) {
   const [data, setData] = useState<FinancialData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [period, setPeriod] = useState<TimePeriod>(defaultPeriod)
   const [detailedMode, setDetailedMode] = useState(false)
+  const [showMilestones, setShowMilestones] = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -294,8 +294,16 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
 
   const chartData = data?.months || []
   const totals = data?.totals || { income: 0, expenses: 0, net: 0 }
-  const notables = data?.notables || []
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0)
+
+  // Map milestones to the chart's shortLabel axis
+  const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  const milestoneMarkers = milestones.map(m => {
+    const d = new Date(m.date)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const shortLabel = chartData.find(cd => cd.month === key)?.shortLabel
+    return shortLabel ? { ...m, shortLabel, monthKey: key } : null
+  }).filter(Boolean) as (Milestone & { shortLabel: string; monthKey: string })[]
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -330,6 +338,24 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
 
         {/* Right: Controls */}
         <div className="flex items-center gap-3 self-start sm:self-auto">
+          {/* Milestones toggle */}
+          {milestones.length > 0 && (
+            <button
+              onClick={() => setShowMilestones(!showMilestones)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
+                showMilestones
+                  ? 'bg-amber-50 border-amber-200 text-amber-700'
+                  : 'bg-white border-gray-200 text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              title={showMilestones ? 'Hide milestones' : 'Show go-live date and resident move-in dates on chart'}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+              </svg>
+              Milestones
+            </button>
+          )}
+
           {/* Detailed mode toggle */}
           <button
             onClick={() => setDetailedMode(!detailedMode)}
@@ -448,6 +474,24 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
                 dot={chartData.length <= 12 ? { r: 3, fill: '#80CAEE', stroke: '#fff', strokeWidth: 2 } : false}
                 activeDot={{ r: 5, fill: '#80CAEE', stroke: '#fff', strokeWidth: 2 }}
               />
+
+              {/* Milestone reference lines */}
+              {showMilestones && milestoneMarkers.map((m, idx) => (
+                <ReferenceLine
+                  key={`milestone-${idx}`}
+                  x={m.shortLabel}
+                  stroke={m.type === 'go-live' ? '#f59e0b' : '#8b5cf6'}
+                  strokeDasharray="4 3"
+                  strokeWidth={2}
+                  label={{
+                    value: m.type === 'go-live' ? '🏠 Go-Live' : `👤 ${m.label}`,
+                    position: 'top',
+                    fill: m.type === 'go-live' ? '#b45309' : '#6d28d9',
+                    fontSize: 10,
+                    fontWeight: 600,
+                  }}
+                />
+              ))}
             </AreaChart>
           </ResponsiveContainer>
         ) : (
@@ -463,46 +507,22 @@ export function IncomeVsExpenseChart({ houseId, refreshTrigger = 0, defaultPerio
         )}
       </div>
 
-      {/* ── Notable items footnotes ── */}
-      {notables.length > 0 && (
-        <div className="px-6 pb-5 border-t border-gray-100">
-          <div className="pt-3 space-y-1.5">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-              Notable Months
-            </p>
-            {notables.map((n, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-xs">
-                <span className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full flex items-center justify-center ${
-                  n.type === 'expense' ? 'bg-amber-100 text-amber-600' : 'bg-blue-100 text-blue-600'
-                }`}>
-                  {n.type === 'expense' ? (
-                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01M12 3l9.66 16.5H2.34L12 3z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                    </svg>
-                  )}
+      {/* ── Milestones legend ── */}
+      {showMilestones && milestoneMarkers.length > 0 && (
+        <div className="px-6 pb-4 border-t border-gray-100">
+          <div className="pt-3 flex flex-wrap gap-x-5 gap-y-1.5">
+            {milestoneMarkers.map((m, idx) => (
+              <div key={idx} className="flex items-center gap-1.5 text-xs">
+                <span
+                  className={`w-3 h-0.5 rounded ${m.type === 'go-live' ? 'bg-amber-500' : 'bg-violet-500'}`}
+                  style={{ borderTop: '2px dashed' }}
+                />
+                <span className={`font-medium ${m.type === 'go-live' ? 'text-amber-700' : 'text-violet-700'}`}>
+                  {m.type === 'go-live' ? '🏠 Go-Live' : `👤 ${m.label}`}
                 </span>
-                <div className="min-w-0">
-                  <span className="font-medium text-gray-700">{n.month}</span>
-                  <span className="text-gray-400 mx-1">·</span>
-                  <span className={`font-semibold ${n.type === 'expense' ? 'text-amber-700' : 'text-blue-700'}`}>
-                    {fmtCurrency(n.amount)} {n.type === 'expense' ? 'in expenses' : 'income'}
-                  </span>
-                  {n.description && (
-                    <>
-                      <span className="text-gray-400 mx-1">—</span>
-                      <span className="text-gray-500">
-                        {n.description}
-                        {n.category && n.category !== 'other' && (
-                          <span className="ml-1 text-gray-400">({CATEGORY_LABELS[n.category] || n.category})</span>
-                        )}
-                      </span>
-                    </>
-                  )}
-                </div>
+                <span className="text-gray-400">
+                  {new Date(m.date).toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })}
+                </span>
               </div>
             ))}
           </div>
