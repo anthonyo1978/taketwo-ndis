@@ -303,7 +303,9 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
         // Brief pause for the visual transition
         await new Promise(resolve => setTimeout(resolve, 700))
 
-        form.setValue('occurredAt', nextDate, { shouldValidate: true })
+        // Format as YYYY-MM-DD string so the <input type="date"> displays it
+        const nextDateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`
+        form.setValue('occurredAt', nextDateStr as any, { shouldValidate: true })
         form.setValue('quantity', nextDays, { shouldValidate: true })
         form.setValue('unitPrice', currentUnitPrice, { shouldValidate: true })
         const newAmount = Math.round(nextDays * currentUnitPrice * 100) / 100
@@ -315,7 +317,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
         // Do NOT call onSuccess here — that would close the dialog.
         // We'll call it when the user clicks "Done" or does a normal create.
       } else {
-        onSuccess()
+      onSuccess()
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create transaction')
@@ -680,8 +682,10 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
                       const days = daysInMonth(d.getFullYear(), d.getMonth() + 1)
                       form.setValue('quantity', days, { shouldValidate: true })
                       setLastEditedField('quantity')
+                      // Snap date to end of month, formatted as YYYY-MM-DD for the date input
                       const eom = lastDayOfMonth(d)
-                      form.setValue('occurredAt', eom, { shouldValidate: true })
+                      const eomStr = `${eom.getFullYear()}-${String(eom.getMonth() + 1).padStart(2, '0')}-${String(eom.getDate()).padStart(2, '0')}`
+                      form.setValue('occurredAt', eomStr as any, { shouldValidate: true })
                     }
                   }
                 }}
