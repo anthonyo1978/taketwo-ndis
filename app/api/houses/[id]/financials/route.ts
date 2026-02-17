@@ -31,11 +31,26 @@ export async function GET(
 
     const supabase = await createClient()
 
+    // ── 0. Fetch the house to get go_live_date ──
+    const { data: house } = await supabase
+      .from('houses')
+      .select('go_live_date')
+      .eq('id', houseId)
+      .eq('organization_id', organizationId)
+      .single()
+
+    const goLiveDate = house?.go_live_date ? new Date(house.go_live_date) : null
+
     const now = new Date()
     let startISO: string | null = null
     if (monthsBack > 0) {
       const startDate = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 1)
-      startISO = startDate.toISOString()
+      // If go-live date is later than the calculated start, use go-live date
+      if (goLiveDate && goLiveDate > startDate) {
+        startISO = new Date(goLiveDate.getFullYear(), goLiveDate.getMonth(), 1).toISOString()
+      } else {
+        startISO = startDate.toISOString()
+      }
     }
 
     // ── 1. Residents in this house ──
@@ -91,20 +106,33 @@ export async function GET(
     }
 
     // ── 4. Determine effective start month ──
+    // For "All Time" (monthsBack === 0), start from the house go-live date.
+    // For fixed periods, start from the calculated month but never before go-live.
     let effectiveStart: Date
     if (monthsBack > 0) {
-      effectiveStart = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 1)
+      const periodStart = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 1)
+      if (goLiveDate) {
+        const goLiveMonth = new Date(goLiveDate.getFullYear(), goLiveDate.getMonth(), 1)
+        effectiveStart = goLiveMonth > periodStart ? goLiveMonth : periodStart
+      } else {
+        effectiveStart = periodStart
+      }
     } else {
-      let earliest = now
-      for (const row of incomeRows) {
-        const d = new Date(row.occurred_at)
-        if (d < earliest) earliest = d
+      // All time: use go-live date, or fall back to earliest data point
+      if (goLiveDate) {
+        effectiveStart = new Date(goLiveDate.getFullYear(), goLiveDate.getMonth(), 1)
+      } else {
+        let earliest = now
+        for (const row of incomeRows) {
+          const d = new Date(row.occurred_at)
+          if (d < earliest) earliest = d
+        }
+        for (const row of (expenseRows || [])) {
+          const d = new Date(row.occurred_at)
+          if (d < earliest) earliest = d
+        }
+        effectiveStart = new Date(earliest.getFullYear(), earliest.getMonth(), 1)
       }
-      for (const row of (expenseRows || [])) {
-        const d = new Date(row.occurred_at)
-        if (d < earliest) earliest = d
-      }
-      effectiveStart = new Date(earliest.getFullYear(), earliest.getMonth(), 1)
     }
 
     // ── 5. Build monthly buckets ──

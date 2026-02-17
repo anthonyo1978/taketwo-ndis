@@ -22,6 +22,34 @@ export async function GET(
 
     const supabase = await createClient()
 
+    // ── 0. Fetch resident to get move-in date (and house go-live date) ──
+    const { data: residentData } = await supabase
+      .from('residents')
+      .select('move_in_date, house_id')
+      .eq('id', residentId)
+      .single()
+
+    let moveInDate: Date | null = null
+    if (residentData?.move_in_date) {
+      moveInDate = new Date(residentData.move_in_date)
+    }
+
+    // If resident has a house, also get the house go-live date as a fallback
+    let houseGoLiveDate: Date | null = null
+    if (residentData?.house_id) {
+      const { data: houseData } = await supabase
+        .from('houses')
+        .select('go_live_date')
+        .eq('id', residentData.house_id)
+        .single()
+      if (houseData?.go_live_date) {
+        houseGoLiveDate = new Date(houseData.go_live_date)
+      }
+    }
+
+    // The effective anchor date: move-in date > house go-live > null
+    const anchorDate = moveInDate || houseGoLiveDate
+
     // ── 1. Determine date range ──
     let startISO: string | null = null
 
@@ -30,7 +58,13 @@ export async function GET(
       start.setMonth(start.getMonth() - monthsParam)
       start.setDate(1)
       start.setHours(0, 0, 0, 0)
-      startISO = start.toISOString()
+      // Don't go earlier than the anchor date
+      if (anchorDate) {
+        const anchorMonth = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1)
+        startISO = (anchorMonth > start ? anchorMonth : start).toISOString()
+      } else {
+        startISO = start.toISOString()
+      }
     }
 
     // ── 2. Fetch transactions for this resident ──
@@ -74,7 +108,16 @@ export async function GET(
     let rangeStart: Date
 
     if (monthsParam > 0) {
-      rangeStart = new Date(now.getFullYear(), now.getMonth() - monthsParam, 1)
+      const periodStart = new Date(now.getFullYear(), now.getMonth() - monthsParam, 1)
+      if (anchorDate) {
+        const anchorMonth = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1)
+        rangeStart = anchorMonth > periodStart ? anchorMonth : periodStart
+      } else {
+        rangeStart = periodStart
+      }
+    } else if (anchorDate) {
+      // All time: start from move-in date / house go-live
+      rangeStart = new Date(anchorDate.getFullYear(), anchorDate.getMonth(), 1)
     } else if (transactions && transactions.length > 0) {
       const earliest = new Date(transactions[0]!.occurred_at)
       rangeStart = new Date(earliest.getFullYear(), earliest.getMonth(), 1)
