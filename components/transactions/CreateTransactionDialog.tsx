@@ -34,6 +34,13 @@ interface CreateTransactionDialogProps {
   mode?: 'standard' | 'drawdown'
 }
 
+/**
+ * Helper: wraps onSuccess so that during "Create & Next" we do NOT
+ * trigger the parent's onSuccess (which closes the dialog).
+ * Instead we track that at least one transaction was created and
+ * call onSuccess when the user finally closes or does a normal create.
+ */
+
 /* ── Helpers for End-of-Month logic ── */
 /** Returns the number of days in a given month (1-based month) */
 function daysInMonth(year: number, month: number): number {
@@ -294,7 +301,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
         setTransitioning(true)
 
         // Brief pause for the visual transition
-        await new Promise(resolve => setTimeout(resolve, 600))
+        await new Promise(resolve => setTimeout(resolve, 700))
 
         form.setValue('occurredAt', nextDate, { shouldValidate: true })
         form.setValue('quantity', nextDays, { shouldValidate: true })
@@ -305,8 +312,8 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
 
         setTransitioning(false)
 
-        // Notify parent that a transaction was created (refresh lists) but keep modal open
-        onSuccess()
+        // Do NOT call onSuccess here — that would close the dialog.
+        // We'll call it when the user clicks "Done" or does a normal create.
       } else {
         onSuccess()
       }
@@ -726,7 +733,14 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
           <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-100">
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => {
+                // If transactions were created during this session, notify parent to refresh
+                if (createCount > 0) {
+                  onSuccess()
+                } else {
+                  onClose()
+                }
+              }}
               disabled={isSubmitting || transitioning}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
