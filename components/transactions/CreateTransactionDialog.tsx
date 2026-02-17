@@ -34,6 +34,23 @@ interface CreateTransactionDialogProps {
   mode?: 'standard' | 'drawdown'
 }
 
+/* ── Helpers for End-of-Month logic ── */
+/** Returns the number of days in a given month (1-based month) */
+function daysInMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate()
+}
+
+/** Returns the last day of the month for a given date */
+function lastDayOfMonth(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth() + 1, 0)
+}
+
+/** Advances a date to the last day of the next month */
+function advanceToNextMonthEnd(d: Date): Date {
+  const next = new Date(d.getFullYear(), d.getMonth() + 2, 0) // last day of next month
+  return next
+}
+
 export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' }: CreateTransactionDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,6 +66,9 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
   const [dateWarning, setDateWarning] = useState<string | null>(null)
   // Track which field the user last edited so we can derive the others
   const [lastEditedField, setLastEditedField] = useState<'quantity' | 'unitPrice' | 'amount' | null>(null)
+  // End-of-month roll-up mode
+  const [endOfMonthMode, setEndOfMonthMode] = useState(false)
+  const [createCount, setCreateCount] = useState(0) // how many created in this session
 
   const form = useForm<FormData>({
     resolver: zodResolver(createTransactionSchema),
@@ -179,6 +199,21 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
     }
   }, [watchedOccurredAt, selectedContractInfo])
 
+  // When end-of-month mode is on and date changes, snap qty to days in that month
+  useEffect(() => {
+    if (endOfMonthMode && watchedOccurredAt) {
+      const d = watchedOccurredAt instanceof Date ? watchedOccurredAt : new Date(watchedOccurredAt)
+      if (!isNaN(d.getTime())) {
+        const days = daysInMonth(d.getFullYear(), d.getMonth() + 1)
+        const currentQty = form.getValues('quantity')
+        if (currentQty !== days) {
+          form.setValue('quantity', days, { shouldValidate: true })
+          setLastEditedField('quantity')
+        }
+      }
+    }
+  }, [watchedOccurredAt, endOfMonthMode, form])
+
   const handleContractChange = (contractId: string) => {
     if (selectedResident && contractId) {
       const contract = selectedResidentContracts.find((c: any) => c.id === contractId)
@@ -218,7 +253,7 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
     setDateWarning(warning)
   }
 
-  const onSubmit = async (data: FormData) => {
+  const doSubmit = async (data: FormData, andNext: boolean) => {
     setIsSubmitting(true)
     setError(null)
     try {
@@ -239,12 +274,38 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
       if (!response.ok || !result.success) {
         throw new Error(result.error || 'Failed to create transaction')
       }
-      onSuccess()
+
+      setCreateCount(prev => prev + 1)
+
+      if (andNext && endOfMonthMode) {
+        // Advance to next month: set date to last day of next month,
+        // quantity = days in that next month, keep unit price
+        const currentDate = data.occurredAt instanceof Date ? data.occurredAt : new Date(data.occurredAt)
+        const nextDate = advanceToNextMonthEnd(currentDate)
+        const nextDays = daysInMonth(nextDate.getFullYear(), nextDate.getMonth() + 1)
+        const currentUnitPrice = data.unitPrice
+
+        form.setValue('occurredAt', nextDate, { shouldValidate: true })
+        form.setValue('quantity', nextDays, { shouldValidate: true })
+        form.setValue('unitPrice', currentUnitPrice, { shouldValidate: true })
+        const newAmount = Math.round(nextDays * currentUnitPrice * 100) / 100
+        form.setValue('amount', newAmount, { shouldValidate: true })
+        setLastEditedField('quantity')
+
+        // Notify parent that a transaction was created (refresh lists) but keep modal open
+        onSuccess()
+      } else {
+        onSuccess()
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create transaction')
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const onSubmit = async (data: FormData) => {
+    await doSubmit(data, false)
   }
 
   const residentHouse = selectedResident ? houses.find(h => h.id === selectedResident.houseId) : null
@@ -584,6 +645,67 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
             </div>
           </div>
 
+          {/* ─── End of Month mode toggle ─── */}
+          <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={endOfMonthMode}
+                onChange={(e) => {
+                  setEndOfMonthMode(e.target.checked)
+                  if (e.target.checked) {
+                    // Auto-set quantity to days in the currently selected month
+                    const currentDate = form.getValues('occurredAt')
+                    if (currentDate) {
+                      const d = currentDate instanceof Date ? currentDate : new Date(currentDate)
+                      const days = daysInMonth(d.getFullYear(), d.getMonth() + 1)
+                      form.setValue('quantity', days, { shouldValidate: true })
+                      setLastEditedField('quantity')
+                      // Snap date to end of month
+                      const eom = lastDayOfMonth(d)
+                      form.setValue('occurredAt', eom, { shouldValidate: true })
+                    }
+                  }
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+            </label>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-700">End of Month Roll-up</p>
+              <p className="text-xs text-gray-500">
+                {endOfMonthMode
+                  ? 'Quantity = days in month. Use "Create & Next →" to auto-advance to the next month.'
+                  : 'Enable to create monthly roll-up transactions with auto-advancing dates.'}
+              </p>
+            </div>
+            {endOfMonthMode && (
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  {(() => {
+                    const d = watchedOccurredAt instanceof Date ? watchedOccurredAt : new Date(watchedOccurredAt || Date.now())
+                    return `${d.toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })} · ${daysInMonth(d.getFullYear(), d.getMonth() + 1)} days`
+                  })()}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* ─── Success banner for Create & Next ─── */}
+          {createCount > 0 && endOfMonthMode && (
+            <div className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+              <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              <p className="text-green-700 text-sm">
+                {createCount} transaction{createCount > 1 ? 's' : ''} created this session. Form advanced to next month.
+              </p>
+            </div>
+          )}
+
           {/* ─── Error ─── */}
           {error && (
             <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
@@ -592,20 +714,39 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
           )}
 
           {/* ─── Footer ─── */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-            <Button type="button" onClick={onClose} disabled={isSubmitting}>
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-            >
-              {isSubmitting 
-                ? (mode === 'drawdown' ? 'Creating...' : 'Creating...')
-                : (mode === 'drawdown' ? 'Create Drawing Down Transaction' : 'Create Transaction')
-              }
-            </Button>
+          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+            <div>
+              {endOfMonthMode && (
+                <p className="text-xs text-gray-400">
+                  Tip: "Create & Next →" saves this transaction and pre-fills the next month
+                </p>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <Button type="button" onClick={onClose} disabled={isSubmitting}>
+                {createCount > 0 ? 'Done' : 'Cancel'}
+              </Button>
+              {endOfMonthMode && (
+                <Button
+                  type="button"
+                  disabled={isSubmitting}
+                  className="bg-green-600 text-white hover:bg-green-700"
+                  onClick={form.handleSubmit((data) => doSubmit(data, true))}
+                >
+                  {isSubmitting ? 'Creating...' : 'Create & Next →'}
+                </Button>
+              )}
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="bg-blue-600 text-white hover:bg-blue-700"
+              >
+                {isSubmitting 
+                  ? 'Creating...'
+                  : (mode === 'drawdown' ? 'Create Drawing Down Transaction' : 'Create Transaction')
+                }
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
