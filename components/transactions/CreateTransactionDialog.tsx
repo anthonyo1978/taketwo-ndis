@@ -69,6 +69,9 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
   // End-of-month roll-up mode
   const [endOfMonthMode, setEndOfMonthMode] = useState(false)
   const [createCount, setCreateCount] = useState(0) // how many created in this session
+  // Transition state for Create & Next animation
+  const [transitioning, setTransitioning] = useState(false)
+  const [transitionLabel, setTransitionLabel] = useState('')
 
   const form = useForm<FormData>({
     resolver: zodResolver(createTransactionSchema),
@@ -285,12 +288,22 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
         const nextDays = daysInMonth(nextDate.getFullYear(), nextDate.getMonth() + 1)
         const currentUnitPrice = data.unitPrice
 
+        // Show transition overlay
+        const nextLabel = nextDate.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })
+        setTransitionLabel(nextLabel)
+        setTransitioning(true)
+
+        // Brief pause for the visual transition
+        await new Promise(resolve => setTimeout(resolve, 600))
+
         form.setValue('occurredAt', nextDate, { shouldValidate: true })
         form.setValue('quantity', nextDays, { shouldValidate: true })
         form.setValue('unitPrice', currentUnitPrice, { shouldValidate: true })
         const newAmount = Math.round(nextDays * currentUnitPrice * 100) / 100
         form.setValue('amount', newAmount, { shouldValidate: true })
         setLastEditedField('quantity')
+
+        setTransitioning(false)
 
         // Notify parent that a transaction was created (refresh lists) but keep modal open
         onSuccess()
@@ -646,22 +659,20 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
           </div>
 
           {/* ─── End of Month mode toggle ─── */}
-          <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
-            <label className="relative inline-flex items-center cursor-pointer">
+          <div className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${endOfMonthMode ? 'bg-blue-50 border border-blue-100' : 'bg-gray-50'}`}>
+            <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
               <input
                 type="checkbox"
                 checked={endOfMonthMode}
                 onChange={(e) => {
                   setEndOfMonthMode(e.target.checked)
                   if (e.target.checked) {
-                    // Auto-set quantity to days in the currently selected month
                     const currentDate = form.getValues('occurredAt')
                     if (currentDate) {
                       const d = currentDate instanceof Date ? currentDate : new Date(currentDate)
                       const days = daysInMonth(d.getFullYear(), d.getMonth() + 1)
                       form.setValue('quantity', days, { shouldValidate: true })
                       setLastEditedField('quantity')
-                      // Snap date to end of month
                       const eom = lastDayOfMonth(d)
                       form.setValue('occurredAt', eom, { shouldValidate: true })
                     }
@@ -671,84 +682,102 @@ export function CreateTransactionDialog({ onClose, onSuccess, mode = 'standard' 
               />
               <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
             </label>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-700">End of Month Roll-up</p>
               <p className="text-xs text-gray-500">
                 {endOfMonthMode
-                  ? 'Quantity = days in month. Use "Create & Next →" to auto-advance to the next month.'
-                  : 'Enable to create monthly roll-up transactions with auto-advancing dates.'}
+                  ? 'Qty = days in month. Create & advance to next month automatically.'
+                  : 'Auto-fill monthly roll-up transactions.'}
               </p>
             </div>
             {endOfMonthMode && (
-              <div className="flex items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  {(() => {
-                    const d = watchedOccurredAt instanceof Date ? watchedOccurredAt : new Date(watchedOccurredAt || Date.now())
-                    return `${d.toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })} · ${daysInMonth(d.getFullYear(), d.getMonth() + 1)} days`
-                  })()}
-                </span>
-              </div>
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0">
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {(() => {
+                  const d = watchedOccurredAt instanceof Date ? watchedOccurredAt : new Date(watchedOccurredAt || Date.now())
+                  return `${d.toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })} · ${daysInMonth(d.getFullYear(), d.getMonth() + 1)} days`
+                })()}
+              </span>
             )}
           </div>
 
           {/* ─── Success banner for Create & Next ─── */}
           {createCount > 0 && endOfMonthMode && (
-            <div className="px-4 py-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
+            <div className="px-3 py-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2">
               <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <p className="text-green-700 text-sm">
-                {createCount} transaction{createCount > 1 ? 's' : ''} created this session. Form advanced to next month.
+              <p className="text-green-700 text-xs font-medium">
+                {createCount} transaction{createCount > 1 ? 's' : ''} created — form advanced to next month
               </p>
             </div>
           )}
 
           {/* ─── Error ─── */}
           {error && (
-            <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-700 text-sm">{error}</p>
             </div>
           )}
 
           {/* ─── Footer ─── */}
-          <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-            <div>
-              {endOfMonthMode && (
-                <p className="text-xs text-gray-400">
-                  Tip: "Create & Next →" saves this transaction and pre-fills the next month
-                </p>
-              )}
-            </div>
-            <div className="flex gap-3">
-              <Button type="button" onClick={onClose} disabled={isSubmitting}>
-                {createCount > 0 ? 'Done' : 'Cancel'}
-              </Button>
-              {endOfMonthMode && (
-                <Button
-                  type="button"
-                  disabled={isSubmitting}
-                  className="bg-green-600 text-white hover:bg-green-700"
-                  onClick={form.handleSubmit((data) => doSubmit(data, true))}
-                >
-                  {isSubmitting ? 'Creating...' : 'Create & Next →'}
-                </Button>
-              )}
-              <Button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-blue-600 text-white hover:bg-blue-700"
+          <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting || transitioning}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+            >
+              {createCount > 0 ? 'Done' : 'Cancel'}
+            </button>
+            {endOfMonthMode && (
+              <button
+                type="button"
+                disabled={isSubmitting || transitioning}
+                className="px-4 py-2 text-sm font-medium text-white bg-green-600 border border-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors inline-flex items-center gap-1.5"
+                onClick={form.handleSubmit((data) => doSubmit(data, true))}
               >
-                {isSubmitting 
-                  ? 'Creating...'
-                  : (mode === 'drawdown' ? 'Create Drawing Down Transaction' : 'Create Transaction')
-                }
-              </Button>
-            </div>
+                {isSubmitting || transitioning ? (
+                  <>
+                    <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>Create & Next →</>
+                )}
+              </button>
+            )}
+            <button
+              type="submit"
+              disabled={isSubmitting || transitioning}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {isSubmitting && !transitioning
+                ? 'Creating…'
+                : (mode === 'drawdown' ? 'Create Drawdown' : 'Create Transaction')
+              }
+            </button>
           </div>
         </form>
+
+        {/* ─── Transition overlay for Create & Next ─── */}
+        {transitioning && (
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-50 rounded-xl">
+            <div className="text-center animate-in fade-in duration-300">
+              <div className="relative mx-auto mb-4 w-14 h-14">
+                <div className="absolute inset-0 rounded-full border-4 border-green-200" />
+                <div className="absolute inset-0 rounded-full border-4 border-green-500 border-t-transparent animate-spin" />
+                <svg className="absolute inset-0 m-auto w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-sm font-semibold text-gray-900">Transaction created ✓</p>
+              <p className="text-xs text-gray-500 mt-1">Loading <span className="font-medium text-blue-600">{transitionLabel}</span>…</p>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )
