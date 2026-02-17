@@ -273,15 +273,31 @@ export default function ResidentDetailPage({ params }: ResidentDetailPageProps) 
           </div>
           
           {/* House Association */}
-          <div className="mt-6 pt-6 border-t">
-            <label className="block text-sm font-medium text-gray-500 mb-2">Current House</label>
-            <Link 
-              href={`/houses/${resident.houseId}`}
-              className="text-blue-600 hover:text-blue-800 font-medium"
-            >
-              {resident.houseId}
-            </Link>
-          </div>
+          {resident.houseId && (
+            <div className="mt-6 pt-6 border-t">
+              <label className="block text-sm font-medium text-gray-500 mb-2">Current House</label>
+              <Link 
+                href={`/houses/${resident.houseId}`}
+                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 font-medium"
+              >
+                <span className="text-base">🏠</span>
+                <span>{resident.house?.name || resident.houseId}</span>
+              </Link>
+              {resident.house && (
+                <p className="text-sm text-gray-500 mt-1 ml-7">
+                  {[resident.house.address1, resident.house.city, resident.house.state, resident.house.postcode].filter(Boolean).join(', ')}
+                </p>
+              )}
+              {resident.roomLabel && (
+                <p className="text-sm text-gray-500 mt-1 ml-7">Room: {resident.roomLabel}</p>
+              )}
+              {resident.moveInDate && (
+                <p className="text-sm text-gray-500 mt-1 ml-7">
+                  Moved in: {new Date(resident.moveInDate).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Emergency Contact */}

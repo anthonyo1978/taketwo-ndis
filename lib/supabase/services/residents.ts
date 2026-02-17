@@ -19,7 +19,15 @@ export class ResidentService {
     return {
       id: dbResident.id,
       houseId: dbResident.house_id,
-      house: undefined, // Will be populated separately if needed
+      house: dbResident.houses ? {
+        id: dbResident.houses.id,
+        name: dbResident.houses.descriptor || dbResident.houses.address1 || 'Unknown',
+        address1: dbResident.houses.address1 || '',
+        address2: dbResident.houses.address2 || undefined,
+        city: dbResident.houses.suburb || '',
+        state: dbResident.houses.state || '',
+        postcode: dbResident.houses.postcode || '',
+      } : undefined,
       firstName: dbResident.first_name,
       lastName: dbResident.last_name,
       dateOfBirth: new Date(dbResident.date_of_birth),
@@ -262,6 +270,21 @@ export class ResidentService {
         .from('residents')
         .select(`
           *,
+          houses (
+            id,
+            descriptor,
+            address1,
+            address2,
+            suburb,
+            state,
+            postcode
+          ),
+          funding_contracts (
+            id,
+            contract_status,
+            current_balance,
+            original_amount
+          ),
           plan_managers (
             id,
             name,
