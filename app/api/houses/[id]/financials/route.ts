@@ -6,26 +6,12 @@ import { getCurrentUserOrganizationId } from 'lib/utils/organization'
  * GET /api/houses/[id]/financials
  *
  * Returns monthly income (NDIS transactions) and expenses for a house,
- * grouped by month.
+ * grouped by month.  When `detailed=1` is passed, each month also includes
+ * a per-resident income breakdown and per-category expense breakdown.
  *
  * Query params:
- *   months – number of months to look back. 0 or omitted = all time.
- *
- * Response shape:
- * {
- *   success: true,
- *   data: {
- *     months: [
- *       { month: "2025-03", label: "Mar 2025", shortLabel: "Mar", income: 5200, expenses: 1000 },
- *       ...
- *     ],
- *     totals: { income: 62400, expenses: 12000, net: 50400 },
- *     notables: [
- *       { month: "May 2025", type: "expense", amount: 4500, description: "Insurance premium", category: "insurance" },
- *       ...
- *     ]
- *   }
- * }
+ *   months   – number of months to look back. 0 or omitted = all time.
+ *   detailed – if "1", include residentBreakdown + expenseBreakdown per month.
  */
 export async function GET(
   request: NextRequest,
@@ -40,12 +26,11 @@ export async function GET(
 
     const searchParams = request.nextUrl.searchParams
     const monthsParam = searchParams.get('months')
-    // 0 or missing = all time
+    const detailed = searchParams.get('detailed') === '1'
     const monthsBack = monthsParam ? parseInt(monthsParam, 10) : 0
 
     const supabase = await createClient()
 
-    // Calculate date range — if monthsBack === 0, no lower bound (all time)
     const now = new Date()
     let startISO: string | null = null
     if (monthsBack > 0) {
@@ -53,20 +38,26 @@ export async function GET(
       startISO = startDate.toISOString()
     }
 
-    // ── 1. Income: Get transactions for residents in this house ──
+    // ── 1. Residents in this house ──
     const { data: residents } = await supabase
       .from('residents')
-      .select('id')
+      .select('id, first_name, last_name')
       .eq('house_id', houseId)
       .eq('organization_id', organizationId)
 
     const residentIds = residents?.map(r => r.id) || []
+    const residentNameMap = new Map<string, string>()
+    for (const r of (residents || [])) {
+      residentNameMap.set(r.id, `${r.first_name || ''} ${r.last_name || ''}`.trim())
+    }
 
-    let incomeRows: { occurred_at: string; amount: string }[] = []
+    // ── 2. Income: transactions ──
+    // Always fetch resident_id so we can optionally break down by resident
+    let incomeRows: { occurred_at: string; amount: string; resident_id: string }[] = []
     if (residentIds.length > 0) {
       let txnQuery = supabase
         .from('transactions')
-        .select('occurred_at, amount')
+        .select('occurred_at, amount, resident_id')
         .in('resident_id', residentIds)
         .not('status', 'in', '("rejected")')
 
@@ -75,7 +66,6 @@ export async function GET(
       }
 
       const { data: txns, error: txnError } = await txnQuery
-
       if (txnError) {
         console.error('[Financials] Error fetching transactions:', txnError)
       } else {
@@ -83,7 +73,7 @@ export async function GET(
       }
     }
 
-    // ── 2. Expenses: Get house expenses (with description + category for notables) ──
+    // ── 3. Expenses ──
     let expQuery = supabase
       .from('house_expenses')
       .select('occurred_at, amount, description, category')
@@ -96,18 +86,15 @@ export async function GET(
     }
 
     const { data: expenseRows, error: expError } = await expQuery
-
     if (expError) {
       console.error('[Financials] Error fetching expenses:', expError)
     }
 
-    // ── 3. Determine the effective start month ──
-    // For all-time, derive from the earliest data point
+    // ── 4. Determine effective start month ──
     let effectiveStart: Date
     if (monthsBack > 0) {
       effectiveStart = new Date(now.getFullYear(), now.getMonth() - monthsBack + 1, 1)
     } else {
-      // Find the earliest date across income and expenses
       let earliest = now
       for (const row of incomeRows) {
         const d = new Date(row.occurred_at)
@@ -120,14 +107,27 @@ export async function GET(
       effectiveStart = new Date(earliest.getFullYear(), earliest.getMonth(), 1)
     }
 
-    // ── 4. Build monthly buckets ──
-    const monthMap = new Map<string, { income: number; expenses: number }>()
+    // ── 5. Build monthly buckets ──
+    interface ResidentAmount { name: string; amount: number }
+    interface CategoryAmount { category: string; amount: number; topItem?: string }
+    interface MonthBucket {
+      income: number
+      expenses: number
+      residentBreakdown: Map<string, { name: string; amount: number }>
+      expenseByCategory: Map<string, { amount: number; topItem: string; topAmount: number }>
+    }
 
-    // Pre-fill all months from effectiveStart to now
+    const monthMap = new Map<string, MonthBucket>()
+
     const cursor = new Date(effectiveStart)
     while (cursor <= now) {
       const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
-      monthMap.set(key, { income: 0, expenses: 0 })
+      monthMap.set(key, {
+        income: 0,
+        expenses: 0,
+        residentBreakdown: new Map(),
+        expenseByCategory: new Map(),
+      })
       cursor.setMonth(cursor.getMonth() + 1)
     }
 
@@ -136,8 +136,21 @@ export async function GET(
       const d = new Date(row.occurred_at)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       const bucket = monthMap.get(key)
-      if (bucket) {
-        bucket.income += parseFloat(row.amount) || 0
+      if (!bucket) continue
+      const amt = parseFloat(row.amount) || 0
+      bucket.income += amt
+
+      // Per-resident breakdown (only when detailed + resident_id available)
+      if (detailed && row.resident_id) {
+        const existing = bucket.residentBreakdown.get(row.resident_id)
+        if (existing) {
+          existing.amount += amt
+        } else {
+          bucket.residentBreakdown.set(row.resident_id, {
+            name: residentNameMap.get(row.resident_id) || 'Unknown',
+            amount: amt,
+          })
+        }
       }
     }
 
@@ -146,27 +159,66 @@ export async function GET(
       const d = new Date(row.occurred_at)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       const bucket = monthMap.get(key)
-      if (bucket) {
-        bucket.expenses += parseFloat(row.amount) || 0
+      if (!bucket) continue
+      const amt = parseFloat(row.amount) || 0
+      bucket.expenses += amt
+
+      // Per-category breakdown (only when detailed)
+      if (detailed) {
+        const cat = row.category || 'other'
+        const existing = bucket.expenseByCategory.get(cat)
+        if (existing) {
+          existing.amount += amt
+          if (amt > existing.topAmount) {
+            existing.topItem = row.description || cat
+            existing.topAmount = amt
+          }
+        } else {
+          bucket.expenseByCategory.set(cat, {
+            amount: amt,
+            topItem: row.description || cat,
+            topAmount: amt,
+          })
+        }
       }
     }
 
     // Convert to sorted array
     const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
     const months = Array.from(monthMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, values]) => {
+      .map(([key, bucket]) => {
         const parts = key.split('-')
         const year = parts[0]
         const month = parts[1] || '01'
         const monthIdx = parseInt(month, 10) - 1
-        return {
+
+        const base: any = {
           month: key,
           label: `${SHORT_MONTHS[monthIdx]} ${year}`,
           shortLabel: SHORT_MONTHS[monthIdx],
-          income: Math.round(values.income * 100) / 100,
-          expenses: Math.round(values.expenses * 100) / 100,
+          income: Math.round(bucket.income * 100) / 100,
+          expenses: Math.round(bucket.expenses * 100) / 100,
         }
+
+        if (detailed) {
+          // Resident breakdown sorted by amount descending
+          base.residentBreakdown = Array.from(bucket.residentBreakdown.values())
+            .map(r => ({ name: r.name, amount: Math.round(r.amount * 100) / 100 }))
+            .sort((a, b) => b.amount - a.amount)
+
+          // Expense category breakdown sorted by amount descending
+          base.expenseBreakdown = Array.from(bucket.expenseByCategory.entries())
+            .map(([cat, data]) => ({
+              category: cat,
+              amount: Math.round(data.amount * 100) / 100,
+              topItem: data.topItem,
+            }))
+            .sort((a, b) => b.amount - a.amount)
+        }
+
+        return base
       })
 
     // Totals
@@ -182,10 +234,7 @@ export async function GET(
     totals.expenses = Math.round(totals.expenses * 100) / 100
     totals.net = Math.round(totals.net * 100) / 100
 
-    // ── 5. Detect notable items ──
-    // A "notable" is any single expense or income month that is ≥ 2× the
-    // average for its type, AND the absolute value is meaningful (≥ $500).
-    // We also surface the largest individual expense per notable month.
+    // ── 6. Notable items ──
     const notables: {
       month: string
       type: 'income' | 'expense'
@@ -202,7 +251,6 @@ export async function GET(
       : 0
 
     for (const m of months) {
-      // Notable high income month
       if (m.income > 0 && avgIncome > 0 && m.income >= avgIncome * 2 && m.income >= 500) {
         notables.push({
           month: m.label,
@@ -211,9 +259,7 @@ export async function GET(
           description: `Income was ${Math.round(m.income / avgIncome)}× the monthly average`,
         })
       }
-      // Notable high expense month
       if (m.expenses > 0 && avgExpenses > 0 && m.expenses >= avgExpenses * 2 && m.expenses >= 500) {
-        // Find the largest individual expense in this month
         const monthKey = m.month
         let biggestExpense: { amount: number; description: string; category: string } | null = null
         for (const row of (expenseRows || [])) {
@@ -230,7 +276,6 @@ export async function GET(
             }
           }
         }
-
         notables.push({
           month: m.label,
           type: 'expense',
