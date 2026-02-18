@@ -283,10 +283,13 @@
   border: 1px solid #bbf7d0;
 }
 
-/* For the welcome step, make the popover wider and remove default padding */
-.haven-tour-welcome-step .driver-popover-title,
-.haven-tour-welcome-step .driver-popover-description {
+/* For the welcome/finale steps, hide the empty title and reset description padding */
+.haven-tour-welcome-step .driver-popover-title {
   display: none !important;
+}
+
+.haven-tour-welcome-step .driver-popover-description {
+  padding: 0 !important;
 }
 
 /* Highlight ring */
