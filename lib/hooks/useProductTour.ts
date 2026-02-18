@@ -33,16 +33,19 @@ function dashboardStep() {
   return `
     <div class="haven-tour-body" style="padding-top:4px;">
       <p>
-        This is your <strong>command centre</strong>. At a glance you can see total income, expenses, 
-        net profit, and this month's performance across your entire portfolio.
+        The <strong>Portfolio Dashboard</strong> gives you a complete view of your organisation.
       </p>
       <p>
-        The financial chart below gives you a bird's-eye view of your business over time — 
-        toggle <span class="haven-tour-highlight">Insights</span> for a deeper breakdown by house and resident.
+        The <span class="haven-tour-highlight">Financial Overview</span> aggregates income and expenses across all houses, 
+        with the ability to drill down into any property to investigate performance and costs.
+      </p>
+      <p>
+        Switch to <span class="haven-tour-highlight">NDIS &amp; Operations</span> to see how your portfolio is performing 
+        from an NDIS funding and efficiency perspective.
       </p>
       <div class="haven-tour-tip">
         <span class="haven-tour-tip-icon">💡</span>
-        <span>Pro tip: Use the house filter to drill into any property's P&L instantly.</span>
+        <span>Pro tip: Use filters and drill-down to move from a portfolio view to a single house or resident in seconds.</span>
       </div>
     </div>
   `
@@ -333,7 +336,7 @@ export function useProductTour() {
         {
           element: '[data-tour="dashboard-nav"]',
           popover: {
-            title: '📊 Your Dashboard',
+            title: '📊 The Portfolio Dashboard',
             description: dashboardStep(),
             side: 'right',
             align: 'start'
