@@ -69,10 +69,12 @@ function SetupPasswordContent() {
           setIsValid(true)
           setUserInfo(result.data)
         } else {
+          console.error('[SETUP PASSWORD] Validation failed:', result.error, 'Status:', response.status)
           setError(result.error || 'Invalid or expired invitation link')
         }
       } catch (err) {
-        setError('Failed to validate invitation link')
+        console.error('[SETUP PASSWORD] Network error validating invite:', err)
+        setError('Failed to connect to the server. Please check your internet connection and try again.')
       } finally {
         setIsLoading(false)
       }

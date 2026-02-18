@@ -19,6 +19,15 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Verify service role key is configured
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('[VALIDATE INVITE] SUPABASE_SERVICE_ROLE_KEY is not set!')
+      return NextResponse.json(
+        { success: false, error: 'Server configuration error. Please contact your administrator.' },
+        { status: 500 }
+      )
+    }
+
     const supabase = createServiceRoleClient()
 
     // Get invite with user details
@@ -39,8 +48,13 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (inviteError || !invite) {
+      console.error('[VALIDATE INVITE] Token lookup failed:', { 
+        error: inviteError?.message, 
+        code: inviteError?.code,
+        tokenPrefix: token.substring(0, 8) + '...' 
+      })
       return NextResponse.json(
-        { success: false, error: 'Invalid invitation token' },
+        { success: false, error: 'Invalid or expired invitation token. Please ask your administrator to resend the invite.' },
         { status: 404 }
       )
     }

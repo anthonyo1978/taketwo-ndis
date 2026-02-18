@@ -154,11 +154,12 @@ export async function POST(request: NextRequest) {
 
     // Send welcome email if requested
     if (shouldSendEmail && token) {
-      // Generate setup link using Vercel URL or public site URL
-      const baseUrl = process.env.VERCEL_URL 
-        ? `https://${process.env.VERCEL_URL}`
-        : process.env.NEXT_PUBLIC_SITE_URL 
+      // Generate setup link — prefer NEXT_PUBLIC_SITE_URL (production domain)
+      // over VERCEL_URL (which is deployment-specific, e.g. taketwo-abc123.vercel.app)
+      const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
         ? process.env.NEXT_PUBLIC_SITE_URL
+        : process.env.VERCEL_URL 
+        ? `https://${process.env.VERCEL_URL}`
         : 'http://localhost:3000'
       
       const setupLink = `${baseUrl}/auth/setup-password?token=${token}`

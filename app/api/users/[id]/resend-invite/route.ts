@@ -42,8 +42,22 @@ export async function POST(
       )
     }
 
+    // Invalidate any existing unused invite tokens for this user
+    await supabase
+      .from('user_invites')
+      .update({ used_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .is('used_at', null)
+
     // Generate new invite token
-    const { data: tokenData } = await supabase.rpc('generate_invite_token')
+    const { data: tokenData, error: rpcError } = await supabase.rpc('generate_invite_token')
+    if (rpcError || !tokenData) {
+      console.error('[USERS API] Error generating invite token:', rpcError)
+      return NextResponse.json(
+        { success: false, error: 'Failed to generate invite token' },
+        { status: 500 }
+      )
+    }
     const token = tokenData as string
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 7)
@@ -65,11 +79,12 @@ export async function POST(
       )
     }
 
-    // Send welcome email
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NEXT_PUBLIC_SITE_URL 
+    // Send welcome email — prefer NEXT_PUBLIC_SITE_URL (production domain)
+    // over VERCEL_URL (which is deployment-specific)
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
       ? process.env.NEXT_PUBLIC_SITE_URL
+      : process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
       : 'http://localhost:3000'
     
     const setupLink = `${baseUrl}/auth/setup-password?token=${token}`
