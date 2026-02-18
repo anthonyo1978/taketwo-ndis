@@ -91,18 +91,14 @@ function transactionsStep() {
   return `
     <div class="haven-tour-body" style="padding-top:4px;">
       <p>
-        <strong>Transactions are records of service delivery.</strong> Every billable event — whether created 
-        manually or by automation — lives here.
+        <strong>Transactions are records of income and expense.</strong> Every expense type for your 
+        organisation lives here.
       </p>
       <p>
         Haven makes it easy to create transactions with smart features like 
-        <span class="haven-tour-highlight">End of Month roll-ups</span>, quantity × unit price calculation, 
-        and "Create & Next" for rapid entry across multiple months.
+        <span class="haven-tour-highlight">End of Month roll-ups</span>, auto price calculation, 
+        and <span class="haven-tour-highlight">automated creation</span>.
       </p>
-      <div class="haven-tour-tip">
-        <span class="haven-tour-tip-icon">⚡</span>
-        <span>Remember: <strong>Active House → Resident → Contract</strong> = transactions can flow. That's the golden rule.</span>
-      </div>
     </div>
   `
 }
@@ -361,7 +357,7 @@ export function useProductTour() {
         {
           element: '[data-tour="transactions-nav"]',
           popover: {
-            title: '💳 Transactions — Service Delivery',
+            title: '💳 Transactions — Income & Expenditure',
             description: transactionsStep(),
             side: 'right',
             align: 'start'
