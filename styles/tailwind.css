@@ -21,21 +21,24 @@
 
 /* ─── Haven Product Tour — Premium Styling ─── */
 
-/* Overlay */
+/* Overlay — subtle frosted glass so the dashboard is still visible */
 .driver-overlay {
-  background: rgba(15, 23, 42, 0.75) !important;
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.25) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
 }
 
 /* Popover container */
 .driver-popover {
   background: #ffffff !important;
-  border-radius: 16px !important;
-  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.25),
+              0 0 0 1px rgba(0, 0, 0, 0.05),
+              0 0 40px 8px rgba(15, 23, 42, 0.08) !important;
   padding: 0 !important;
   max-width: 420px !important;
   overflow: hidden;
-  animation: haven-tour-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: haven-tour-enter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   /* Force GPU compositing for crisp rendering */
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
@@ -147,12 +150,12 @@
 .haven-tour-hero-image {
   position: relative;
   width: 100%;
-  height: 200px;
+  height: 280px;
   overflow: hidden;
 }
 
 .haven-tour-hero-image--short {
-  height: 120px;
+  height: 140px;
 }
 
 .haven-tour-hero-bg {
@@ -298,9 +301,13 @@
   border: 1px solid #bbf7d0;
 }
 
-/* For the welcome/finale steps, hide the empty title and reset description padding */
+/* Welcome/finale steps — large, centred, immersive popover */
 .haven-tour-welcome-step {
-  max-width: 480px !important;
+  max-width: 640px !important;
+  width: 90vw !important;
+  box-shadow: 0 32px 80px -16px rgba(0, 0, 0, 0.35),
+              0 0 0 1px rgba(255, 255, 255, 0.08),
+              0 0 60px 10px rgba(15, 23, 42, 0.15) !important;
 }
 
 .haven-tour-welcome-step .driver-popover-title {

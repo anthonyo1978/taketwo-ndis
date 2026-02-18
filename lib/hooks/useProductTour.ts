@@ -10,7 +10,7 @@ import { useSession } from 'lib/contexts/SessionContext'
 function welcomeStep(firstName: string) {
   return `
     <div class="haven-tour-hero-image">
-      <img src="/assets/haven-login-bg.png" alt="" class="haven-tour-hero-bg" />
+      <img src="/assets/haven-night-sky.png" alt="" class="haven-tour-hero-bg" />
       <div class="haven-tour-hero-overlay">
         <img src="/assets/haven-logo.svg" alt="Haven" style="width:48px;height:48px;margin-bottom:12px;" />
         <h2>Welcome${firstName ? `, ${firstName}` : ''}!</h2>
@@ -234,7 +234,7 @@ function helpStep() {
 function finaleStep(firstName: string) {
   return `
     <div class="haven-tour-hero-image haven-tour-hero-image--short">
-      <img src="/assets/image-small-text.png" alt="" class="haven-tour-hero-bg" />
+      <img src="/assets/haven-night-sky.png" alt="" class="haven-tour-hero-bg" />
       <div class="haven-tour-hero-overlay">
         <div style="font-size:36px;">🎉</div>
       </div>
