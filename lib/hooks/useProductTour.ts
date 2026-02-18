@@ -55,16 +55,16 @@ function housesStep() {
   return `
     <div class="haven-tour-body" style="padding-top:4px;">
       <p>
-        <strong>Houses are the foundation of Haven.</strong> Each house represents a property in your SDA portfolio — 
+        <strong>Houses are the foundation of Haven.</strong> Each house represents a property in your SDA portfolio, 
         with bedrooms, occupancy tracking, go-live dates, and financial reporting built in.
       </p>
       <p>
-        Inside each house you'll find residents, expenses, head leases, suppliers, and a 
-        full financial overview with <span class="haven-tour-highlight">milestones</span> and <span class="haven-tour-highlight">insights</span>.
+        Inside each house you can manage residents, expenses, head leases, suppliers, and view a complete 
+        financial picture with <span class="haven-tour-highlight">milestones</span> and <span class="haven-tour-highlight">insights</span>.
       </p>
       <div class="haven-tour-tip">
         <span class="haven-tour-tip-icon">🏗️</span>
-        <span>Start here: Add your first house, then assign residents to it.</span>
+        <span>Start here: Add your first house, then assign residents when you're ready.</span>
       </div>
     </div>
   `
