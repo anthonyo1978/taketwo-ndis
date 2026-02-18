@@ -157,12 +157,8 @@ function notificationsStep() {
   return `
     <div class="haven-tour-body" style="padding-top:4px;">
       <p>
-        <strong>Stay in the loop.</strong> Notifications keep you informed about contract activations, 
-        automated billing runs, system events, and anything that needs your attention.
-      </p>
-      <p>
-        You'll also find your <span class="haven-tour-highlight">to-do list</span> here — create tasks from 
-        notifications or add your own reminders to stay organised.
+        <strong>Stay informed and in control.</strong> Notifications alert you to contract activations, 
+        automated billing runs, NDIA communications, system activity, and anything requiring your attention.
       </p>
     </div>
   `
