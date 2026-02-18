@@ -5,6 +5,263 @@ import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { useSession } from 'lib/contexts/SessionContext'
 
+// ─── Rich HTML builders for tour steps ───
+
+function welcomeStep(firstName: string) {
+  return `
+    <div class="haven-tour-hero">
+      <div style="font-size:40px;margin-bottom:8px;">🏡</div>
+      <h2>Welcome to Haven${firstName ? `, ${firstName}` : ''}!</h2>
+      <p class="haven-tour-subtitle">Finally — software built for SDA providers.</p>
+    </div>
+    <div class="haven-tour-body">
+      <p>
+        No more spreadsheets. No more manual billing. No more chasing contracts across folders.
+      </p>
+      <p>
+        Haven is the <span class="haven-tour-highlight">all-in-one platform</span> built from the ground up 
+        to help SDA businesses manage their entire operation — houses, residents, billing, claims, and reporting — in one place.
+      </p>
+      <div class="haven-tour-features">
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">⚡</span> Automated billing</div>
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📊</span> Real-time dashboards</div>
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📋</span> NDIS claims</div>
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">🔒</span> Bank-level security</div>
+      </div>
+      <div class="haven-tour-pill" style="margin-top:16px;">✨ Let's take a quick tour — it'll only take 60 seconds</div>
+    </div>
+  `
+}
+
+function dashboardStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        This is your <strong>command centre</strong>. At a glance you can see total income, expenses, 
+        net profit, and this month's performance across your entire portfolio.
+      </p>
+      <p>
+        The financial chart below gives you a bird's-eye view of your business over time — 
+        toggle <span class="haven-tour-highlight">Insights</span> for a deeper breakdown by house and resident.
+      </p>
+      <div class="haven-tour-tip">
+        <span class="haven-tour-tip-icon">💡</span>
+        <span>Pro tip: Use the house filter to drill into any property's P&L instantly.</span>
+      </div>
+    </div>
+  `
+}
+
+function housesStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        <strong>Houses are the foundation of Haven.</strong> Each house represents a property in your SDA portfolio — 
+        with bedrooms, occupancy tracking, go-live dates, and financial reporting built in.
+      </p>
+      <p>
+        Inside each house you'll find residents, expenses, head leases, suppliers, and a 
+        full financial overview with <span class="haven-tour-highlight">milestones</span> and <span class="haven-tour-highlight">insights</span>.
+      </p>
+      <div class="haven-tour-tip">
+        <span class="haven-tour-tip-icon">🏗️</span>
+        <span>Start here: Add your first house, then assign residents to it.</span>
+      </div>
+    </div>
+  `
+}
+
+function residentsStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        <strong>Your residents are at the heart of everything.</strong> Each resident record holds their personal details, 
+        NDIS funding contracts, plan manager info, and transaction history.
+      </p>
+      <p>
+        Once a resident is linked to a house with an active funding contract, Haven can 
+        <span class="haven-tour-highlight">automatically generate transactions</span> — daily, weekly, or fortnightly. 
+        No more manual data entry.
+      </p>
+      <div class="haven-tour-features">
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📄</span> Funding contracts</div>
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📈</span> Claim summaries</div>
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">🤖</span> Auto billing</div>
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">💰</span> Balance tracking</div>
+      </div>
+    </div>
+  `
+}
+
+function transactionsStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        <strong>Transactions are records of service delivery.</strong> Every billable event — whether created 
+        manually or by automation — lives here.
+      </p>
+      <p>
+        Haven makes it easy to create transactions with smart features like 
+        <span class="haven-tour-highlight">End of Month roll-ups</span>, quantity × unit price calculation, 
+        and "Create & Next" for rapid entry across multiple months.
+      </p>
+      <div class="haven-tour-tip">
+        <span class="haven-tour-tip-icon">⚡</span>
+        <span>Remember: <strong>Active House → Resident → Contract</strong> = transactions can flow. That's the golden rule.</span>
+      </div>
+    </div>
+  `
+}
+
+function claimsStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        <strong>This is where the money comes in.</strong> Package your approved transactions into NDIA claims, 
+        track submission status, and reconcile payments — all from one screen.
+      </p>
+      <p>
+        No more copy-pasting into spreadsheets. Haven formats everything the NDIA expects, 
+        so you can <span class="haven-tour-highlight">submit with confidence</span>.
+      </p>
+      <div class="haven-tour-features">
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📦</span> Bulk packaging</div>
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📤</span> Export & submit</div>
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">✅</span> Status tracking</div>
+        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">🔄</span> Reconciliation</div>
+      </div>
+    </div>
+  `
+}
+
+function suppliersStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        <strong>Keep track of your service providers.</strong> Link suppliers to houses for maintenance, 
+        cleaning, gardening, and other services. 
+      </p>
+      <p>
+        Having your supplier relationships in Haven means you always know who services which property — 
+        and you can track associated expenses against each house.
+      </p>
+    </div>
+  `
+}
+
+function settingsStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        <strong>The engine room.</strong> Settings is where you configure the magic — 
+        <span class="haven-tour-highlight">automated billing</span>, user management, 
+        organisation details, and system preferences.
+      </p>
+      <p>
+        Toggle automation on, set billing frequencies per contract, and let Haven 
+        create transactions while you sleep. You'll get a morning summary of everything it did.
+      </p>
+      <div class="haven-tour-tip">
+        <span class="haven-tour-tip-icon">🤖</span>
+        <span>Automation is Haven's superpower. Set it up once and reclaim hours every week.</span>
+      </div>
+    </div>
+  `
+}
+
+function notificationsStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        <strong>Stay in the loop.</strong> Notifications keep you informed about contract activations, 
+        automated billing runs, system events, and anything that needs your attention.
+      </p>
+      <p>
+        You'll also find your <span class="haven-tour-highlight">to-do list</span> here — create tasks from 
+        notifications or add your own reminders to stay organised.
+      </p>
+    </div>
+  `
+}
+
+function notificationsPanelStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        This side panel gives you <strong>real-time alerts</strong> without leaving your current page. 
+        Click the bell icon to see notifications, the clipboard for to-dos, and the clock for reminders.
+      </p>
+      <p>
+        It's your quick-access hub — always one click away, no matter where you are in Haven.
+      </p>
+    </div>
+  `
+}
+
+function reportingStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        <strong>Data-driven decisions.</strong> Generate detailed reports on income, expenses, 
+        occupancy, and claims across your entire portfolio or individual houses.
+      </p>
+      <p>
+        Export to CSV, view trends over time, and get the <span class="haven-tour-highlight">financial clarity</span> 
+        you need to grow your SDA business with confidence.
+      </p>
+    </div>
+  `
+}
+
+function helpStep() {
+  return `
+    <div class="haven-tour-body" style="padding-top:4px;">
+      <p>
+        <strong>You're never on your own.</strong> The Help Centre has quick-start guides, 
+        training materials, FAQs, and detailed documentation for every feature.
+      </p>
+      <p>
+        Whether you're onboarding a new team member or troubleshooting a claim, 
+        the answer is probably already here.
+      </p>
+    </div>
+  `
+}
+
+function finaleStep(firstName: string) {
+  return `
+    <div class="haven-tour-body">
+      <div class="haven-tour-finale">
+        <div style="font-size:36px;margin-bottom:8px;">🎉</div>
+        <p style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px;">
+          You're all set${firstName ? `, ${firstName}` : ''}!
+        </p>
+        <p style="color:#64748b;font-size:13px;">
+          You've just seen the highlights. Haven has so much more to offer — 
+          and we're adding new features all the time.
+        </p>
+        <div class="haven-tour-checkmarks">
+          <span class="haven-tour-check">✓ Houses</span>
+          <span class="haven-tour-check">✓ Residents</span>
+          <span class="haven-tour-check">✓ Transactions</span>
+          <span class="haven-tour-check">✓ Claims</span>
+          <span class="haven-tour-check">✓ Automation</span>
+          <span class="haven-tour-check">✓ Reporting</span>
+        </div>
+        <p style="color:#475569;font-size:13px;margin-top:14px;">
+          Click your <strong>profile icon</strong> anytime to restart this tour. 
+          Now go build something amazing. 🚀
+        </p>
+        <div class="haven-tour-pill" style="margin-top:12px;justify-content:center;">
+          🇦🇺 Proudly built in Australia for SDA providers
+        </div>
+      </div>
+    </div>
+  `
+}
+
+// ─── Tour Hook ───
+
 export function useProductTour() {
   const { user } = useSession()
   const [tourCompleted, setTourCompleted] = useState(true) // Default to true to prevent flash
@@ -35,9 +292,15 @@ export function useProductTour() {
   }, [user])
 
   const startTour = () => {
+    const firstName = user?.firstName || ''
+
     const driverObj = driver({
       showProgress: true,
       showButtons: ['next', 'previous', 'close'],
+      progressText: '{{current}} of {{total}}',
+      nextBtnText: 'Next →',
+      prevBtnText: '← Previous',
+      doneBtnText: 'Get Started! 🚀',
       onDestroyed: () => {
         // Mark tour as completed
         localStorage.setItem('haven-tour-completed', 'true')
@@ -57,100 +320,133 @@ export function useProductTour() {
         })
       },
       steps: [
+        // Step 1: Grand welcome — no element highlight, centred popover
         {
           popover: {
-            title: '👋 Welcome to Haven!',
-            description: 'Haven helps you manage houses, residents, transactions, and claiming. Let\'s take a quick 30-second tour to get you started. You can skip anytime or press ESC.'
+            title: '',
+            description: welcomeStep(firstName),
+            popoverClass: 'haven-tour-welcome-step',
           }
         },
+        // Step 2: Dashboard
+        {
+          element: '[data-tour="dashboard-nav"]',
+          popover: {
+            title: '📊 Your Dashboard',
+            description: dashboardStep(),
+            side: 'right',
+            align: 'start'
+          }
+        },
+        // Step 3: Houses
         {
           element: '[data-tour="houses-nav"]',
           popover: {
-            title: '🏠 Start with Houses',
-            description: 'Create houses to organise your residents. This is the foundation of your setup.<br/><br/><a href="/help/user-guide#managing-houses" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs font-medium">📖 Learn more about Houses →</a>',
+            title: '🏠 Houses — Your Portfolio',
+            description: housesStep(),
             side: 'right',
             align: 'start'
           }
         },
+        // Step 4: Residents
         {
           element: '[data-tour="residents-nav"]',
           popover: {
-            title: '👥 Create Residents',
-            description: 'Create residents and add them to your houses. Each resident record carries important resident details, including contact details, funding details, and preferences.<br/><br/><a href="/help/user-guide#managing-residents" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs font-medium">📖 Learn more about Residents →</a>',
+            title: '👥 Residents — The Heart of Haven',
+            description: residentsStep(),
             side: 'right',
             align: 'start'
           }
         },
+        // Step 5: Transactions
         {
           element: '[data-tour="transactions-nav"]',
           popover: {
-            title: '💳 Transactions',
-            description: 'Transactions are records of service delivery, and they live here. Remember: <strong>Active House → Active Resident (linked to house) → Active Contract</strong> — only then can you generate transactions.<br/><br/><a href="/help/user-guide#transactions--billing" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs font-medium">📖 Learn more about Transactions →</a>',
+            title: '💳 Transactions — Service Delivery',
+            description: transactionsStep(),
             side: 'right',
             align: 'start'
           }
         },
+        // Step 6: Claims
         {
           element: '[data-tour="claims-nav"]',
           popover: {
-            title: '📄 Claiming',
-            description: 'In this section, you can build your claims and automatically send them to the NDIA or create downloadable files.<br/><br/><a href="/help/user-guide#claims-management" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs font-medium">📖 Learn more about Claims →</a>',
+            title: '📄 Claims — Get Paid',
+            description: claimsStep(),
             side: 'right',
             align: 'start'
           }
         },
+        // Step 7: Suppliers
         {
-          element: '[data-tour="settings-nav"]',
+          element: '[data-tour="suppliers-nav"]',
           popover: {
-            title: '⚙️ Automation is Key',
-            description: 'In Settings, you can easily set up automation to automatically create transactions. This section also allows much configuration of the system and user management.<br/><br/><a href="/help/user-guide#automated-billing" target="_blank" class="text-blue-500 hover:text-blue-700 text-xs font-medium">📖 Learn more about Automation →</a>',
+            title: '🔧 Suppliers & Services',
+            description: suppliersStep(),
             side: 'right',
             align: 'start'
           }
         },
+        // Step 8: Notifications
         {
           element: '[data-tour="notifications-nav"]',
           popover: {
-            title: '🔔 Notifications Module',
-            description: 'View and manage all system notifications here. This is your central hub for alerts from contract activations, automated billing, and system events.',
+            title: '🔔 Notifications & To-Dos',
+            description: notificationsStep(),
             side: 'right',
             align: 'start'
           }
         },
+        // Step 9: Notifications Panel
         {
           element: '[data-tour="notifications-panel"]',
           popover: {
-            title: '🔔 Notifications Panel',
-            description: 'The notification panel on the right shows real-time alerts as they happen. Click the bell icon to see notifications instantly without leaving your current page. This complements the Notifications module on the left!',
+            title: '⚡ Quick Access Panel',
+            description: notificationsPanelStep(),
             side: 'left',
             align: 'center'
           }
         },
+        // Step 10: Reporting
         {
-          element: '[data-tour="notifications-panel"]',
+          element: '[data-tour="reporting-nav"]',
           popover: {
-            title: '✅ To-Do List',
-            description: 'This panel also includes your simple to-do list. Click the clipboard icon to access it. Create tasks from notifications or add your own reminders to stay organized.',
-            side: 'left',
-            align: 'center'
+            title: '📈 Reporting & Insights',
+            description: reportingStep(),
+            side: 'right',
+            align: 'start'
           }
         },
+        // Step 11: Settings
+        {
+          element: '[data-tour="settings-nav"]',
+          popover: {
+            title: '⚙️ Settings — The Engine Room',
+            description: settingsStep(),
+            side: 'right',
+            align: 'start'
+          }
+        },
+        // Step 12: Help
         {
           element: '[data-tour="help-nav"]',
           popover: {
-            title: '📚 Help Center',
-            description: 'Quick Start guides, Training materials, FAQs, and in-depth documentation all live here. Access them anytime you need help.<br/><br/><a href="/help" class="text-blue-500 hover:text-blue-700 text-xs font-medium">📖 Browse all guides →</a>',
+            title: '📚 Help Centre',
+            description: helpStep(),
             side: 'right',
             align: 'start'
           }
         },
+        // Step 13: Finale
         {
           element: '[data-tour="user-profile"]',
           popover: {
-            title: '✅ You\'re All Set!',
-            description: 'Click your profile icon anytime to restart this tour. Happy managing!',
+            title: '',
+            description: finaleStep(firstName),
             side: 'left',
-            align: 'end'
+            align: 'end',
+            popoverClass: 'haven-tour-welcome-step',
           }
         }
       ]
