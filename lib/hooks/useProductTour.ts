@@ -9,10 +9,13 @@ import { useSession } from 'lib/contexts/SessionContext'
 
 function welcomeStep(firstName: string) {
   return `
-    <div class="haven-tour-hero">
-      <div style="font-size:40px;margin-bottom:8px;">🏡</div>
-      <h2>Welcome to Haven${firstName ? `, ${firstName}` : ''}!</h2>
-      <p class="haven-tour-subtitle">Finally — software built for SDA providers.</p>
+    <div class="haven-tour-hero-image">
+      <img src="/assets/haven-login-bg.png" alt="" class="haven-tour-hero-bg" />
+      <div class="haven-tour-hero-overlay">
+        <img src="/assets/haven-logo.svg" alt="Haven" style="width:48px;height:48px;margin-bottom:12px;" />
+        <h2>Welcome${firstName ? `, ${firstName}` : ''}!</h2>
+        <p class="haven-tour-subtitle">Finally — software built for SDA providers.</p>
+      </div>
     </div>
     <div class="haven-tour-body">
       <p>
@@ -230,9 +233,14 @@ function helpStep() {
 
 function finaleStep(firstName: string) {
   return `
+    <div class="haven-tour-hero-image haven-tour-hero-image--short">
+      <img src="/assets/image-small-text.png" alt="" class="haven-tour-hero-bg" />
+      <div class="haven-tour-hero-overlay">
+        <div style="font-size:36px;">🎉</div>
+      </div>
+    </div>
     <div class="haven-tour-body">
       <div class="haven-tour-finale">
-        <div style="font-size:36px;margin-bottom:8px;">🎉</div>
         <p style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:4px;">
           You're all set${firstName ? `, ${firstName}` : ''}!
         </p>
