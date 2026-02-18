@@ -232,7 +232,7 @@ function SetupPasswordContent() {
                   Your password has been set successfully.
                 </p>
                 <p className="mt-2 text-sm text-green-600">
-                  You will now be redirected to the login page. Please use your new password to sign in.
+                  You will now be redirected to the login page. Please sign in using your <strong>email address</strong> (the one your invitation was sent to) as your username, and the <strong>password you just created</strong>.
                 </p>
               </div>
             </div>
