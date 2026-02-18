@@ -87,40 +87,46 @@
   gap: 8px !important;
 }
 
-/* Buttons — use solid colours for crisp rendering (no gradients = no pixel artifacts) */
+/* Buttons — clean, crisp */
 .driver-popover-footer button {
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  font-weight: 600 !important;
-  padding: 8px 18px !important;
-  transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 14px !important;
+  border-radius: 18px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  line-height: 1 !important;
+  transition: background-color 0.15s ease, transform 0.15s ease !important;
   cursor: pointer !important;
-  border: none !important;
+  border: 1px solid transparent !important;
   -webkit-font-smoothing: antialiased !important;
-  -moz-osx-font-smoothing: grayscale !important;
-  text-rendering: optimizeLegibility !important;
 }
 
 .driver-popover-next-btn {
   background-color: #059669 !important;
   color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  border-color: #059669 !important;
 }
 
 .driver-popover-next-btn:hover {
   background-color: #047857 !important;
-  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35) !important;
+  border-color: #047857 !important;
   transform: translateY(-1px) !important;
 }
 
 .driver-popover-prev-btn {
-  background-color: #f1f5f9 !important;
-  color: #475569 !important;
+  background-color: #f8fafc !important;
+  color: #64748b !important;
+  border-color: #e2e8f0 !important;
 }
 
 .driver-popover-prev-btn:hover {
-  background-color: #e2e8f0 !important;
-  color: #1e293b !important;
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Close button */
@@ -173,27 +179,23 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
+  padding-bottom: 24px;
   z-index: 1;
-  /* Subtle dark scrim so text pops over the image */
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.1) 100%);
+  /* Gentle gradient from transparent top to slightly darker bottom for text legibility */
+  background: linear-gradient(180deg, transparent 40%, rgba(15, 23, 42, 0.45) 100%);
 }
 
-.haven-tour-hero-overlay h2 {
-  font-size: 28px;
-  font-weight: 800;
-  color: #ffffff;
-  margin: 0 0 4px 0;
-  letter-spacing: -0.02em;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
-}
-
-.haven-tour-hero-overlay .haven-tour-subtitle {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
-  margin: 0;
+/* Italic tagline overlaid on the hero image */
+.haven-tour-tagline {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-style: italic;
+  font-size: 22px;
   font-weight: 400;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
 }
 
 .haven-tour-body {

@@ -7,31 +7,23 @@ import { useSession } from 'lib/contexts/SessionContext'
 
 // ─── Rich HTML builders for tour steps ───
 
-function welcomeStep(firstName: string) {
+function welcomeStep() {
   return `
     <div class="haven-tour-hero-image">
       <img src="/assets/haven-night-sky.png" alt="" class="haven-tour-hero-bg" />
       <div class="haven-tour-hero-overlay">
-        <img src="/assets/haven-logo.svg" alt="Haven" style="width:48px;height:48px;margin-bottom:12px;" />
-        <h2>Welcome${firstName ? `, ${firstName}` : ''}!</h2>
-        <p class="haven-tour-subtitle">Finally — software built for SDA providers.</p>
+        <p class="haven-tour-tagline">Finally &mdash; Software for SDA Providers</p>
       </div>
     </div>
     <div class="haven-tour-body">
       <p>
-        No more spreadsheets. No more manual billing. No more chasing contracts across folders.
+        Haven is the platform purpose-built for Specialist Disability Accommodation providers. 
+        Manage your houses, residents, funding contracts, billing, claims, and reporting &mdash; 
+        all from one place.
       </p>
       <p>
-        Haven is the <span class="haven-tour-highlight">all-in-one platform</span> built from the ground up 
-        to help SDA businesses manage their entire operation — houses, residents, billing, claims, and reporting — in one place.
+        We'll walk you through the key areas in about 60 seconds. Let's go.
       </p>
-      <div class="haven-tour-features">
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">⚡</span> Automated billing</div>
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📊</span> Real-time dashboards</div>
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📋</span> NDIS claims</div>
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">🔒</span> Bank-level security</div>
-      </div>
-      <div class="haven-tour-pill" style="margin-top:16px;">✨ Let's take a quick tour — it'll only take 60 seconds</div>
     </div>
   `
 }
@@ -306,9 +298,9 @@ export function useProductTour() {
       showProgress: true,
       showButtons: ['next', 'previous', 'close'],
       progressText: '{{current}} of {{total}}',
-      nextBtnText: 'Next →',
-      prevBtnText: '← Previous',
-      doneBtnText: 'Get Started! 🚀',
+      nextBtnText: '\u2192',
+      prevBtnText: '\u2190',
+      doneBtnText: 'Get Started \u2192',
       onDestroyed: () => {
         // Mark tour as completed
         localStorage.setItem('haven-tour-completed', 'true')
@@ -332,7 +324,7 @@ export function useProductTour() {
         {
           popover: {
             title: '',
-            description: welcomeStep(firstName),
+            description: welcomeStep(),
             popoverClass: 'haven-tour-welcome-step',
           }
         },
