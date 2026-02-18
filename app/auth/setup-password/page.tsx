@@ -122,12 +122,11 @@ function SetupPasswordContent() {
             router.push('/login')
           }, 3000)
         } else {
-          // Successfully logged in automatically
+          // Password set successfully — redirect to login
           setIsSuccess(true)
-          // Redirect to dashboard after 2 seconds
           setTimeout(() => {
-            router.push('/dashboard')
-          }, 2000)
+            router.push('/login')
+          }, 3000)
         }
       } else {
         console.error('[FRONTEND] Setup password error:', result.error)
@@ -233,7 +232,7 @@ function SetupPasswordContent() {
                   Your password has been set successfully.
                 </p>
                 <p className="mt-2 text-sm text-green-600">
-                  Redirecting you to your dashboard...
+                  You will now be redirected to the login page. Please use your new password to sign in.
                 </p>
               </div>
             </div>
