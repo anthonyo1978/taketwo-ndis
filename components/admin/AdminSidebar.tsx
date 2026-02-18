@@ -123,30 +123,40 @@ export function AdminSidebar({ className }: AdminSidebarProps) {
     }
   }, [])
 
-  // Listen for Haven mode changes (when toggled in settings)
+  // Listen for Haven mode and collapsed state changes (e.g. from product tour)
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'haven-mode-enabled') {
         setHavenMode(e.newValue === 'true')
       }
+      if (e.key === STORAGE_KEY) {
+        setIsCollapsed(e.newValue === 'true')
+      }
     }
     window.addEventListener('storage', handleStorageChange)
-    // Also listen for changes in the same window
+    // Also poll for changes in the same window
     const interval = setInterval(() => {
-      const stored = localStorage.getItem('haven-mode-enabled')
-      if (stored !== null) {
-        const newValue = JSON.parse(stored) as boolean
+      const storedHaven = localStorage.getItem('haven-mode-enabled')
+      if (storedHaven !== null) {
+        const newValue = JSON.parse(storedHaven) as boolean
         if (newValue !== havenMode) {
           setHavenMode(newValue)
         }
       }
-    }, 500) // Check every 500ms
+      const storedCollapsed = localStorage.getItem(STORAGE_KEY)
+      if (storedCollapsed !== null) {
+        const newCollapsed = JSON.parse(storedCollapsed) as boolean
+        if (newCollapsed !== isCollapsed) {
+          setIsCollapsed(newCollapsed)
+        }
+      }
+    }, 500)
 
     return () => {
       window.removeEventListener('storage', handleStorageChange)
       clearInterval(interval)
     }
-  }, [havenMode])
+  }, [havenMode, isCollapsed])
 
   // Save collapsed state to localStorage
   useEffect(() => {

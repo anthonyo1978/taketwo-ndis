@@ -279,6 +279,13 @@ export function useProductTour() {
   const startTour = () => {
     const firstName = user?.firstName || ''
 
+    // Ensure sidebar is open and in Haven (dark) mode for the tour
+    localStorage.setItem('admin-sidebar-collapsed', 'false')
+    localStorage.setItem('haven-mode-enabled', 'true')
+    // Dispatch storage events so the sidebar component picks up the changes immediately
+    window.dispatchEvent(new StorageEvent('storage', { key: 'admin-sidebar-collapsed', newValue: 'false' }))
+    window.dispatchEvent(new StorageEvent('storage', { key: 'haven-mode-enabled', newValue: 'true' }))
+
     const driverObj = driver({
       showProgress: true,
       showButtons: ['next', 'previous', 'close'],
