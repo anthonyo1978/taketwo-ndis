@@ -12,17 +12,18 @@ function welcomeStep() {
     <div class="haven-tour-hero-image">
       <img src="/assets/haven-night-sky.png" alt="" class="haven-tour-hero-bg" />
       <div class="haven-tour-hero-overlay">
-        <p class="haven-tour-tagline">Finally &mdash; Software for SDA Providers</p>
+        <p class="haven-tour-tagline">Finally, an operating system built for SDA providers</p>
       </div>
     </div>
     <div class="haven-tour-body">
       <p>
-        Haven is the platform purpose-built for Specialist Disability Accommodation providers. 
-        Manage your houses, residents, funding contracts, billing, claims, and reporting &mdash; 
-        all from one place.
+        Haven brings every part of your SDA business into one place&mdash;from spinning up new houses 
+        and managing rooms, leases, and expenses, to onboarding participants, tracking income and costs, 
+        and monitoring performance across your entire organisation.
       </p>
       <p>
-        We'll walk you through the key areas in about 60 seconds. Let's go.
+        Clear dashboards, automation, reporting, and intelligent tools help you stay in 
+        control&mdash;from the room level to the balance sheet.
       </p>
     </div>
   `
