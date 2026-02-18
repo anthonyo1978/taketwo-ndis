@@ -107,19 +107,14 @@ function claimsStep() {
   return `
     <div class="haven-tour-body" style="padding-top:4px;">
       <p>
-        <strong>This is where the money comes in.</strong> Package your approved transactions into NDIA claims, 
-        track submission status, and reconcile payments — all from one screen.
+        <strong>This is where your revenue comes together.</strong> Easily gather transactions into NDIA claims, 
+        submit in a few clicks, track submission status, and reconcile payments&mdash;without double handling 
+        or spreadsheet work.
       </p>
       <p>
-        No more copy-pasting into spreadsheets. Haven formats everything the NDIA expects, 
-        so you can <span class="haven-tour-highlight">submit with confidence</span>.
+        Haven formats everything the NDIA expects, so you can <span class="haven-tour-highlight">submit with confidence</span>. 
+        Claiming, reconciliation, and error management are all handled in one place.
       </p>
-      <div class="haven-tour-features">
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📦</span> Bulk packaging</div>
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📤</span> Export & submit</div>
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">✅</span> Status tracking</div>
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">🔄</span> Reconciliation</div>
-      </div>
     </div>
   `
 }
@@ -128,12 +123,11 @@ function suppliersStep() {
   return `
     <div class="haven-tour-body" style="padding-top:4px;">
       <p>
-        <strong>Keep track of your service providers.</strong> Link suppliers to houses for maintenance, 
-        cleaning, gardening, and other services. 
+        <strong>Keep track of the suppliers who support your organisation.</strong> Store contact details, 
+        manage services, and link suppliers to expenses, utilities, and invoices across Haven.
       </p>
       <p>
-        Having your supplier relationships in Haven means you always know who services which property — 
-        and you can track associated expenses against each house.
+        Everything stays connected, so you always know who provides what&mdash;and what it costs.
       </p>
     </div>
   `
@@ -377,7 +371,7 @@ export function useProductTour() {
         {
           element: '[data-tour="suppliers-nav"]',
           popover: {
-            title: '🔧 Suppliers & Services',
+            title: '🔧 Suppliers',
             description: suppliersStep(),
             side: 'right',
             align: 'start'
