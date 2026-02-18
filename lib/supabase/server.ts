@@ -27,3 +27,22 @@ export async function createClient() {
     }
   )
 }
+
+/**
+ * Create a Supabase client with the service role key.
+ * This bypasses RLS and should ONLY be used for operations
+ * that need to run without an authenticated user session
+ * (e.g. validating invite tokens, setting up passwords).
+ */
+export function createServiceRoleClient() {
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      cookies: {
+        getAll: () => [],
+        setAll: () => {},
+      },
+    }
+  )
+}

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from 'lib/supabase/server'
+import { createServiceRoleClient } from 'lib/supabase/server'
 
 /**
  * GET /api/auth/validate-invite?token=xxx
- * Validates an invitation token and returns user info
+ * Validates an invitation token and returns user info.
+ * Uses service role client because the user is not authenticated yet
+ * (they're clicking the invite link for the first time).
  */
 export async function GET(request: NextRequest) {
   try {
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    const supabase = createServiceRoleClient()
 
     // Get invite with user details
     const { data: invite, error: inviteError } = await supabase

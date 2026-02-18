@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from 'lib/supabase/server'
-import { createServerClient } from '@supabase/ssr'
+import { createServiceRoleClient } from 'lib/supabase/server'
 import { z } from 'zod'
 
 const setupPasswordSchema = z.object({
@@ -14,7 +13,8 @@ const setupPasswordSchema = z.object({
 
 /**
  * POST /api/auth/setup-password
- * Creates Supabase Auth user and sets password for invited user
+ * Creates Supabase Auth user and sets password for invited user.
+ * Uses service role client throughout because the user is not authenticated yet.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +30,10 @@ export async function POST(request: NextRequest) {
     }
 
     const { token, password } = validation.data
-    const supabase = await createClient()
+
+    // Use service role client for ALL operations in this route
+    // because the user is not authenticated (they're setting up their password)
+    const supabase = createServiceRoleClient()
 
     // Get invite with user details
     const { data: invite, error: inviteError } = await supabase
@@ -78,20 +81,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create Supabase Auth user using admin API
-    // Note: This requires SUPABASE_SERVICE_ROLE_KEY
-    const supabaseAdmin = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        cookies: {
-          getAll: () => [],
-          setAll: () => {},
-        },
-      }
-    )
-    
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: user.email,
       password: password,
       email_confirm: true, // Auto-confirm email
@@ -109,7 +99,7 @@ export async function POST(request: NextRequest) {
         // User already exists in Supabase Auth, try to sign them in instead
         // User already exists in Supabase Auth, try to sign them in instead
         
-        const { data: signInData, error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: user.email,
           password: password
         })
@@ -179,8 +169,8 @@ export async function POST(request: NextRequest) {
       .update({ used_at: new Date().toISOString() })
       .eq('id', invite.id)
 
-    // Sign the user in automatically using service role
-    const { error: signInError } = await supabaseAdmin.auth.signInWithPassword({
+    // Sign the user in automatically
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email: user.email,
       password: password
     })
