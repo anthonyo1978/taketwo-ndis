@@ -74,20 +74,15 @@ function residentsStep() {
   return `
     <div class="haven-tour-body" style="padding-top:4px;">
       <p>
-        <strong>Your residents are at the heart of everything.</strong> Each resident record holds their personal details, 
-        NDIS funding contracts, plan manager info, and transaction history.
+        <strong>Everything in Haven connects back to the people you support.</strong> Each resident profile brings together 
+        personal details, NDIS funding contracts, funding management types, transaction overviews, history and 
+        more&hellip; in one place.
       </p>
       <p>
-        Once a resident is linked to a house with an active funding contract, Haven can 
-        <span class="haven-tour-highlight">automatically generate transactions</span> — daily, weekly, or fortnightly. 
-        No more manual data entry.
+        Link a resident to a house with an active funding contract, and Haven 
+        <span class="haven-tour-highlight">automatically generates transactions</span>&mdash;daily, weekly, or 
+        fortnightly&mdash;saving hours of manual work.
       </p>
-      <div class="haven-tour-features">
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📄</span> Funding contracts</div>
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">📈</span> Claim summaries</div>
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">🤖</span> Auto billing</div>
-        <div class="haven-tour-feature"><span class="haven-tour-feature-icon">💰</span> Balance tracking</div>
-      </div>
     </div>
   `
 }
