@@ -132,7 +132,7 @@ export default function DashboardPage() {
                 : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
-            📋 NDIS & Operations
+            📋 NDIS Overview
           </button>
         </div>
 

@@ -363,28 +363,30 @@ export function PortfolioFinancialChart() {
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* ── Header ── */}
-      <div className="px-6 pt-5 pb-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        {/* Left: Title + summary */}
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {selectedHouseId ? houses.find(h => h.id === selectedHouseId)?.name || 'House' : 'Portfolio'} — Income vs Expenses
-          </h3>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2">
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-sm text-gray-600">Income</span>
-              <span className="text-sm font-semibold text-gray-900 ml-1">{fmtCurrency(totals.income)}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-              <span className="text-sm text-gray-600">Expenses</span>
-              <span className="text-sm font-semibold text-gray-900 ml-1">{fmtCurrency(totals.expenses)}</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className={`w-2.5 h-2.5 rounded-full ${totals.net >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-              <span className="text-sm text-gray-600">Net</span>
-              <span className={`text-sm font-bold ml-1 ${totals.net >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {totals.net >= 0 ? '+' : ''}{fmtCurrency(totals.net)}
+      <div className="px-6 pt-5 pb-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        {/* Left: Title + inline summary */}
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h3 className="text-lg font-semibold text-gray-900 whitespace-nowrap">
+              {selectedHouseId ? houses.find(h => h.id === selectedHouseId)?.name || 'House' : 'Portfolio'} — Income vs Expenses
+            </h3>
+            <div className="flex items-center gap-x-4 gap-y-1 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-sm">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-gray-500">Income</span>
+                <span className="font-semibold text-gray-900">{fmtCurrency(totals.income)}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-sm">
+                <span className="w-2 h-2 rounded-full bg-rose-400" />
+                <span className="text-gray-500">Expenses</span>
+                <span className="font-semibold text-gray-900">{fmtCurrency(totals.expenses)}</span>
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-sm">
+                <span className={`w-2 h-2 rounded-full ${totals.net >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                <span className="text-gray-500">Net</span>
+                <span className={`font-bold ${totals.net >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {totals.net >= 0 ? '+' : ''}{fmtCurrency(totals.net)}
+                </span>
               </span>
             </div>
           </div>

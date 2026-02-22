@@ -1,9 +1,10 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
+import { Camera, Trash2, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { Input } from "components/ui/Input"
@@ -37,6 +38,10 @@ export default function ResidentEditPage({ params }: ResidentEditPageProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [residentId, setResidentId] = useState<string>('')
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -72,6 +77,7 @@ export default function ResidentEditPage({ params }: ResidentEditPageProps) {
         
         if (result.success && result.data) {
           setResident(result.data)
+          setCurrentPhotoUrl(result.data.photoUrl || result.data.photoBase64 || '')
           
           // Populate form with resident data
           form.reset({
@@ -143,6 +149,72 @@ export default function ResidentEditPage({ params }: ResidentEditPageProps) {
       console.error('Error updating resident:', error)
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError('Photo must be less than 5MB')
+      return
+    }
+
+    const previewUrl = URL.createObjectURL(file)
+    setPhotoPreview(previewUrl)
+    setError(null)
+    setPhotoUploading(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('photo', file)
+
+      const response = await fetch(`/api/residents/${residentId}/photo`, {
+        method: 'POST',
+        body: formData
+      })
+      const result = await response.json() as { success: boolean; photoUrl?: string; error?: string }
+
+      if (result.success && result.photoUrl) {
+        setCurrentPhotoUrl(result.photoUrl)
+        setPhotoPreview(null)
+      } else {
+        setError(result.error || 'Failed to upload photo')
+        setPhotoPreview(null)
+      }
+    } catch {
+      setError('Network error uploading photo')
+      setPhotoPreview(null)
+    } finally {
+      setPhotoUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handlePhotoRemove = async () => {
+    setPhotoUploading(true)
+    setError(null)
+    try {
+      const response = await fetch(`/api/residents/${residentId}/photo`, {
+        method: 'DELETE'
+      })
+      const result = await response.json() as { success: boolean; error?: string }
+
+      if (result.success) {
+        setCurrentPhotoUrl('')
+        setPhotoPreview(null)
+      } else {
+        setError(result.error || 'Failed to remove photo')
+      }
+    } catch {
+      setError('Network error removing photo')
+    } finally {
+      setPhotoUploading(false)
     }
   }
 

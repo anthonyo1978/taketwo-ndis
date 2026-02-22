@@ -1,7 +1,8 @@
 "use client"
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { useEffect, useState } from "react"
+import { Camera, Trash2, Loader2 } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
 import { useForm } from "react-hook-form"
 
 import { Button } from "components/Button/Button"
@@ -38,6 +39,10 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
   const [moveInDate, setMoveInDate] = useState(
     resident.moveInDate ? new Date(resident.moveInDate).toISOString().split('T')[0] : ''
   )
+  const [photoUploading, setPhotoUploading] = useState(false)
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [currentPhotoUrl, setCurrentPhotoUrl] = useState(resident.photoUrl || resident.photoBase64 || '')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
@@ -89,8 +94,80 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
       setMoveInDate(
         resident.moveInDate ? new Date(resident.moveInDate).toISOString().split('T')[0] : ''
       )
+      setCurrentPhotoUrl(resident.photoUrl || resident.photoBase64 || '')
+      setPhotoPreview(null)
     }
   }, [resident, setValue])
+
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate client-side
+    if (!file.type.startsWith('image/')) {
+      setSubmitError('Please select a valid image file')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setSubmitError('Photo must be less than 5MB')
+      return
+    }
+
+    // Show preview immediately
+    const previewUrl = URL.createObjectURL(file)
+    setPhotoPreview(previewUrl)
+    setSubmitError(null)
+
+    // Upload
+    setPhotoUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append('photo', file)
+
+      const response = await fetch(`/api/residents/${resident.id}/photo`, {
+        method: 'POST',
+        body: formData
+      })
+      const result = await response.json() as { success: boolean; photoUrl?: string; error?: string }
+
+      if (result.success && result.photoUrl) {
+        setCurrentPhotoUrl(result.photoUrl)
+        setPhotoPreview(null)
+      } else {
+        setSubmitError(result.error || 'Failed to upload photo')
+        setPhotoPreview(null)
+      }
+    } catch {
+      setSubmitError('Network error uploading photo')
+      setPhotoPreview(null)
+    } finally {
+      setPhotoUploading(false)
+      // Reset file input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handlePhotoRemove = async () => {
+    setPhotoUploading(true)
+    setSubmitError(null)
+    try {
+      const response = await fetch(`/api/residents/${resident.id}/photo`, {
+        method: 'DELETE'
+      })
+      const result = await response.json() as { success: boolean; error?: string }
+
+      if (result.success) {
+        setCurrentPhotoUrl('')
+        setPhotoPreview(null)
+      } else {
+        setSubmitError(result.error || 'Failed to remove photo')
+      }
+    } catch {
+      setSubmitError('Network error removing photo')
+    } finally {
+      setPhotoUploading(false)
+    }
+  }
 
   const handleFormSubmit = async (data: ResidentUpdateSchemaType) => {
     setIsSubmitting(true)
@@ -279,31 +356,67 @@ export function ResidentEditForm({ resident, open, onClose, onSuccess }: Residen
             </div>
           </div>
 
-          {/* Photo Display */}
+          {/* Profile Photo */}
           <div className="space-y-4">
             <h4 className="text-md font-medium text-gray-900">Profile Photo</h4>
             
             <div className="flex items-center space-x-4">
-              {(resident.photoUrl || resident.photoBase64) ? (
-                <img
-                  src={resident.photoUrl || resident.photoBase64}
-                  alt={`${resident.firstName} ${resident.lastName}`}
-                  className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
+              {/* Photo preview / current photo / initials */}
+              <div className="relative group">
+                {(photoPreview || currentPhotoUrl) ? (
+                  <img
+                    src={photoPreview || currentPhotoUrl}
+                    alt={`${resident.firstName} ${resident.lastName}`}
+                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-300"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center border-2 border-gray-300">
+                    <span className="text-white text-sm font-bold">
+                      {resident.firstName.charAt(0)}{resident.lastName.charAt(0)}
+                    </span>
+                  </div>
+                )}
+                {photoUploading && (
+                  <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                    <Loader2 className="w-5 h-5 text-white animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  onChange={handlePhotoSelect}
+                  className="hidden"
+                  disabled={photoUploading || isSubmitting}
                 />
-              ) : (
-                <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center border-2 border-gray-300">
-                  <span className="text-gray-500 text-sm font-medium">
-                    {resident.firstName.charAt(0)}{resident.lastName.charAt(0)}
-                  </span>
-                </div>
-              )}
-              <div>
-                <p className="text-sm text-gray-600">
-                  Current profile photo
-                </p>
-                <p className="text-xs text-gray-500">
-                  Photo upload will be available in a future update
-                </p>
+
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={photoUploading || isSubmitting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
+                >
+                  <Camera className="w-3.5 h-3.5" />
+                  {currentPhotoUrl ? 'Change Photo' : 'Upload Photo'}
+                </button>
+
+                {currentPhotoUrl && (
+                  <button
+                    type="button"
+                    onClick={handlePhotoRemove}
+                    disabled={photoUploading || isSubmitting}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Remove
+                  </button>
+                )}
+
+                <p className="text-xs text-gray-400">JPEG, PNG, GIF or WebP · Max 5 MB</p>
               </div>
             </div>
           </div>
