@@ -2,20 +2,20 @@
  * Haven Daily Brief
  *
  * Aggregates financial data across an organisation and produces a structured
- * briefing object. A separate function renders it into an HTML email.
+ * briefing object. A separate function renders it into a conversational,
+ * text-first HTML email designed for mobile reading.
  *
  * Data sources (all queries use service-role client to bypass RLS):
- *   - transactions (income)
+ *   - transactions (income / client billing)
  *   - house_expenses (property + org costs)
- *   - houses (property names)
+ *   - houses + residents (occupancy / vacancy)
  *   - automations + automation_runs (failed runs, upcoming)
  *   - funding_contracts (expiring soon, low balance)
+ *   - claims (pipeline / unclaimed amounts)
  *   - users (admin email recipients)
  */
 
 import { Resend } from 'resend'
-import type { Automation } from 'types/automation'
-import { createNotification } from './notification-service'
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Types
@@ -25,10 +25,13 @@ export interface DailyBriefData {
   orgName: string
   orgId: string
   timezone: string
-  reportDate: string // human-readable e.g. "Monday 24 Feb 2026"
+  /** The date the email is sent (today) — e.g. "Monday 24 February 2026" */
+  todayDate: string
+  /** The date the data refers to (yesterday) — e.g. "Sunday 23 February 2026" */
+  reportDate: string
   baseUrl: string
 
-  /* Section 1 — Executive Snapshot (Yesterday) */
+  /* ── Yesterday ── */
   yesterday: {
     income: number
     propertyCosts: number
@@ -38,7 +41,37 @@ export interface DailyBriefData {
     expenseCount: number
   }
 
-  /* Section 2 — Property Highlights */
+  /* ── Client billing narrative ── */
+  clients: {
+    billedCount: number       // distinct residents billed yesterday
+    housesWithBilling: number // distinct houses that had billing
+    totalBilled: number       // total $ billed
+  }
+
+  /* ── Occupancy ── */
+  occupancy: {
+    totalHouses: number
+    totalBedrooms: number
+    occupiedBedrooms: number
+    vacantBedrooms: number
+  }
+
+  /* ── Recurring invoices created yesterday ── */
+  recurringInvoicesYesterday: {
+    count: number
+    total: number
+    description: string // e.g. "rent" — category of the most common
+  }
+
+  /* ── P&L trend ── */
+  trend: {
+    last7DaysNet: number
+    prior7DaysNet: number
+    direction: 'up' | 'down' | 'flat'
+    changeAmount: number
+  }
+
+  /* ── Property Highlights ── */
   propertyHighlights: Array<{
     propertyId: string
     propertyName: string
@@ -47,7 +80,7 @@ export interface DailyBriefData {
     net: number
   }>
 
-  /* Section 3 — Next 7-Day Outlook */
+  /* ── Week Ahead ── */
   outlook: {
     expectedIncome: number
     expectedPropertyCosts: number
@@ -62,7 +95,15 @@ export interface DailyBriefData {
     }>
   }
 
-  /* Section 4 — Alerts */
+  /* ── Claims pipeline ── */
+  claims: {
+    draftAmount: number
+    draftCount: number
+    submittedAmount: number
+    submittedCount: number
+  }
+
+  /* ── Alerts ── */
   alerts: {
     expiringContracts: Array<{
       residentName: string
@@ -83,7 +124,7 @@ export interface DailyBriefData {
     }>
   }
 
-  /* Recipient list */
+  /* ── Recipient list ── */
   adminEmails: string[]
 }
 
@@ -100,7 +141,7 @@ export async function aggregateDailyBrief(
 ): Promise<DailyBriefData> {
   const now = new Date()
 
-  // Calculate yesterday boundaries in the org's timezone
+  // Calculate date boundaries in the org's timezone
   const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' })
   const todayStr = formatter.format(now)
 
@@ -117,6 +158,15 @@ export async function aggregateDailyBrief(
   futureEnd.setDate(futureEnd.getDate() + forwardDays)
   const futureEndStr = futureEnd.toISOString().split('T')[0]
 
+  // 7-day trend windows
+  const sevenDaysAgo = new Date(todayStr + 'T00:00:00')
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0]
+
+  const fourteenDaysAgo = new Date(todayStr + 'T00:00:00')
+  fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14)
+  const fourteenDaysAgoStr = fourteenDaysAgo.toISOString().split('T')[0]
+
   // ── Org name ──
   const { data: org } = await supabase
     .from('organizations')
@@ -128,30 +178,46 @@ export async function aggregateDailyBrief(
   // ── Houses lookup ──
   const { data: houses } = await supabase
     .from('houses')
-    .select('id, descriptor, address1, suburb')
+    .select('id, descriptor, address1, suburb, bedroom_count, status')
     .eq('organization_id', orgId)
 
   const houseMap = new Map<string, string>()
+  let totalHouses = 0
+  let totalBedrooms = 0
   for (const h of (houses || [])) {
     houseMap.set(h.id, h.descriptor || h.address1 || h.suburb || 'Unknown')
+    if (h.status === 'Active') {
+      totalHouses++
+      totalBedrooms += (h.bedroom_count || 1)
+    }
   }
 
-  // ── Residents → house mapping ──
+  // ── Residents → house mapping + occupancy ──
   const { data: residents } = await supabase
     .from('residents')
-    .select('id, house_id')
+    .select('id, house_id, status')
     .eq('organization_id', orgId)
 
   const residentHouseMap = new Map<string, string>()
+  const occupiedHouseIds = new Set<string>()
+  let occupiedBedrooms = 0
   for (const r of (residents || [])) {
     if (r.house_id) residentHouseMap.set(r.id, r.house_id)
+    if (r.status === 'Active' && r.house_id) {
+      occupiedHouseIds.add(r.house_id)
+      occupiedBedrooms++
+    }
   }
+  const vacantBedrooms = Math.max(0, totalBedrooms - occupiedBedrooms)
+
   const residentIds = (residents || []).map((r: any) => r.id)
 
   // ── 1. Yesterday's income (transactions) ──
   let incomeTotal = 0
   let transactionCount = 0
   const incomeByHouse = new Map<string, number>()
+  const billedResidents = new Set<string>()
+  const billedHouses = new Set<string>()
 
   if (residentIds.length > 0) {
     const batchSize = 100
@@ -169,18 +235,20 @@ export async function aggregateDailyBrief(
         const amt = parseFloat(tx.amount) || 0
         incomeTotal += amt
         transactionCount++
+        billedResidents.add(tx.resident_id)
         const houseId = residentHouseMap.get(tx.resident_id)
         if (houseId) {
           incomeByHouse.set(houseId, (incomeByHouse.get(houseId) || 0) + amt)
+          billedHouses.add(houseId)
         }
       }
     }
   }
 
   // ── 2. Yesterday's expenses ──
-  const { data: expenses } = await supabase
+  const { data: expensesData } = await supabase
     .from('house_expenses')
-    .select('amount, house_id, scope')
+    .select('amount, house_id, scope, category, source')
     .eq('organization_id', orgId)
     .gte('occurred_at', yesterdayStart)
     .lte('occurred_at', yesterdayEndStr + 'T23:59:59')
@@ -190,8 +258,11 @@ export async function aggregateDailyBrief(
   let orgCosts = 0
   let expenseCount = 0
   const expenseByHouse = new Map<string, number>()
+  let recurringExpenseCount = 0
+  let recurringExpenseTotal = 0
+  const recurringCategoryCounts = new Map<string, number>()
 
-  for (const e of (expenses || [])) {
+  for (const e of (expensesData || [])) {
     const amt = parseFloat(e.amount) || 0
     expenseCount++
     if (e.scope === 'organisation') {
@@ -202,7 +273,24 @@ export async function aggregateDailyBrief(
         expenseByHouse.set(e.house_id, (expenseByHouse.get(e.house_id) || 0) + amt)
       }
     }
+    // Track automation-generated expenses
+    if (e.source === 'automation') {
+      recurringExpenseCount++
+      recurringExpenseTotal += amt
+      const cat = e.category || 'other'
+      recurringCategoryCounts.set(cat, (recurringCategoryCounts.get(cat) || 0) + 1)
+    }
   }
+
+  // Find most common recurring category
+  let topRecurringCategory = 'expense'
+  let topCatCount = 0
+  recurringCategoryCounts.forEach((count, cat) => {
+    if (count > topCatCount) {
+      topCatCount = count
+      topRecurringCategory = cat
+    }
+  })
 
   const net = incomeTotal - propertyCosts - orgCosts
 
@@ -222,10 +310,65 @@ export async function aggregateDailyBrief(
       net: inc - exp,
     })
   })
-  // Show: negative-net properties first, then top 3 positive
   const negativeNet = propertyData.filter((p) => p.net < 0).sort((a, b) => a.net - b.net)
   const positiveNet = propertyData.filter((p) => p.net >= 0).sort((a, b) => b.net - a.net).slice(0, 3)
   const propertyHighlights = [...negativeNet, ...positiveNet]
+
+  // ── 7-day P&L trend ──
+  // Last 7 days income
+  let last7Income = 0
+  let prior7Income = 0
+  if (residentIds.length > 0) {
+    const batchSize = 100
+    for (let i = 0; i < residentIds.length; i += batchSize) {
+      const batch = residentIds.slice(i, i + batchSize)
+      // Last 7 days
+      const { data: txns7 } = await supabase
+        .from('transactions')
+        .select('amount')
+        .in('resident_id', batch)
+        .gte('occurred_at', sevenDaysAgoStr)
+        .lte('occurred_at', yesterdayEndStr + 'T23:59:59')
+        .not('status', 'in', '("rejected","cancelled")')
+      for (const tx of (txns7 || [])) { last7Income += parseFloat(tx.amount) || 0 }
+
+      // Prior 7 days
+      const { data: txns14 } = await supabase
+        .from('transactions')
+        .select('amount')
+        .in('resident_id', batch)
+        .gte('occurred_at', fourteenDaysAgoStr)
+        .lt('occurred_at', sevenDaysAgoStr)
+        .not('status', 'in', '("rejected","cancelled")')
+      for (const tx of (txns14 || [])) { prior7Income += parseFloat(tx.amount) || 0 }
+    }
+  }
+
+  // Last 7 days expenses
+  const { data: expenses7 } = await supabase
+    .from('house_expenses')
+    .select('amount')
+    .eq('organization_id', orgId)
+    .gte('occurred_at', sevenDaysAgoStr)
+    .lte('occurred_at', yesterdayEndStr + 'T23:59:59')
+    .not('status', 'eq', 'cancelled')
+  let last7Expenses = 0
+  for (const e of (expenses7 || [])) { last7Expenses += parseFloat(e.amount) || 0 }
+
+  const { data: expenses14 } = await supabase
+    .from('house_expenses')
+    .select('amount')
+    .eq('organization_id', orgId)
+    .gte('occurred_at', fourteenDaysAgoStr)
+    .lt('occurred_at', sevenDaysAgoStr)
+    .not('status', 'eq', 'cancelled')
+  let prior7Expenses = 0
+  for (const e of (expenses14 || [])) { prior7Expenses += parseFloat(e.amount) || 0 }
+
+  const last7DaysNet = last7Income - last7Expenses
+  const prior7DaysNet = prior7Income - prior7Expenses
+  const changeAmount = last7DaysNet - prior7DaysNet
+  const trendDirection: 'up' | 'down' | 'flat' = changeAmount > 50 ? 'up' : changeAmount < -50 ? 'down' : 'flat'
 
   // ── 3. Outlook — upcoming scheduled automations ──
   const { data: upcomingAutomations } = await supabase
@@ -249,7 +392,6 @@ export async function aggregateDailyBrief(
     const nextDate = auto.next_run_at ? new Date(auto.next_run_at).toLocaleDateString('en-AU', { timeZone: timezone, day: 'numeric', month: 'short' }) : '—'
 
     if (auto.type === 'recurring_transaction') {
-      // Try to look up the template to get amount
       let amount = 0
       let category = 'Recurring'
       let propertyName: string | undefined
@@ -283,15 +425,8 @@ export async function aggregateDailyBrief(
         }
       }
 
-      upcomingItems.push({
-        date: nextDate,
-        name: auto.name,
-        category,
-        property: propertyName,
-        amount,
-      })
+      upcomingItems.push({ date: nextDate, name: auto.name, category, property: propertyName, amount })
     } else if (auto.type === 'contract_billing_run') {
-      // Estimate from active contracts
       const { data: activeContracts } = await supabase
         .from('funding_contracts')
         .select('daily_support_item_cost')
@@ -304,17 +439,34 @@ export async function aggregateDailyBrief(
         estIncome += parseFloat(c.daily_support_item_cost) || 0
       }
       expectedIncome += estIncome
-
-      upcomingItems.push({
-        date: nextDate,
-        name: auto.name,
-        category: 'Contract Billing',
-        amount: estIncome,
-      })
+      upcomingItems.push({ date: nextDate, name: auto.name, category: 'Contract Billing', amount: estIncome })
     }
   }
 
   const projectedNet = expectedIncome - expectedPropertyCosts - expectedOrgCosts
+
+  // ── Claims pipeline ──
+  const { data: draftClaims } = await supabase
+    .from('claims')
+    .select('total_amount')
+    .eq('status', 'draft')
+  let draftAmount = 0
+  let draftCount = 0
+  for (const c of (draftClaims || [])) {
+    draftAmount += parseFloat(c.total_amount) || 0
+    draftCount++
+  }
+
+  const { data: submittedClaims } = await supabase
+    .from('claims')
+    .select('total_amount')
+    .in('status', ['submitted', 'in_progress', 'processed', 'auto_processed'])
+  let submittedAmount = 0
+  let submittedCount = 0
+  for (const c of (submittedClaims || [])) {
+    submittedAmount += parseFloat(c.total_amount) || 0
+    submittedCount++
+  }
 
   // ── 4. Alerts ──
 
@@ -390,7 +542,6 @@ export async function aggregateDailyBrief(
       })
     }
   }
-  // Cap at 10
   lowBalanceAlerts.splice(10)
 
   // ── Admin emails ──
@@ -407,7 +558,15 @@ export async function aggregateDailyBrief(
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
     || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
 
-  // ── Report date ──
+  // ── Dates ──
+  const todayDate = now.toLocaleDateString('en-AU', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: timezone,
+  })
+
   const reportDate = yesterdayEnd.toLocaleDateString('en-AU', {
     weekday: 'long',
     day: 'numeric',
@@ -420,15 +579,31 @@ export async function aggregateDailyBrief(
     orgName,
     orgId,
     timezone,
+    todayDate,
     reportDate,
     baseUrl,
-    yesterday: {
-      income: incomeTotal,
-      propertyCosts,
-      orgCosts,
-      net,
-      transactionCount,
-      expenseCount,
+    yesterday: { income: incomeTotal, propertyCosts, orgCosts, net, transactionCount, expenseCount },
+    clients: {
+      billedCount: billedResidents.size,
+      housesWithBilling: billedHouses.size,
+      totalBilled: incomeTotal,
+    },
+    occupancy: {
+      totalHouses,
+      totalBedrooms,
+      occupiedBedrooms,
+      vacantBedrooms,
+    },
+    recurringInvoicesYesterday: {
+      count: recurringExpenseCount,
+      total: recurringExpenseTotal,
+      description: topRecurringCategory,
+    },
+    trend: {
+      last7DaysNet,
+      prior7DaysNet,
+      direction: trendDirection,
+      changeAmount,
     },
     propertyHighlights,
     outlook: {
@@ -438,6 +613,7 @@ export async function aggregateDailyBrief(
       projectedNet,
       upcomingItems: upcomingItems.slice(0, 5),
     },
+    claims: { draftAmount, draftCount, submittedAmount, submittedCount },
     alerts: {
       expiringContracts: expiringAlerts,
       failedAutomations: failedAlerts,
@@ -448,233 +624,454 @@ export async function aggregateDailyBrief(
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HTML Email Template
+   Helpers
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function fmt(n: number): string {
   return n.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function colorVal(n: number): string {
-  if (n > 0) return '#059669' // green-600
-  if (n < 0) return '#dc2626' // red-600
-  return '#6b7280' // gray-500
+function fmtWhole(n: number): string {
+  return n.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
 }
 
-export function renderDailyBriefEmail(data: DailyBriefData): string {
-  const { yesterday: y, outlook: o, alerts: a, propertyHighlights: ph } = data
-
-  const hasAlerts = a.expiringContracts.length > 0 || a.failedAutomations.length > 0 || a.lowBalanceContracts.length > 0
-  const alertCount = a.expiringContracts.length + a.failedAutomations.length + a.lowBalanceContracts.length
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Haven Daily Brief — ${data.reportDate}</title>
-  <style>
-    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background: #f3f4f6; color: #1f2937; -webkit-font-smoothing: antialiased; }
-    .wrapper { max-width: 640px; margin: 0 auto; padding: 24px 16px; }
-    .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 16px; }
-    .header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); color: #fff; padding: 32px 28px 24px; }
-    .header h1 { margin: 0 0 4px; font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
-    .header .org { margin: 0 0 2px; font-size: 14px; opacity: 0.85; font-weight: 500; }
-    .header .date { margin: 0; font-size: 13px; opacity: 0.65; }
-    .section { padding: 24px 28px; }
-    .section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: #6b7280; margin: 0 0 16px; }
-    .metric-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f3f4f6; }
-    .metric-row:last-child { border-bottom: none; }
-    .metric-label { font-size: 14px; color: #4b5563; }
-    .metric-value { font-size: 14px; font-weight: 600; }
-    .net-row { display: flex; justify-content: space-between; padding: 10px 0; margin-top: 4px; border-top: 2px solid #e5e7eb; }
-    .net-label { font-size: 15px; font-weight: 700; color: #1f2937; }
-    .net-value { font-size: 15px; font-weight: 700; }
-    .stat-grid { display: flex; gap: 12px; }
-    .stat-box { flex: 1; text-align: center; background: #f9fafb; border-radius: 8px; padding: 16px 8px; }
-    .stat-box .val { font-size: 22px; font-weight: 700; line-height: 1.2; }
-    .stat-box .lbl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-top: 4px; font-weight: 600; }
-    .prop-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #f9fafb; border-radius: 8px; margin-bottom: 6px; }
-    .prop-name { font-size: 13px; font-weight: 600; color: #1f2937; }
-    .prop-net { font-size: 13px; font-weight: 700; }
-    .prop-detail { font-size: 11px; color: #6b7280; }
-    .upcoming-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f3f4f6; }
-    .upcoming-item:last-child { border-bottom: none; }
-    .upcoming-date { font-size: 12px; color: #6b7280; min-width: 60px; }
-    .upcoming-name { font-size: 13px; color: #1f2937; flex: 1; margin: 0 8px; }
-    .upcoming-amount { font-size: 13px; font-weight: 600; }
-    .alert-item { padding: 10px 12px; background: #fef2f2; border-radius: 8px; margin-bottom: 6px; border-left: 3px solid #ef4444; }
-    .alert-item.warning { background: #fffbeb; border-left-color: #f59e0b; }
-    .alert-item .alert-title { font-size: 13px; font-weight: 600; color: #1f2937; }
-    .alert-item .alert-detail { font-size: 12px; color: #6b7280; margin-top: 2px; }
-    .footer { text-align: center; padding: 20px 28px; }
-    .footer p { margin: 0; font-size: 12px; color: #9ca3af; }
-    .footer a { color: #4f46e5; text-decoration: none; font-weight: 500; }
-    .cta-btn { display: inline-block; background: #4f46e5; color: #fff; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; }
-    .divider { height: 1px; background: #e5e7eb; margin: 0; }
-    @media (max-width: 480px) {
-      .stat-grid { flex-direction: column; }
-      .wrapper { padding: 12px 8px; }
-      .section { padding: 20px 16px; }
-      .header { padding: 24px 16px 20px; }
-    }
-  </style>
-</head>
-<body>
-  <div class="wrapper">
-    <!-- Header -->
-    <div class="card">
-      <div class="header">
-        <h1>☀️ Daily Brief</h1>
-        <p class="org">${esc(data.orgName)}</p>
-        <p class="date">${esc(data.reportDate)}</p>
-      </div>
-
-      <!-- Executive Snapshot -->
-      <div class="section">
-        <div class="section-title">Yesterday's Performance</div>
-        <div class="stat-grid">
-          <div class="stat-box">
-            <div class="val" style="color: #059669;">$${fmt(y.income)}</div>
-            <div class="lbl">Income</div>
-          </div>
-          <div class="stat-box">
-            <div class="val" style="color: #dc2626;">$${fmt(y.propertyCosts)}</div>
-            <div class="lbl">Property Costs</div>
-          </div>
-          <div class="stat-box">
-            <div class="val" style="color: #dc2626;">$${fmt(y.orgCosts)}</div>
-            <div class="lbl">Org Costs</div>
-          </div>
-        </div>
-        <div class="net-row">
-          <span class="net-label">Net Result</span>
-          <span class="net-value" style="color: ${colorVal(y.net)};">$${fmt(y.net)}</span>
-        </div>
-        <div style="text-align: center; margin-top: 8px; font-size: 12px; color: #9ca3af;">
-          ${y.transactionCount} transaction${y.transactionCount !== 1 ? 's' : ''} · ${y.expenseCount} expense${y.expenseCount !== 1 ? 's' : ''}
-        </div>
-      </div>
-
-      ${ph.length > 0 ? `
-      <div class="divider"></div>
-      <div class="section">
-        <div class="section-title">Property Highlights</div>
-        ${ph.map(p => `
-        <div class="prop-row">
-          <div>
-            <div class="prop-name">${esc(p.propertyName)}</div>
-            <div class="prop-detail">Income $${fmt(p.income)} · Costs $${fmt(p.expenses)}</div>
-          </div>
-          <div class="prop-net" style="color: ${colorVal(p.net)};">$${fmt(p.net)}</div>
-        </div>
-        `).join('')}
-      </div>
-      ` : ''}
-    </div>
-
-    <!-- Outlook -->
-    <div class="card">
-      <div class="section">
-        <div class="section-title">Next 7 Days Outlook</div>
-        <div class="metric-row">
-          <span class="metric-label">Expected Income</span>
-          <span class="metric-value" style="color: #059669;">$${fmt(o.expectedIncome)}</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Expected Property Costs</span>
-          <span class="metric-value" style="color: #dc2626;">$${fmt(o.expectedPropertyCosts)}</span>
-        </div>
-        <div class="metric-row">
-          <span class="metric-label">Expected Org Costs</span>
-          <span class="metric-value" style="color: #dc2626;">$${fmt(o.expectedOrgCosts)}</span>
-        </div>
-        <div class="net-row">
-          <span class="net-label">Projected Net</span>
-          <span class="net-value" style="color: ${colorVal(o.projectedNet)};">$${fmt(o.projectedNet)}</span>
-        </div>
-
-        ${o.upcomingItems.length > 0 ? `
-        <div style="margin-top: 16px;">
-          <div class="section-title" style="margin-bottom: 8px;">Upcoming Items</div>
-          ${o.upcomingItems.map(item => `
-          <div class="upcoming-item">
-            <span class="upcoming-date">${esc(item.date)}</span>
-            <span class="upcoming-name">${esc(item.name)}${item.property ? ` <span style="color:#9ca3af;">· ${esc(item.property)}</span>` : ''}</span>
-            <span class="upcoming-amount">$${fmt(item.amount)}</span>
-          </div>
-          `).join('')}
-        </div>
-        ` : ''}
-      </div>
-    </div>
-
-    ${hasAlerts ? `
-    <!-- Alerts -->
-    <div class="card">
-      <div class="section">
-        <div class="section-title">⚠️ Attention Required (${alertCount})</div>
-
-        ${a.failedAutomations.length > 0 ? `
-        <div style="margin-bottom: 12px;">
-          <div style="font-size: 12px; font-weight: 600; color: #dc2626; margin-bottom: 6px;">Failed Automations</div>
-          ${a.failedAutomations.map(f => `
-          <div class="alert-item">
-            <div class="alert-title">${esc(f.automationName)}</div>
-            <div class="alert-detail">Failed at ${esc(f.failedAt)} — ${esc(f.error)}</div>
-          </div>
-          `).join('')}
-        </div>
-        ` : ''}
-
-        ${a.expiringContracts.length > 0 ? `
-        <div style="margin-bottom: 12px;">
-          <div style="font-size: 12px; font-weight: 600; color: #d97706; margin-bottom: 6px;">Contracts Expiring Soon</div>
-          ${a.expiringContracts.map(c => `
-          <div class="alert-item warning">
-            <div class="alert-title">${esc(c.residentName)} — ${esc(c.contractType)}</div>
-            <div class="alert-detail">Expires ${esc(c.endDate)} (${c.daysRemaining} day${c.daysRemaining !== 1 ? 's' : ''})</div>
-          </div>
-          `).join('')}
-        </div>
-        ` : ''}
-
-        ${a.lowBalanceContracts.length > 0 ? `
-        <div>
-          <div style="font-size: 12px; font-weight: 600; color: #d97706; margin-bottom: 6px;">Low Balance Contracts</div>
-          ${a.lowBalanceContracts.map(c => `
-          <div class="alert-item warning">
-            <div class="alert-title">${esc(c.residentName)}</div>
-            <div class="alert-detail">$${fmt(c.balance)} remaining of $${fmt(c.originalAmount)} (${c.percentRemaining}%)</div>
-          </div>
-          `).join('')}
-        </div>
-        ` : ''}
-      </div>
-    </div>
-    ` : ''}
-
-    <!-- CTA -->
-    <div style="text-align: center; margin: 8px 0 16px;">
-      <a href="${data.baseUrl}/dashboard" class="cta-btn">Open Haven Dashboard →</a>
-    </div>
-
-    <!-- Footer -->
-    <div class="footer">
-      <p>Haven Daily Brief · ${esc(data.orgName)}</p>
-      <p style="margin-top: 4px;">
-        <a href="${data.baseUrl}/automations">Manage automations</a> ·
-        <a href="${data.baseUrl}/transactions">Transactions</a> ·
-        <a href="${data.baseUrl}/houses">Houses</a>
-      </p>
-    </div>
-  </div>
-</body>
-</html>`
+function fmtShort(n: number): string {
+  if (Math.abs(n) >= 1_000_000) {
+    return '$' + (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'm'
+  }
+  if (Math.abs(n) >= 1000) {
+    return '$' + (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k'
+  }
+  return '$' + fmtWhole(n)
 }
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function green(text: string): string {
+  return `<span style="color:#059669;font-weight:600;">${text}</span>`
+}
+
+function red(text: string): string {
+  return `<span style="color:#dc2626;font-weight:600;">${text}</span>`
+}
+
+function muted(text: string): string {
+  return `<span style="color:#6b7280;">${text}</span>`
+}
+
+function bold(text: string): string {
+  return `<strong>${text}</strong>`
+}
+
+function link(href: string, text: string): string {
+  return `<a href="${href}" style="color:#4f46e5;text-decoration:none;border-bottom:1px solid #c7d2fe;">${text}</a>`
+}
+
+function moneyColor(n: number): string {
+  if (n > 0) return green(`$${fmt(n)}`)
+  if (n < 0) return red(`-$${fmt(Math.abs(n))}`)
+  return muted('$0.00')
+}
+
+function pluralise(n: number, singular: string, plural?: string): string {
+  return n === 1 ? singular : (plural || singular + 's')
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HTML Email Template — Text-first, conversational, mobile-optimised
+   ═══════════════════════════════════════════════════════════════════════════
+   Design principles:
+   - Reads like a morning note from a smart COO, not a dashboard
+   - Scannable in under 60 seconds on mobile
+   - Georgia serif body, system sans headings — calm, editorial feel
+   - Three narrative sections: Yesterday / Week Ahead / Worth Watching
+   - Bullet points only where needed, paragraphs preferred
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export function renderDailyBriefEmail(data: DailyBriefData): string {
+  const {
+    yesterday: y,
+    clients: cl,
+    occupancy: occ,
+    recurringInvoicesYesterday: rec,
+    trend: tr,
+    outlook: o,
+    claims: cm,
+    alerts: a,
+    propertyHighlights: ph,
+  } = data
+
+  // ── YESTERDAY narrative ──
+
+  // Client billing
+  let clientLine = ''
+  if (cl.billedCount > 0) {
+    clientLine = `${bold(String(cl.billedCount))} ${pluralise(cl.billedCount, 'client')} across ${bold(String(cl.housesWithBilling))} ${pluralise(cl.housesWithBilling, 'house')} were billed a total of ${green('$' + fmt(cl.totalBilled))}. This is yet to be claimed.`
+  } else {
+    clientLine = `No client billing occurred yesterday.`
+  }
+
+  // Occupancy
+  let occupancyLine = ''
+  if (occ.totalHouses > 0) {
+    if (occ.vacantBedrooms > 0) {
+      occupancyLine = `Of the ${bold(String(occ.totalHouses))} ${pluralise(occ.totalHouses, 'house')} currently online, ${red(String(occ.vacantBedrooms) + ' ' + pluralise(occ.vacantBedrooms, 'room'))} ${occ.vacantBedrooms === 1 ? 'is' : 'are'} vacant (${occ.occupiedBedrooms} of ${occ.totalBedrooms} beds filled).`
+    } else {
+      occupancyLine = `All ${bold(String(occ.totalBedrooms))} rooms across ${bold(String(occ.totalHouses))} houses are occupied. ${green('Full capacity.')}`
+    }
+  }
+
+  // Recurring invoices
+  let recurringLine = ''
+  if (rec.count > 0) {
+    recurringLine = `Yesterday ${green('$' + fmt(rec.total))} of invoices were created from ${bold(String(rec.count))} recurring ${esc(rec.description)} ${pluralise(rec.count, 'automation')}.`
+  }
+
+  // P&L trend — the key narrative paragraph
+  let trendLine = ''
+  const netWord = y.net >= 0 ? green('up $' + fmt(y.net)) : red('down $' + fmt(Math.abs(y.net)))
+  const trendWord = tr.direction === 'up' ? green('trending up') : tr.direction === 'down' ? red('trending down') : muted('roughly flat')
+  const last7Str = tr.last7DaysNet >= 0 ? green('$' + fmt(tr.last7DaysNet)) : red('-$' + fmt(Math.abs(tr.last7DaysNet)))
+  trendLine = `From a P&amp;L view, yesterday the business was ${netWord}. Over the last 7 days the net position is ${last7Str}, which is ${trendWord} compared to the prior week.`
+
+  // Property highlights — inline, not a table
+  let propertyLine = ''
+  if (ph.length > 0) {
+    const snippets = ph.slice(0, 4).map(p => {
+      const netStr = p.net >= 0 ? green('+$' + fmt(p.net)) : red('-$' + fmt(Math.abs(p.net)))
+      return `${bold(esc(p.propertyName))} ${netStr}`
+    })
+    propertyLine = snippets.join(' · ')
+  }
+
+  // ── WEEK AHEAD narrative ──
+  const weekLines: string[] = []
+
+  // Low balance clients
+  if (a.lowBalanceContracts.length > 0) {
+    const top = a.lowBalanceContracts[0]!
+    weekLines.push(`${bold(esc(top.residentName))} is running low on funds — ${red('$' + fmt(top.balance) + ' remaining')} of $${fmt(top.originalAmount)}. ${link(data.baseUrl + '/residents', 'Worth checking.')}`)
+    if (a.lowBalanceContracts.length > 1) {
+      weekLines.push(`${muted(String(a.lowBalanceContracts.length - 1) + ' other ' + pluralise(a.lowBalanceContracts.length - 1, 'client') + ' also ' + (a.lowBalanceContracts.length - 1 === 1 ? 'has' : 'have') + ' low balances.')}`)
+    }
+  }
+
+  // Claims pipeline
+  if (cm.draftCount > 0) {
+    weekLines.push(`${bold(fmtShort(cm.draftAmount))} of NDIS claims across ${bold(String(cm.draftCount))} ${pluralise(cm.draftCount, 'claim')} ${pluralise(cm.draftCount, 'needs', 'need')} to be ${link(data.baseUrl + '/claims', 'submitted')}.`)
+  }
+  if (cm.submittedCount > 0) {
+    weekLines.push(`${bold(fmtShort(cm.submittedAmount))} across ${bold(String(cm.submittedCount))} ${pluralise(cm.submittedCount, 'claim')} ${cm.submittedCount === 1 ? 'is' : 'are'} submitted and awaiting payment.`)
+  }
+
+  // Upcoming scheduled items
+  for (const item of o.upcomingItems.slice(0, 3)) {
+    const propStr = item.property ? ` (${esc(item.property)})` : ''
+    weekLines.push(`${bold(esc(item.date))} — ${esc(item.name)}${propStr}: ${item.amount > 0 ? '$' + fmt(item.amount) : 'scheduled'}.`)
+  }
+
+  // Expiring contracts
+  if (a.expiringContracts.length > 0) {
+    const exp = a.expiringContracts[0]!
+    weekLines.push(`${bold(esc(exp.residentName))}'s ${esc(exp.contractType)} contract expires ${bold(esc(exp.endDate))} (${exp.daysRemaining} ${pluralise(exp.daysRemaining, 'day')}).`)
+    if (a.expiringContracts.length > 1) {
+      weekLines.push(`${muted(String(a.expiringContracts.length - 1) + ' other ' + pluralise(a.expiringContracts.length - 1, 'contract') + ' also expiring within 30 days.')}`)
+    }
+  }
+
+  // ── WORTH WATCHING narrative ──
+  const watchLines: string[] = []
+
+  if (a.failedAutomations.length > 0) {
+    for (const f of a.failedAutomations.slice(0, 3)) {
+      watchLines.push(`${red('⚠')} ${bold(esc(f.automationName))} failed at ${esc(f.failedAt)} — ${muted(esc(f.error))}`)
+    }
+  }
+
+  const negProps = ph.filter(p => p.net < 0)
+  if (negProps.length > 0) {
+    for (const p of negProps.slice(0, 2)) {
+      watchLines.push(`${bold(esc(p.propertyName))} ran at a loss yesterday: income $${fmt(p.income)}, costs $${fmt(p.expenses)}, net ${red('-$' + fmt(Math.abs(p.net)))}.`)
+    }
+  }
+
+  const hasWatching = watchLines.length > 0
+
+  // ── Render HTML ──
+  return `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Haven Daily Brief — ${esc(data.todayDate)}</title>
+  <!--[if mso]><style>body,table,td{font-family:Arial,Helvetica,sans-serif!important;}</style><![endif]-->
+  <style>
+    /* Reset */
+    body, html { margin: 0; padding: 0; width: 100%; }
+    body {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+      background: #f9fafb;
+      color: #1f2937;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      line-height: 1.7;
+    }
+    img { border: 0; display: block; }
+    a { color: #4f46e5; }
+
+    /* Layout */
+    .outer { width: 100%; background: #f9fafb; padding: 24px 0; }
+    .inner {
+      max-width: 560px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    /* Header bar */
+    .header-bar {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      padding: 28px 32px 24px;
+    }
+    .header-bar h1 {
+      margin: 0 0 2px;
+      font-size: 22px;
+      font-weight: 700;
+      color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      letter-spacing: -0.3px;
+    }
+    .header-bar .subtitle {
+      margin: 0;
+      font-size: 13px;
+      color: rgba(255,255,255,0.7);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Body content */
+    .body-content { padding: 28px 32px 32px; }
+
+    /* Intro */
+    .intro {
+      font-size: 15px;
+      color: #6b7280;
+      line-height: 1.55;
+      margin: 0 0 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    /* Section headers */
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #9ca3af;
+      margin: 28px 0 14px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    /* Paragraphs */
+    p { font-size: 15.5px; line-height: 1.7; margin: 0 0 14px; color: #1f2937; }
+    .muted-p { font-size: 13px; color: #9ca3af; margin: 4px 0 0; }
+
+    /* Number strip */
+    .nums {
+      background: #f8fafc;
+      border-radius: 6px;
+      padding: 14px 18px;
+      margin: 18px 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .nums table { width: 100%; border-collapse: collapse; }
+    .nums td { padding: 3px 0; font-size: 13px; color: #6b7280; }
+    .nums .val { text-align: right; font-weight: 600; font-size: 14px; }
+    .nums .net td { padding-top: 7px; border-top: 1px solid #e5e7eb; }
+    .nums .net .lbl { font-weight: 700; color: #1f2937; font-size: 14px; }
+
+    /* Bullet list */
+    ul { margin: 0 0 14px; padding-left: 18px; }
+    li { font-size: 15px; line-height: 1.65; margin-bottom: 8px; color: #1f2937; }
+
+    /* Property line */
+    .prop-line { font-size: 13px; color: #6b7280; line-height: 1.5; margin: 2px 0 18px; }
+
+    /* Divider */
+    .sep { height: 1px; background: #f3f4f6; margin: 24px 0; }
+
+    /* CTA */
+    .cta { text-align: center; margin: 24px 0 8px; }
+    .cta a {
+      display: inline-block;
+      background: #1e1b4b;
+      color: #ffffff;
+      padding: 11px 26px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Footer */
+    .footer { text-align: center; padding: 16px 32px 24px; }
+    .footer p { margin: 0; font-size: 11px; color: #9ca3af; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; }
+    .footer a { color: #6366f1; text-decoration: none; }
+
+    /* Empty state */
+    .quiet { font-size: 14px; color: #9ca3af; font-style: italic; }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      .inner { border-radius: 0; }
+      .header-bar { padding: 22px 20px 20px; }
+      .body-content { padding: 22px 20px 28px; }
+      .header-bar h1 { font-size: 20px; }
+      p { font-size: 15px; }
+      li { font-size: 14px; }
+      .nums { padding: 12px 14px; }
+      .footer { padding: 14px 20px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="outer">
+    <div class="inner">
+
+      <!-- ─── Header ─── -->
+      <div class="header-bar">
+        <h1>☀️ Haven Daily Brief</h1>
+        <p class="subtitle">${esc(data.orgName)} · ${esc(data.todayDate)}</p>
+      </div>
+
+      <div class="body-content">
+
+        <!-- ─── Intro ─── -->
+        <p class="intro">
+          Here's your update on what happened yesterday across the business, from a client, house and organisational funding perspective.
+        </p>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- YESTERDAY                                   -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="section-title">Yesterday</div>
+
+        <p>${clientLine}</p>
+
+        ${occupancyLine ? `<p>${occupancyLine}</p>` : ''}
+
+        ${recurringLine ? `<p>${recurringLine}</p>` : ''}
+
+        <p>${trendLine}</p>
+
+        <!-- Number strip -->
+        <div class="nums">
+          <table>
+            <tr>
+              <td>Client Income</td>
+              <td class="val" style="color:#059669;">$${fmt(y.income)}</td>
+            </tr>
+            <tr>
+              <td>Property Costs</td>
+              <td class="val" style="color:${y.propertyCosts > 0 ? '#dc2626' : '#6b7280'};">$${fmt(y.propertyCosts)}</td>
+            </tr>
+            <tr>
+              <td>Organisation Costs</td>
+              <td class="val" style="color:${y.orgCosts > 0 ? '#dc2626' : '#6b7280'};">$${fmt(y.orgCosts)}</td>
+            </tr>
+            <tr class="net">
+              <td class="lbl">Net Result</td>
+              <td class="val" style="color:${y.net >= 0 ? '#059669' : '#dc2626'};">$${fmt(y.net)}</td>
+            </tr>
+          </table>
+        </div>
+
+        ${propertyLine ? `<p class="prop-line">${propertyLine}</p>` : ''}
+
+        <p class="muted-p">${y.transactionCount} ${pluralise(y.transactionCount, 'transaction')} · ${y.expenseCount} ${pluralise(y.expenseCount, 'expense')}</p>
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- YOUR WEEK AHEAD                             -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="sep"></div>
+        <div class="section-title">Your Week Ahead</div>
+
+        ${weekLines.length > 0 ? `
+        <ul>
+          ${weekLines.map(b => `<li>${b}</li>`).join('\n          ')}
+        </ul>
+        ` : `
+        <p class="quiet">Nothing flagged for the coming week. All clear.</p>
+        `}
+
+        ${o.projectedNet !== 0 ? `
+        <div class="nums">
+          <table>
+            <tr>
+              <td>Expected Income (7d)</td>
+              <td class="val" style="color:#059669;">$${fmt(o.expectedIncome)}</td>
+            </tr>
+            <tr>
+              <td>Expected Costs (7d)</td>
+              <td class="val" style="color:${(o.expectedPropertyCosts + o.expectedOrgCosts) > 0 ? '#dc2626' : '#6b7280'};">$${fmt(o.expectedPropertyCosts + o.expectedOrgCosts)}</td>
+            </tr>
+            <tr class="net">
+              <td class="lbl">Projected Net</td>
+              <td class="val" style="color:${o.projectedNet >= 0 ? '#059669' : '#dc2626'};">$${fmt(o.projectedNet)}</td>
+            </tr>
+          </table>
+        </div>
+        ` : ''}
+
+        <!-- ═══════════════════════════════════════════ -->
+        <!-- THINGS WORTH WATCHING                       -->
+        <!-- ═══════════════════════════════════════════ -->
+        <div class="sep"></div>
+        <div class="section-title">Things Worth Watching</div>
+
+        ${hasWatching ? `
+        <ul>
+          ${watchLines.map(b => `<li>${b}</li>`).join('\n          ')}
+        </ul>
+
+        ${(a.lowBalanceContracts.length > 0 || a.expiringContracts.length > 0) ? `
+        <p style="font-size:13px;color:#6b7280;">
+          ${a.lowBalanceContracts.length > 0 ? `${bold(String(a.lowBalanceContracts.length))} ${pluralise(a.lowBalanceContracts.length, 'client')} with low funding balances. ` : ''}
+          ${a.expiringContracts.length > 0 ? `${bold(String(a.expiringContracts.length))} ${pluralise(a.expiringContracts.length, 'contract')} expiring within 30 days. ` : ''}
+          ${link(data.baseUrl + '/residents', 'Review in Haven →')}
+        </p>
+        ` : ''}
+        ` : `
+        <p class="quiet">Nothing flagged. All systems running smoothly.</p>
+        `}
+
+        <div class="sep"></div>
+
+        <!-- CTA -->
+        <div class="cta">
+          <a href="${data.baseUrl}/dashboard">Open Haven →</a>
+        </div>
+
+      </div><!-- /body-content -->
+
+      <!-- ─── Footer ─── -->
+      <div class="footer">
+        <p>
+          ${esc(data.orgName)} · Haven Daily Brief<br>
+          <a href="${data.baseUrl}/automations">Automations</a> · <a href="${data.baseUrl}/transactions">Transactions</a> · <a href="${data.baseUrl}/houses">Houses</a> · <a href="${data.baseUrl}/claims">Claims</a>
+        </p>
+      </div>
+
+    </div><!-- /inner -->
+  </div><!-- /outer -->
+</body>
+</html>`
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -689,7 +1086,7 @@ export async function sendDailyBriefEmail(
   }
 
   const html = renderDailyBriefEmail(data)
-  const subject = `☀️ Haven Daily Brief — ${data.reportDate}`
+  const subject = `☀️ Haven Daily Brief — ${data.todayDate}`
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
@@ -720,4 +1117,3 @@ export async function sendDailyBriefEmail(
     return { success: false, recipientCount: 0, error: err.message }
   }
 }
-
