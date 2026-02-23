@@ -20,6 +20,9 @@ import {
   Settings2,
   History,
   AlertTriangle,
+  Home,
+  Building2,
+  ExternalLink,
 } from 'lucide-react'
 import type { Automation, AutomationRun, ScheduleFrequency, AutomationHealthStatus } from 'types/automation'
 import {
@@ -29,6 +32,7 @@ import {
   describeSchedule,
   getAutomationHealth,
 } from 'types/automation'
+import { EXPENSE_CATEGORY_LABELS } from 'types/house-expense'
 
 /* ─── Run status badge (for individual run records) ─── */
 function RunStatusBadge({ status }: { status: string }) {
@@ -115,6 +119,7 @@ export default function AutomationDetailPage() {
   const [runs, setRuns] = useState<AutomationRun[]>([])
   const [loading, setLoading] = useState(true)
   const [runningNow, setRunningNow] = useState(false)
+  const [templateExpense, setTemplateExpense] = useState<any | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -152,6 +157,20 @@ export default function AutomationDetailPage() {
         setScheduleTime(s.timeOfDay || '02:00')
         setScheduleDOW(s.dayOfWeek ?? 1)
         setScheduleDOM(s.dayOfMonth ?? 1)
+
+        // Fetch linked template expense if applicable
+        const params = autoJson.data.parameters as any
+        if (params?.templateExpenseId) {
+          try {
+            const expRes = await fetch(`/api/house-expenses/${params.templateExpenseId}`)
+            const expJson = (await expRes.json()) as { success: boolean; data?: any }
+            if (expJson.success && expJson.data) {
+              setTemplateExpense(expJson.data)
+            }
+          } catch {
+            // non-fatal
+          }
+        }
       }
       if (runsJson.success && runsJson.data) setRuns(runsJson.data)
     } catch {
@@ -492,27 +511,96 @@ export default function AutomationDetailPage() {
             )}
           </div>
 
-          {/* Parameters Card */}
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-4">
-              <Settings2 className="w-4 h-4 text-gray-400" />
-              Parameters
-            </h3>
-            {Object.keys(automation.parameters || {}).length > 0 ? (
-              <dl className="space-y-2 text-sm">
-                {Object.entries(automation.parameters || {}).map(([key, value]) => (
-                  <div key={key}>
-                    <dt className="text-gray-500 text-xs">{key}</dt>
-                    <dd className="font-mono text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded mt-0.5 break-all">
-                      {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                    </dd>
+          {/* Linked Expense / Parameters Card */}
+          {templateExpense ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                {templateExpense.scope === 'organisation' ? (
+                  <Building2 className="w-4 h-4 text-indigo-500" />
+                ) : (
+                  <Home className="w-4 h-4 text-indigo-500" />
+                )}
+                Template Expense
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                      templateExpense.scope === 'organisation'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-blue-100 text-blue-700'
+                    }`}
+                  >
+                    {templateExpense.scope === 'organisation' ? (
+                      <Building2 className="w-3 h-3" />
+                    ) : (
+                      <Home className="w-3 h-3" />
+                    )}
+                    {templateExpense.scope === 'organisation' ? 'Organisation' : 'House'}
+                  </span>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                    {EXPENSE_CATEGORY_LABELS[templateExpense.category] || templateExpense.category}
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{templateExpense.description}</p>
+                  {templateExpense.supplier && (
+                    <p className="text-xs text-gray-500 mt-0.5">{templateExpense.supplier}</p>
+                  )}
+                </div>
+
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-bold text-gray-900">
+                    ${Number(templateExpense.amount).toFixed(2)}
+                  </span>
+                  {templateExpense.frequency && templateExpense.frequency !== 'one_off' && (
+                    <span className="text-xs text-gray-400">/ {templateExpense.frequency}</span>
+                  )}
+                </div>
+
+                {templateExpense.houseName && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <Home className="w-3 h-3" />
+                    {templateExpense.houseName}
                   </div>
-                ))}
-              </dl>
-            ) : (
-              <p className="text-xs text-gray-400 italic">No parameters configured</p>
-            )}
-          </div>
+                )}
+
+                <Link
+                  href={
+                    templateExpense.houseId
+                      ? `/houses/${templateExpense.houseId}?tab=expenses`
+                      : '/expenses'
+                  }
+                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium mt-1"
+                >
+                  View expense
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                <Settings2 className="w-4 h-4 text-gray-400" />
+                Parameters
+              </h3>
+              {Object.keys(automation.parameters || {}).length > 0 ? (
+                <dl className="space-y-2 text-sm">
+                  {Object.entries(automation.parameters || {}).map(([key, value]) => (
+                    <div key={key}>
+                      <dt className="text-gray-500 text-xs">{key}</dt>
+                      <dd className="font-mono text-xs text-gray-700 bg-gray-50 px-2 py-1 rounded mt-0.5 break-all">
+                        {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="text-xs text-gray-400 italic">No parameters configured</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Right column — Runs Log */}
