@@ -93,12 +93,37 @@ export const DAY_OF_WEEK_LABELS = [
 
 export const AUTOMATION_TYPE_LABELS: Record<AutomationType, string> = {
   recurring_transaction: 'Recurring Transaction',
-  contract_billing_run: 'Contract Billing Run',
+  contract_billing_run: 'Contract Billing',
 }
 
 export const AUTOMATION_TYPE_DESCRIPTIONS: Record<AutomationType, string> = {
   recurring_transaction: 'Automatically generates a transaction on schedule from a template',
   contract_billing_run: 'Nightly scan of funding contracts to generate NDIS drawdown transactions',
+}
+
+export const AUTOMATION_TYPE_ICONS: Record<AutomationType, string> = {
+  recurring_transaction: '🔁',
+  contract_billing_run: '⚡',
+}
+
+/**
+ * Derive the overall automation health status.
+ * - Disabled: isEnabled is false
+ * - Broken:   isEnabled but last run failed (or never ran and has no next run)
+ * - Active:   isEnabled and either last run succeeded or hasn't run yet with a valid next run
+ */
+export type AutomationHealthStatus = 'active' | 'broken' | 'disabled'
+
+export function getAutomationHealth(a: Pick<Automation, 'isEnabled' | 'lastRunStatus' | 'nextRunAt'>): AutomationHealthStatus {
+  if (!a.isEnabled) return 'disabled'
+  if (a.lastRunStatus === 'failed') return 'broken'
+  return 'active'
+}
+
+export const HEALTH_LABELS: Record<AutomationHealthStatus, string> = {
+  active: 'Active',
+  broken: 'Broken',
+  disabled: 'Disabled',
 }
 
 /**

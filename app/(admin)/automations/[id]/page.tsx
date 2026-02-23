@@ -12,8 +12,8 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  ToggleLeft,
-  ToggleRight,
+  Power,
+  Ban,
   Copy,
   Loader2,
   Calendar,
@@ -21,19 +21,21 @@ import {
   History,
   AlertTriangle,
 } from 'lucide-react'
-import type { Automation, AutomationRun, ScheduleFrequency } from 'types/automation'
+import type { Automation, AutomationRun, ScheduleFrequency, AutomationHealthStatus } from 'types/automation'
 import {
   AUTOMATION_TYPE_LABELS,
   AUTOMATION_TYPE_DESCRIPTIONS,
   DAY_OF_WEEK_LABELS,
   describeSchedule,
+  getAutomationHealth,
 } from 'types/automation'
 
-function StatusBadge({ status }: { status: string }) {
+/* ─── Run status badge (for individual run records) ─── */
+function RunStatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'success':
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
           <CheckCircle2 className="w-3 h-3" /> Success
         </span>
       )
@@ -53,6 +55,33 @@ function StatusBadge({ status }: { status: string }) {
       return (
         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
           <Clock className="w-3 h-3" /> {status}
+        </span>
+      )
+  }
+}
+
+/* ─── Automation health badge (Active / Broken / Disabled) ─── */
+function HealthBadge({ health }: { health: AutomationHealthStatus }) {
+  switch (health) {
+    case 'active':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          Active
+        </span>
+      )
+    case 'broken':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 ring-1 ring-red-200">
+          <AlertTriangle className="w-3 h-3" />
+          Broken
+        </span>
+      )
+    case 'disabled':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-50 text-gray-500 ring-1 ring-gray-200">
+          <Ban className="w-3 h-3" />
+          Disabled
         </span>
       )
   }
@@ -282,7 +311,7 @@ export default function AutomationDetailPage() {
             {automation.description && (
               <p className="text-sm text-gray-500 mt-0.5">{automation.description}</p>
             )}
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-2.5 mt-2">
               <span
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                   isRecurring ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
@@ -290,13 +319,7 @@ export default function AutomationDetailPage() {
               >
                 {AUTOMATION_TYPE_LABELS[automation.type]}
               </span>
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                  automation.isEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                {automation.isEnabled ? 'Enabled' : 'Disabled'}
-              </span>
+              <HealthBadge health={getAutomationHealth(automation)} />
             </div>
           </div>
         </div>
@@ -315,14 +338,10 @@ export default function AutomationDetailPage() {
             className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
               automation.isEnabled
                 ? 'text-amber-700 bg-amber-50 hover:bg-amber-100'
-                : 'text-green-700 bg-green-50 hover:bg-green-100'
+                : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
             }`}
           >
-            {automation.isEnabled ? (
-              <ToggleLeft className="w-4 h-4" />
-            ) : (
-              <ToggleRight className="w-4 h-4" />
-            )}
+            <Power className="w-4 h-4" />
             {automation.isEnabled ? 'Disable' : 'Enable'}
           </button>
           <button
@@ -521,7 +540,7 @@ export default function AutomationDetailPage() {
                   <div key={run.id} className="px-5 py-3 hover:bg-gray-50/50 transition-colors">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <StatusBadge status={run.status} />
+                        <RunStatusBadge status={run.status} />
                         <span className="text-sm text-gray-700">
                           {formatDate(run.startedAt)}
                         </span>
