@@ -126,11 +126,15 @@ const fmtCurrencyFull = (v: number) =>
   }).format(v)
 
 /* ───── Simple Tooltip ───── */
-function SimpleTooltip({ active, payload, label }: any) {
+function SimpleTooltip({ active, payload, label, splitExpenses }: any) {
   if (!active || !payload?.length) return null
 
   const income = payload.find((p: any) => p.dataKey === 'income')?.value ?? 0
-  const expenses = payload.find((p: any) => p.dataKey === 'expenses')?.value ?? 0
+  // When split, sum the two stacked values; otherwise take the single expenses value
+  const propExp = payload.find((p: any) => p.dataKey === 'propertyExpenses')?.value ?? 0
+  const orgExp = payload.find((p: any) => p.dataKey === 'orgExpenses')?.value ?? 0
+  const combinedExp = payload.find((p: any) => p.dataKey === 'expenses')?.value
+  const expenses = splitExpenses ? (propExp + orgExp) : (combinedExp ?? propExp + orgExp)
   const net = income - expenses
 
   return (
@@ -144,13 +148,38 @@ function SimpleTooltip({ active, payload, label }: any) {
           </span>
           <span className="text-sm font-medium text-gray-900">{fmtCurrencyFull(income)}</span>
         </div>
-        <div className="flex items-center justify-between gap-4">
-          <span className="flex items-center gap-1.5 text-sm text-gray-600">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-            Expenses
-          </span>
-          <span className="text-sm font-medium text-gray-900">{fmtCurrencyFull(expenses)}</span>
-        </div>
+
+        {splitExpenses ? (
+          <>
+            <div className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-1.5 text-sm text-gray-600">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                Property
+              </span>
+              <span className="text-sm font-medium text-gray-900">{fmtCurrencyFull(propExp)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <span className="flex items-center gap-1.5 text-sm text-gray-600">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                Organisation
+              </span>
+              <span className="text-sm font-medium text-gray-900">{fmtCurrencyFull(orgExp)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4 text-xs text-gray-400 pt-0.5">
+              <span>Total Expenses</span>
+              <span>{fmtCurrencyFull(expenses)}</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-between gap-4">
+            <span className="flex items-center gap-1.5 text-sm text-gray-600">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+              Expenses
+            </span>
+            <span className="text-sm font-medium text-gray-900">{fmtCurrencyFull(expenses)}</span>
+          </div>
+        )}
+
         <div className="border-t border-gray-100 pt-1.5 flex items-center justify-between gap-4">
           <span className="text-sm font-medium text-gray-600">Net</span>
           <span className={`text-sm font-semibold ${net >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
@@ -163,11 +192,14 @@ function SimpleTooltip({ active, payload, label }: any) {
 }
 
 /* ───── Compact Detailed Tooltip (hover — top N items + "click for more") ───── */
-function DetailedTooltip({ active, payload, label, chartData, isHouseFiltered }: any) {
+function DetailedTooltip({ active, payload, label, chartData, isHouseFiltered, splitExpenses }: any) {
   if (!active || !payload?.length) return null
 
   const income = payload.find((p: any) => p.dataKey === 'income')?.value ?? 0
-  const expenses = payload.find((p: any) => p.dataKey === 'expenses')?.value ?? 0
+  const propExp = payload.find((p: any) => p.dataKey === 'propertyExpenses')?.value ?? 0
+  const orgExp = payload.find((p: any) => p.dataKey === 'orgExpenses')?.value ?? 0
+  const combinedExp = payload.find((p: any) => p.dataKey === 'expenses')?.value
+  const expenses = splitExpenses ? (propExp + orgExp) : (combinedExp ?? propExp + orgExp)
   const net = income - expenses
 
   const payloadMonth = payload[0]?.payload?.month
@@ -238,13 +270,33 @@ function DetailedTooltip({ active, payload, label, chartData, isHouseFiltered }:
 
       {/* ── Expenses section ── */}
       <div className="mb-3">
-        <div className="flex items-center justify-between gap-4 mb-1">
-          <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-            Expenses
-          </span>
-          <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(expenses)}</span>
-        </div>
+        {/* Show property/org split summary when in split mode */}
+        {splitExpenses ? (
+          <>
+            <div className="flex items-center justify-between gap-4 mb-0.5">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                Property Expenses
+              </span>
+              <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(propExp)}</span>
+            </div>
+            <div className="flex items-center justify-between gap-4 mb-1">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                Org Expenses
+              </span>
+              <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(orgExp)}</span>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center justify-between gap-4 mb-1">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+              Expenses
+            </span>
+            <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(expenses)}</span>
+          </div>
+        )}
 
         {visibleExpense.length > 0 && (
           <div className="ml-4 mt-1 space-y-0.5">
@@ -304,6 +356,8 @@ function MonthDetailPanel({
   const panelRef = useRef<HTMLDivElement>(null)
   const income = monthData.income
   const expenses = monthData.expenses
+  const propExp = monthData.propertyExpenses ?? 0
+  const orgExp = monthData.orgExpenses ?? 0
   const net = income - expenses
   const incomeBreakdown = monthData.incomeBreakdown || []
   const expenseBreakdown = monthData.expenseBreakdown || []
@@ -327,7 +381,7 @@ function MonthDetailPanel({
     >
       {/* Header */}
       <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <h4 className="text-sm font-bold text-gray-900">{monthData.label}</h4>
           <div className="flex items-center gap-3">
             <span className="inline-flex items-center gap-1 text-xs">
@@ -336,8 +390,16 @@ function MonthDetailPanel({
             </span>
             <span className="inline-flex items-center gap-1 text-xs">
               <span className="w-2 h-2 rounded-full bg-rose-400" />
-              <span className="font-semibold text-gray-900">{fmtCurrencyFull(expenses)}</span>
+              <span className="font-semibold text-gray-900">{fmtCurrencyFull(propExp)}</span>
+              <span className="text-gray-400">prop</span>
             </span>
+            {orgExp > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs">
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                <span className="font-semibold text-gray-900">{fmtCurrencyFull(orgExp)}</span>
+                <span className="text-gray-400">org</span>
+              </span>
+            )}
             <span className={`text-xs font-bold ${net >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
               Net {net >= 0 ? '+' : ''}{fmtCurrencyFull(net)}
             </span>
@@ -442,6 +504,7 @@ export function PortfolioFinancialChart() {
   const [selectedHouseId, setSelectedHouseId] = useState<string | ''>('')
   const [chartMode, setChartMode] = useState<ChartMode>('lines')
   const [detailedMode, setDetailedMode] = useState(true)
+  const [splitExpenses, setSplitExpenses] = useState(false)
   // Pinned month detail panel (click-to-expand)
   const [pinnedMonth, setPinnedMonth] = useState<MonthData | null>(null)
 
@@ -489,12 +552,20 @@ export function PortfolioFinancialChart() {
     setPinnedMonth(null)
   }, [period, selectedHouseId, detailedMode])
 
+  // When filtering to a single house, disable split (all expenses are property-scoped)
+  useEffect(() => {
+    if (selectedHouseId) setSplitExpenses(false)
+  }, [selectedHouseId])
+
   const chartData: MonthData[] = (data?.months || []).map(m => ({
     ...m,
+    propertyExpenses: m.propertyExpenses ?? m.expenses,
+    orgExpenses: m.orgExpenses ?? 0,
     net: Math.max(0, m.income - m.expenses),
   }))
   const totals = data?.totals || { income: 0, expenses: 0, propertyExpenses: 0, orgExpenses: 0, net: 0, portfolioGrossProfit: 0, netOperatingProfit: 0 }
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0)
+  const hasOrgExpenses = chartData.some(d => (d.orgExpenses ?? 0) > 0)
   const useFullLabel = chartData.length > 12
   const xDataKey = useFullLabel ? 'label' : 'shortLabel'
 
@@ -568,8 +639,8 @@ export function PortfolioFinancialChart() {
   }
 
   const tooltipContent = detailedMode
-    ? <DetailedTooltip chartData={chartData} isHouseFiltered={!!selectedHouseId} />
-    : <SimpleTooltip />
+    ? <DetailedTooltip chartData={chartData} isHouseFiltered={!!selectedHouseId} splitExpenses={splitExpenses} />
+    : <SimpleTooltip splitExpenses={splitExpenses} />
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
@@ -587,11 +658,28 @@ export function PortfolioFinancialChart() {
                 <span className="text-gray-500">Income</span>
                 <span className="font-semibold text-gray-900">{fmtCurrency(totals.income)}</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 text-sm">
-                <span className="w-2 h-2 rounded-full bg-rose-400" />
-                <span className="text-gray-500">Expenses</span>
-                <span className="font-semibold text-gray-900">{fmtCurrency(totals.expenses)}</span>
-              </span>
+
+              {splitExpenses ? (
+                <>
+                  <span className="inline-flex items-center gap-1.5 text-sm">
+                    <span className="w-2 h-2 rounded-full bg-rose-400" />
+                    <span className="text-gray-500">Property</span>
+                    <span className="font-semibold text-gray-900">{fmtCurrency(totals.propertyExpenses)}</span>
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-sm">
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                    <span className="text-gray-500">Org</span>
+                    <span className="font-semibold text-gray-900">{fmtCurrency(totals.orgExpenses)}</span>
+                  </span>
+                </>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-sm">
+                  <span className="w-2 h-2 rounded-full bg-rose-400" />
+                  <span className="text-gray-500">Expenses</span>
+                  <span className="font-semibold text-gray-900">{fmtCurrency(totals.expenses)}</span>
+                </span>
+              )}
+
               <span className="inline-flex items-center gap-1.5 text-sm">
                 <span className={`w-2 h-2 rounded-full ${totals.net >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                 <span className="text-gray-500">Net</span>
@@ -616,6 +704,38 @@ export function PortfolioFinancialChart() {
               <option key={h.id} value={h.id}>{h.name}</option>
             ))}
           </select>
+
+          {/* Expense split toggle — only show when viewing all houses and there are org expenses */}
+          {!selectedHouseId && hasOrgExpenses && (
+            <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
+              <button
+                onClick={() => setSplitExpenses(false)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                  !splitExpenses
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                title="Show combined expenses"
+              >
+                Combined
+              </button>
+              <button
+                onClick={() => setSplitExpenses(true)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${
+                  splitExpenses
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+                title="Split expenses into Property vs Organisation"
+              >
+                <span className="flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  Split
+                </span>
+              </button>
+            </div>
+          )}
 
           {/* Insights toggle */}
           <button
@@ -720,11 +840,28 @@ export function PortfolioFinancialChart() {
                     <Cell key={i} fill="#10b981" />
                   ))}
                 </Bar>
-                <Bar dataKey="expenses" name="Expenses" radius={[4, 4, 0, 0]} maxBarSize={28}>
-                  {chartData.map((_, i) => (
-                    <Cell key={i} fill="#fb7185" />
-                  ))}
-                </Bar>
+
+                {splitExpenses ? (
+                  <>
+                    {/* Stacked: property on bottom, org on top */}
+                    <Bar dataKey="propertyExpenses" name="Property Expenses" stackId="expenses" maxBarSize={28}>
+                      {chartData.map((_, i) => (
+                        <Cell key={i} fill="#fb7185" />
+                      ))}
+                    </Bar>
+                    <Bar dataKey="orgExpenses" name="Org Expenses" stackId="expenses" radius={[4, 4, 0, 0]} maxBarSize={28}>
+                      {chartData.map((_, i) => (
+                        <Cell key={i} fill="#fbbf24" />
+                      ))}
+                    </Bar>
+                  </>
+                ) : (
+                  <Bar dataKey="expenses" name="Expenses" radius={[4, 4, 0, 0]} maxBarSize={28}>
+                    {chartData.map((_, i) => (
+                      <Cell key={i} fill="#fb7185" />
+                    ))}
+                  </Bar>
+                )}
 
                 {/* Net line overlaid on bars */}
                 <Line
@@ -752,6 +889,14 @@ export function PortfolioFinancialChart() {
                     <stop offset="0%" stopColor="#fb7185" stopOpacity={0.3} />
                     <stop offset="100%" stopColor="#fb7185" stopOpacity={0.02} />
                   </linearGradient>
+                  <linearGradient id="portfolioPropExpGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fb7185" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#fb7185" stopOpacity={0.05} />
+                  </linearGradient>
+                  <linearGradient id="portfolioOrgExpGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fbbf24" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#fbbf24" stopOpacity={0.05} />
+                  </linearGradient>
                 </defs>
 
                 <CartesianGrid {...gridProps} />
@@ -773,16 +918,44 @@ export function PortfolioFinancialChart() {
                   activeDot={{ r: 5, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
                 />
 
-                <Area
-                  type="monotone"
-                  dataKey="expenses"
-                  name="Expenses"
-                  stroke="#fb7185"
-                  strokeWidth={2}
-                  fill="url(#portfolioExpenseGrad)"
-                  dot={chartData.length <= 12 ? { r: 3, fill: '#fb7185', stroke: '#fff', strokeWidth: 2 } : false}
-                  activeDot={{ r: 5, fill: '#fb7185', stroke: '#fff', strokeWidth: 2 }}
-                />
+                {splitExpenses ? (
+                  <>
+                    {/* Stacked areas: property on bottom, org on top */}
+                    <Area
+                      type="monotone"
+                      dataKey="propertyExpenses"
+                      name="Property Expenses"
+                      stackId="expenses"
+                      stroke="#fb7185"
+                      strokeWidth={2}
+                      fill="url(#portfolioPropExpGrad)"
+                      dot={chartData.length <= 12 ? { r: 3, fill: '#fb7185', stroke: '#fff', strokeWidth: 2 } : false}
+                      activeDot={{ r: 5, fill: '#fb7185', stroke: '#fff', strokeWidth: 2 }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="orgExpenses"
+                      name="Org Expenses"
+                      stackId="expenses"
+                      stroke="#fbbf24"
+                      strokeWidth={2}
+                      fill="url(#portfolioOrgExpGrad)"
+                      dot={chartData.length <= 12 ? { r: 3, fill: '#fbbf24', stroke: '#fff', strokeWidth: 2 } : false}
+                      activeDot={{ r: 5, fill: '#fbbf24', stroke: '#fff', strokeWidth: 2 }}
+                    />
+                  </>
+                ) : (
+                  <Area
+                    type="monotone"
+                    dataKey="expenses"
+                    name="Expenses"
+                    stroke="#fb7185"
+                    strokeWidth={2}
+                    fill="url(#portfolioExpenseGrad)"
+                    dot={chartData.length <= 12 ? { r: 3, fill: '#fb7185', stroke: '#fff', strokeWidth: 2 } : false}
+                    activeDot={{ r: 5, fill: '#fb7185', stroke: '#fff', strokeWidth: 2 }}
+                  />
+                )}
               </AreaChart>
             )}
           </ResponsiveContainer>
