@@ -23,6 +23,7 @@ import {
   Home,
   Building2,
   ExternalLink,
+  Mail,
 } from 'lucide-react'
 import type { Automation, AutomationRun, ScheduleFrequency, AutomationHealthStatus } from 'types/automation'
 import {
@@ -322,11 +323,15 @@ export default function AutomationDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div className="flex items-start gap-3">
           <div
-            className={`p-2 rounded-xl ring-2 ring-offset-2 ${levelColors.ring} ${isRecurring ? 'bg-indigo-100' : 'bg-amber-100'}`}
+            className={`p-2 rounded-xl ring-2 ring-offset-2 ${levelColors.ring} ${
+              isRecurring ? 'bg-indigo-100' : automation.type === 'daily_digest' ? 'bg-sky-100' : 'bg-amber-100'
+            }`}
             title={`${LEVEL_LABELS[level]} level`}
           >
             {isRecurring ? (
-              <RefreshCw className={`w-5 h-5 ${isRecurring ? 'text-indigo-600' : 'text-amber-600'}`} />
+              <RefreshCw className="w-5 h-5 text-indigo-600" />
+            ) : automation.type === 'daily_digest' ? (
+              <Mail className="w-5 h-5 text-sky-600" />
             ) : (
               <Zap className="w-5 h-5 text-amber-600" />
             )}
@@ -345,7 +350,7 @@ export default function AutomationDetailPage() {
               </span>
               <span
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                  isRecurring ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
+                  isRecurring ? 'bg-indigo-100 text-indigo-700' : automation.type === 'daily_digest' ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700'
                 }`}
               >
                 {AUTOMATION_TYPE_LABELS[automation.type]}
@@ -523,8 +528,34 @@ export default function AutomationDetailPage() {
             )}
           </div>
 
-          {/* Linked Expense / Parameters Card */}
-          {templateExpense ? (
+          {/* Linked Expense / Daily Brief Config / Parameters Card */}
+          {automation.type === 'daily_digest' ? (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-4">
+                <Mail className="w-4 h-4 text-sky-500" />
+                Daily Brief Configuration
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Lookback</span>
+                  <span className="font-medium text-gray-900">{(automation.parameters as any)?.lookbackDays ?? 1} day(s)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Outlook</span>
+                  <span className="font-medium text-gray-900">{(automation.parameters as any)?.forwardDays ?? 7} day(s)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Recipients</span>
+                  <span className="font-medium text-gray-900">All admin users</span>
+                </div>
+                <div className="pt-2 border-t border-gray-100">
+                  <p className="text-xs text-gray-500">
+                    Sends an executive financial summary to all admin users each morning. Includes yesterday&apos;s performance, 7-day outlook, and operational alerts.
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : templateExpense ? (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-4">
                 {templateExpense.scope === 'organisation' ? (

@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   Ban,
+  Mail,
 } from 'lucide-react'
 import type { Automation, AutomationType, AutomationHealthStatus, AutomationCreateInput, AutomationLevel } from 'types/automation'
 import {
@@ -58,17 +59,21 @@ function HealthBadge({ health }: { health: AutomationHealthStatus }) {
 
 /* ─── Type Icon with Level Ring ─── */
 function TypeIcon({ type, level }: { type: AutomationType; level: AutomationLevel }) {
-  const isRecurring = type === 'recurring_transaction'
   const colors = LEVEL_COLORS[level]
+  const bgClass = type === 'recurring_transaction'
+    ? 'bg-indigo-100'
+    : type === 'daily_digest'
+      ? 'bg-sky-100'
+      : 'bg-amber-100'
   return (
     <div
-      className={`flex items-center justify-center w-10 h-10 rounded-xl ring-2 ring-offset-2 ${colors.ring} ${
-        isRecurring ? 'bg-indigo-100' : 'bg-amber-100'
-      }`}
+      className={`flex items-center justify-center w-10 h-10 rounded-xl ring-2 ring-offset-2 ${colors.ring} ${bgClass}`}
       title={`${LEVEL_LABELS[level]} level`}
     >
-      {isRecurring ? (
+      {type === 'recurring_transaction' ? (
         <RefreshCw className="w-5 h-5 text-indigo-600" />
+      ) : type === 'daily_digest' ? (
+        <Mail className="w-5 h-5 text-sky-600" />
       ) : (
         <Zap className="w-5 h-5 text-amber-600" />
       )}
@@ -342,6 +347,7 @@ function AutomationsPageInner() {
             <option value="">All Types</option>
             <option value="recurring_transaction">Recurring Transaction</option>
             <option value="contract_billing_run">Contract Billing</option>
+            <option value="daily_digest">Daily Brief</option>
           </select>
 
           {/* Level legend */}
@@ -439,7 +445,7 @@ function AutomationsPageInner() {
                       </span>
                       <span className="text-gray-300">·</span>
                       <span className={`font-medium ${
-                        a.type === 'recurring_transaction' ? 'text-indigo-600' : 'text-amber-600'
+                        a.type === 'recurring_transaction' ? 'text-indigo-600' : a.type === 'daily_digest' ? 'text-sky-600' : 'text-amber-600'
                       }`}>
                         {AUTOMATION_TYPE_LABELS[a.type]}
                       </span>

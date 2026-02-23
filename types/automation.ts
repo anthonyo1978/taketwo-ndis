@@ -1,6 +1,6 @@
 /* ───── Automation Types ───── */
 
-export type AutomationType = 'recurring_transaction' | 'contract_billing_run'
+export type AutomationType = 'recurring_transaction' | 'contract_billing_run' | 'daily_digest'
 export type AutomationRunStatus = 'running' | 'success' | 'failed'
 export type ScheduleFrequency = 'daily' | 'weekly' | 'monthly'
 
@@ -30,7 +30,15 @@ export interface ContractBillingParams {
   catchUpMode?: boolean
 }
 
-export type AutomationParameters = RecurringTransactionParams | ContractBillingParams
+/** Parameters for daily_digest runner */
+export interface DailyDigestParams {
+  /** How many days back to look for yesterday snapshot (default 1) */
+  lookbackDays?: number
+  /** How many days forward for the outlook (default 7) */
+  forwardDays?: number
+}
+
+export type AutomationParameters = RecurringTransactionParams | ContractBillingParams | DailyDigestParams
 
 export interface Automation {
   id: string
@@ -94,16 +102,19 @@ export const DAY_OF_WEEK_LABELS = [
 export const AUTOMATION_TYPE_LABELS: Record<AutomationType, string> = {
   recurring_transaction: 'Recurring Transaction',
   contract_billing_run: 'Contract Billing',
+  daily_digest: 'Daily Brief',
 }
 
 export const AUTOMATION_TYPE_DESCRIPTIONS: Record<AutomationType, string> = {
   recurring_transaction: 'Automatically generates a transaction on schedule from a template',
   contract_billing_run: 'Nightly scan of funding contracts to generate NDIS drawdown transactions',
+  daily_digest: 'Executive morning summary emailed daily to all admin users',
 }
 
 export const AUTOMATION_TYPE_ICONS: Record<AutomationType, string> = {
   recurring_transaction: '🔁',
   contract_billing_run: '⚡',
+  daily_digest: '📊',
 }
 
 /**
@@ -138,6 +149,7 @@ export type AutomationLevel = 'organisation' | 'house' | 'client'
  */
 export function getAutomationLevel(a: Pick<Automation, 'type' | 'parameters'>): AutomationLevel {
   if (a.type === 'contract_billing_run') return 'client'
+  if (a.type === 'daily_digest') return 'organisation'
   const params = a.parameters as RecurringTransactionParams
   if (params?.scope === 'organisation') return 'organisation'
   return 'house'

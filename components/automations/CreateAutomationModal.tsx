@@ -142,7 +142,7 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
     if (type === 'recurring_transaction' && !hasPrefill) {
       setStep('expense')
     } else {
-      // Contract billing — skip expense, go to schedule
+      // Contract billing / daily_digest — skip expense, go to schedule
       setStep('schedule')
     }
   }
@@ -194,7 +194,9 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
         name ||
         (type === 'recurring_transaction'
           ? `Recurring: ${expenseDescription || 'Expense'}`
-          : 'Contract Billing Run')
+          : type === 'daily_digest'
+            ? 'Haven Daily Brief'
+            : 'Contract Billing Run')
 
       // Build parameters
       const parameters: Record<string, any> = {}
@@ -206,6 +208,9 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
         if (prefill?.parameters) Object.assign(parameters, prefill.parameters)
         // Override with our template if we just created one
         if (templateExpenseId && !hasPrefill) parameters.templateExpenseId = templateExpenseId
+      } else if (type === 'daily_digest') {
+        parameters.lookbackDays = 1
+        parameters.forwardDays = 7
       }
 
       const payload: AutomationCreateInput = {
@@ -373,6 +378,29 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
                         <h3 className="text-sm font-semibold text-gray-900">Contract Billing</h3>
                         <p className="text-xs text-gray-500 mt-0.5">
                           Scan funding contracts and generate NDIS drawdown transactions nightly.
+                        </p>
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Daily Brief */}
+                  <button
+                    type="button"
+                    onClick={() => { setType('daily_digest'); setFrequency('daily'); setTimeOfDay('06:00') }}
+                    className={`w-full p-4 rounded-xl border text-left transition-all ${
+                      type === 'daily_digest'
+                        ? 'border-sky-500 bg-sky-50 ring-1 ring-sky-500'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-sky-100 rounded-lg flex-shrink-0">
+                        <Zap className="w-5 h-5 text-sky-600" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-gray-900">Daily Brief</h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Executive morning email — yesterday&apos;s financials, upcoming activity, and alerts.
                         </p>
                       </div>
                     </div>

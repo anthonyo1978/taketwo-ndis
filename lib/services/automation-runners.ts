@@ -5,10 +5,11 @@
  * They are invoked by the scheduler and return structured results.
  */
 
-import type { Automation, AutomationRun } from 'types/automation'
+import type { Automation, AutomationRun, DailyDigestParams } from 'types/automation'
 import { generateTransactionsForEligibleContracts } from './transaction-generator'
 import { sendAutomationCompletionEmail, sendAutomationErrorEmail } from './email-notifications'
 import { createNotification } from './notification-service'
+import { aggregateDailyBrief, sendDailyBriefEmail } from './daily-brief'
 
 export interface RunnerResult {
   success: boolean
@@ -272,6 +273,83 @@ async function runContractBilling(
 }
 
 /* ────────────────────────────────────────────────────────────
+   C) Daily Digest Runner
+   ──────────────────────────────────────────────────────────── */
+
+async function runDailyDigest(
+  automation: Automation,
+  runId: string,
+  supabase: any,
+): Promise<RunnerResult> {
+  const params = automation.parameters as DailyDigestParams
+  const timezone = automation.schedule.timezone || 'Australia/Sydney'
+  const lookbackDays = params.lookbackDays ?? 1
+  const forwardDays = params.forwardDays ?? 7
+
+  try {
+    // 1. Aggregate data
+    const briefData = await aggregateDailyBrief(
+      automation.organizationId,
+      supabase,
+      timezone,
+      lookbackDays,
+      forwardDays,
+    )
+
+    // 2. Send email
+    const emailResult = await sendDailyBriefEmail(briefData)
+
+    // 3. Create Haven notification
+    try {
+      await createNotification({
+        organizationId: automation.organizationId,
+        title: '☀️ Daily Brief Sent',
+        message: `Net yesterday: $${briefData.yesterday.net.toFixed(2)} · Sent to ${emailResult.recipientCount} admin${emailResult.recipientCount !== 1 ? 's' : ''}`,
+        icon: '📊',
+        category: 'automation',
+        priority: 'low',
+        actionUrl: '/dashboard',
+        metadata: { automationId: automation.id, runId },
+      })
+    } catch {
+      // non-fatal
+    }
+
+    const summary = [
+      `Net yesterday: $${briefData.yesterday.net.toFixed(2)}`,
+      `Income: $${briefData.yesterday.income.toFixed(2)}`,
+      `Costs: $${(briefData.yesterday.propertyCosts + briefData.yesterday.orgCosts).toFixed(2)}`,
+      `Sent to ${emailResult.recipientCount} admin(s)`,
+      emailResult.error ? `Email note: ${emailResult.error}` : '',
+    ].filter(Boolean).join(' | ')
+
+    return {
+      success: emailResult.success || emailResult.recipientCount === 0,
+      summary,
+      metrics: {
+        income: briefData.yesterday.income,
+        propertyCosts: briefData.yesterday.propertyCosts,
+        orgCosts: briefData.yesterday.orgCosts,
+        net: briefData.yesterday.net,
+        recipientCount: emailResult.recipientCount,
+        alertCount: briefData.alerts.expiringContracts.length
+          + briefData.alerts.failedAutomations.length
+          + briefData.alerts.lowBalanceContracts.length,
+      },
+      error: emailResult.success ? undefined : emailResult.error,
+    }
+  } catch (err: any) {
+    console.error('[RUNNER:daily_digest] Error:', err)
+    return {
+      success: false,
+      summary: `Daily Brief failed: ${err.message}`,
+      metrics: {},
+      error: err.message,
+    }
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
    Preflight Checks
    ──────────────────────────────────────────────────────────── */
 
@@ -388,6 +466,52 @@ async function preflightContractBilling(
   }
 }
 
+async function preflightDailyDigest(
+  automation: Automation,
+  supabase: any,
+): Promise<PreflightResult> {
+  // Check org exists
+  const { data: org, error: orgErr } = await supabase
+    .from('organizations')
+    .select('id, name')
+    .eq('id', automation.organizationId)
+    .single()
+
+  if (orgErr || !org) {
+    return { canRun: false, reason: 'Organisation not found.' }
+  }
+
+  // Check there are admin users to send to
+  const { count, error: countErr } = await supabase
+    .from('users')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', automation.organizationId)
+    .eq('role', 'admin')
+    .eq('status', 'active')
+
+  if (countErr) {
+    return { canRun: false, reason: `Failed to check admin users: ${countErr.message}` }
+  }
+
+  if (!count || count === 0) {
+    return {
+      canRun: false,
+      reason: 'No active admin users found. The Daily Brief needs at least one admin to send to.',
+    }
+  }
+
+  const warnings: string[] = []
+  if (!process.env.RESEND_API_KEY) {
+    warnings.push('RESEND_API_KEY is not configured — email will not actually send.')
+  }
+
+  return {
+    canRun: true,
+    reason: `Ready to generate Daily Brief for ${org.name} and send to ${count} admin${count > 1 ? 's' : ''}.`,
+    warnings: warnings.length > 0 ? warnings : undefined,
+  }
+}
+
 /**
  * Run a preflight check to determine if an automation can safely execute.
  * Use this before "Run Now" to give users meaningful feedback.
@@ -401,6 +525,8 @@ export async function preflightCheck(
       return preflightRecurringTransaction(automation, supabase)
     case 'contract_billing_run':
       return preflightContractBilling(automation, supabase)
+    case 'daily_digest':
+      return preflightDailyDigest(automation, supabase)
     default:
       return {
         canRun: false,
@@ -423,6 +549,8 @@ export async function executeRunner(
       return runRecurringTransaction(automation, runId, supabase)
     case 'contract_billing_run':
       return runContractBilling(automation, runId, supabase)
+    case 'daily_digest':
+      return runDailyDigest(automation, runId, supabase)
     default:
       return {
         success: false,
