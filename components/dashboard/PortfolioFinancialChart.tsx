@@ -26,6 +26,7 @@ interface ExpenseBreakdown {
   category: string
   amount: number
   topItem?: string
+  scope?: 'property' | 'organisation'
 }
 
 interface MonthData {
@@ -269,26 +270,85 @@ function DetailedTooltip({ active, payload, label, chartData, isHouseFiltered, s
       </div>
 
       {/* ── Expenses section ── */}
-      <div className="mb-3">
-        {/* Show property/org split summary when in split mode */}
-        {splitExpenses ? (
-          <>
-            <div className="flex items-center justify-between gap-4 mb-0.5">
-              <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                Property Expenses
-              </span>
-              <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(propExp)}</span>
+      {splitExpenses ? (
+        <>
+          {/* Property expenses */}
+          {propExp > 0 && (
+            <div className="mb-2">
+              <div className="flex items-center justify-between gap-4 mb-1">
+                <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                  Property
+                </span>
+                <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(propExp)}</span>
+              </div>
+              {(() => {
+                const propItems = expenseBreakdown.filter((c: ExpenseBreakdown) => c.scope !== 'organisation').slice(0, TOOLTIP_MAX_ITEMS)
+                const propTotal = expenseBreakdown.filter((c: ExpenseBreakdown) => c.scope !== 'organisation').length
+                const propHidden = propTotal - propItems.length
+                return propItems.length > 0 ? (
+                  <div className="ml-4 space-y-0.5">
+                    {propItems.map((c: ExpenseBreakdown, i: number) => {
+                      const pct = propExp > 0 ? Math.round((c.amount / propExp) * 100) : 0
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-300 flex-shrink-0" />
+                          <span className="text-gray-600 truncate flex-1">
+                            {CATEGORY_LABELS[c.category] || c.category}
+                          </span>
+                          <span className="text-gray-900 font-medium tabular-nums">{fmtCurrencyFull(c.amount)}</span>
+                          <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
+                        </div>
+                      )
+                    })}
+                    {propHidden > 0 && (
+                      <p className="text-[10px] text-gray-400">+{propHidden} more</p>
+                    )}
+                  </div>
+                ) : null
+              })()}
             </div>
-            <div className="flex items-center justify-between gap-4 mb-1">
-              <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                Org Expenses
-              </span>
-              <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(orgExp)}</span>
+          )}
+          {/* Org expenses */}
+          {orgExp > 0 && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between gap-4 mb-1">
+                <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                  Organisation
+                </span>
+                <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(orgExp)}</span>
+              </div>
+              {(() => {
+                const orgItems = expenseBreakdown.filter((c: ExpenseBreakdown) => c.scope === 'organisation').slice(0, TOOLTIP_MAX_ITEMS)
+                const orgTotal = expenseBreakdown.filter((c: ExpenseBreakdown) => c.scope === 'organisation').length
+                const orgHidden = orgTotal - orgItems.length
+                return orgItems.length > 0 ? (
+                  <div className="ml-4 space-y-0.5">
+                    {orgItems.map((c: ExpenseBreakdown, i: number) => {
+                      const pct = orgExp > 0 ? Math.round((c.amount / orgExp) * 100) : 0
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-xs">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-300 flex-shrink-0" />
+                          <span className="text-gray-600 truncate flex-1">
+                            {CATEGORY_LABELS[c.category] || c.category}
+                          </span>
+                          <span className="text-gray-900 font-medium tabular-nums">{fmtCurrencyFull(c.amount)}</span>
+                          <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
+                        </div>
+                      )
+                    })}
+                    {orgHidden > 0 && (
+                      <p className="text-[10px] text-gray-400">+{orgHidden} more</p>
+                    )}
+                  </div>
+                ) : null
+              })()}
             </div>
-          </>
-        ) : (
+          )}
+        </>
+      ) : (
+        <div className="mb-3">
           <div className="flex items-center justify-between gap-4 mb-1">
             <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
@@ -296,34 +356,34 @@ function DetailedTooltip({ active, payload, label, chartData, isHouseFiltered, s
             </span>
             <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(expenses)}</span>
           </div>
-        )}
 
-        {visibleExpense.length > 0 && (
-          <div className="ml-4 mt-1 space-y-0.5">
-            {visibleExpense.map((c: ExpenseBreakdown, i: number) => {
-              const pct = expenses > 0 ? Math.round((c.amount / expenses) * 100) : 0
-              return (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-300 flex-shrink-0" />
-                  <span className="text-gray-600 truncate flex-1">
-                    {CATEGORY_LABELS[c.category] || c.category}
-                    {c.topItem && c.topItem !== c.category && (
-                      <span className="text-gray-400 ml-1">({c.topItem})</span>
-                    )}
-                  </span>
-                  <span className="text-gray-900 font-medium tabular-nums">{fmtCurrencyFull(c.amount)}</span>
-                  <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
-                </div>
-              )
-            })}
-            {hiddenExpenseCount > 0 && (
-              <p className="text-[10px] text-gray-400 mt-0.5">
-                +{hiddenExpenseCount} more categor{hiddenExpenseCount > 1 ? 'ies' : 'y'}
-              </p>
-            )}
-          </div>
-        )}
-      </div>
+          {visibleExpense.length > 0 && (
+            <div className="ml-4 mt-1 space-y-0.5">
+              {visibleExpense.map((c: ExpenseBreakdown, i: number) => {
+                const pct = expenses > 0 ? Math.round((c.amount / expenses) * 100) : 0
+                return (
+                  <div key={i} className="flex items-center gap-2 text-xs">
+                    <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${c.scope === 'organisation' ? 'bg-amber-300' : 'bg-rose-300'}`} />
+                    <span className="text-gray-600 truncate flex-1">
+                      {CATEGORY_LABELS[c.category] || c.category}
+                      {c.topItem && c.topItem !== c.category && (
+                        <span className="text-gray-400 ml-1">({c.topItem})</span>
+                      )}
+                    </span>
+                    <span className="text-gray-900 font-medium tabular-nums">{fmtCurrencyFull(c.amount)}</span>
+                    <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
+                  </div>
+                )
+              })}
+              {hiddenExpenseCount > 0 && (
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  +{hiddenExpenseCount} more categor{hiddenExpenseCount > 1 ? 'ies' : 'y'}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Net ── */}
       <div className="border-t border-gray-100 pt-2 flex items-center justify-between gap-4">
@@ -456,39 +516,94 @@ function MonthDetailPanel({
 
         {/* Expenses column */}
         <div className="p-4">
-          <div className="flex items-center gap-1.5 mb-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-            <span className="text-sm font-semibold text-gray-700">Expenses</span>
-            <span className="text-xs text-gray-400 ml-auto">{expenseBreakdown.length} categor{expenseBreakdown.length !== 1 ? 'ies' : 'y'}</span>
-          </div>
-          {expenseBreakdown.length > 0 ? (
-            <div className="space-y-1.5 max-h-[240px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#e5e7eb transparent' }}>
-              {expenseBreakdown.map((c: ExpenseBreakdown, i: number) => {
-                const pct = expenses > 0 ? Math.round((c.amount / expenses) * 100) : 0
-                const barWidth = expenses > 0 ? Math.max((c.amount / expenses) * 100, 2) : 0
-                return (
-                  <div key={i}>
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="w-2 h-2 rounded-full bg-rose-300 flex-shrink-0" />
-                      <span className="text-gray-700 truncate flex-1 font-medium">
-                        {CATEGORY_LABELS[c.category] || c.category}
-                        {c.topItem && c.topItem !== c.category && (
-                          <span className="text-gray-400 font-normal ml-1">({c.topItem})</span>
-                        )}
+          {(() => {
+            const propBreakdown = expenseBreakdown.filter((c: ExpenseBreakdown) => c.scope !== 'organisation')
+            const orgBreakdown = expenseBreakdown.filter((c: ExpenseBreakdown) => c.scope === 'organisation')
+            const hasBothScopes = propBreakdown.length > 0 && orgBreakdown.length > 0
+
+            return (
+              <>
+                {/* Property expenses */}
+                {propBreakdown.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                      <span className="text-sm font-semibold text-gray-700">
+                        {hasBothScopes ? 'Property Expenses' : 'Expenses'}
                       </span>
-                      <span className="text-gray-900 font-semibold tabular-nums">{fmtCurrencyFull(c.amount)}</span>
-                      <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
+                      <span className="text-xs text-gray-400 ml-auto">
+                        {hasBothScopes ? fmtCurrencyFull(propExp) : `${propBreakdown.length} categor${propBreakdown.length !== 1 ? 'ies' : 'y'}`}
+                      </span>
                     </div>
-                    <div className="ml-4 mt-0.5 h-1 bg-gray-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-rose-300 rounded-full" style={{ width: `${barWidth}%` }} />
+                    <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#e5e7eb transparent' }}>
+                      {propBreakdown.map((c: ExpenseBreakdown, i: number) => {
+                        const base = propExp > 0 ? propExp : expenses
+                        const pct = base > 0 ? Math.round((c.amount / base) * 100) : 0
+                        const barWidth = base > 0 ? Math.max((c.amount / base) * 100, 2) : 0
+                        return (
+                          <div key={i}>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="w-2 h-2 rounded-full bg-rose-300 flex-shrink-0" />
+                              <span className="text-gray-700 truncate flex-1 font-medium">
+                                {CATEGORY_LABELS[c.category] || c.category}
+                                {c.topItem && c.topItem !== c.category && (
+                                  <span className="text-gray-400 font-normal ml-1">({c.topItem})</span>
+                                )}
+                              </span>
+                              <span className="text-gray-900 font-semibold tabular-nums">{fmtCurrencyFull(c.amount)}</span>
+                              <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
+                            </div>
+                            <div className="ml-4 mt-0.5 h-1 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-rose-300 rounded-full" style={{ width: `${barWidth}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-400 italic">No expenses recorded</p>
-          )}
+                  </>
+                )}
+
+                {/* Org expenses */}
+                {orgBreakdown.length > 0 && (
+                  <>
+                    <div className={`flex items-center gap-1.5 mb-2 ${propBreakdown.length > 0 ? 'mt-4 pt-3 border-t border-gray-100' : ''}`}>
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                      <span className="text-sm font-semibold text-gray-700">Organisation Expenses</span>
+                      <span className="text-xs text-gray-400 ml-auto">{fmtCurrencyFull(orgExp)}</span>
+                    </div>
+                    <div className="space-y-1.5 max-h-[160px] overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: '#e5e7eb transparent' }}>
+                      {orgBreakdown.map((c: ExpenseBreakdown, i: number) => {
+                        const pct = orgExp > 0 ? Math.round((c.amount / orgExp) * 100) : 0
+                        const barWidth = orgExp > 0 ? Math.max((c.amount / orgExp) * 100, 2) : 0
+                        return (
+                          <div key={i}>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="w-2 h-2 rounded-full bg-amber-300 flex-shrink-0" />
+                              <span className="text-gray-700 truncate flex-1 font-medium">
+                                {CATEGORY_LABELS[c.category] || c.category}
+                                {c.topItem && c.topItem !== c.category && (
+                                  <span className="text-gray-400 font-normal ml-1">({c.topItem})</span>
+                                )}
+                              </span>
+                              <span className="text-gray-900 font-semibold tabular-nums">{fmtCurrencyFull(c.amount)}</span>
+                              <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
+                            </div>
+                            <div className="ml-4 mt-0.5 h-1 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-amber-300 rounded-full" style={{ width: `${barWidth}%` }} />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </>
+                )}
+
+                {expenseBreakdown.length === 0 && (
+                  <p className="text-xs text-gray-400 italic">No expenses recorded</p>
+                )}
+              </>
+            )
+          })()}
         </div>
       </div>
     </div>

@@ -181,7 +181,7 @@ export async function GET(request: NextRequest) {
       propertyExpenses: number
       orgExpenses: number
       incomeBySource: Map<string, { name: string; amount: number }>
-      expenseByCategory: Map<string, { amount: number; topItem: string; topAmount: number }>
+      expenseByCategory: Map<string, { amount: number; topItem: string; topAmount: number; scope: string }>
     }
 
     const monthMap = new Map<string, MonthBucket>()
@@ -250,7 +250,9 @@ export async function GET(request: NextRequest) {
 
         if (detailed) {
           const cat = row.category || 'other'
-          const existing = bucket.expenseByCategory.get(cat)
+          // Use scope:category as key so property "rent" and org "rent" don't collide
+          const catKey = `${scope}:${cat}`
+          const existing = bucket.expenseByCategory.get(catKey)
           if (existing) {
             existing.amount += amt
             if (amt > existing.topAmount) {
@@ -258,10 +260,11 @@ export async function GET(request: NextRequest) {
               existing.topAmount = amt
             }
           } else {
-            bucket.expenseByCategory.set(cat, {
+            bucket.expenseByCategory.set(catKey, {
               amount: amt,
               topItem: row.description || cat,
               topAmount: amt,
+              scope,
             })
           }
         }
@@ -299,10 +302,12 @@ export async function GET(request: NextRequest) {
             .sort((a, b) => b.amount - a.amount)
 
           base.expenseBreakdown = Array.from(bucket.expenseByCategory.entries())
-            .map(([cat, data]) => ({
-              category: cat,
+            .map(([catKey, data]) => ({
+              // catKey is "scope:category" — extract the actual category
+              category: catKey.includes(':') ? catKey.split(':').slice(1).join(':') : catKey,
               amount: Math.round(data.amount * 100) / 100,
               topItem: data.topItem,
+              scope: data.scope || 'property',
             }))
             .sort((a, b) => b.amount - a.amount)
         }
