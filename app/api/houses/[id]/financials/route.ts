@@ -88,12 +88,13 @@ export async function GET(
       }
     }
 
-    // ── 3. Expenses ──
+    // ── 3. Expenses (property-scoped only for house view) ──
     let expQuery = supabase
       .from('house_expenses')
       .select('occurred_at, amount, description, category')
       .eq('house_id', houseId)
       .eq('organization_id', organizationId)
+      .eq('scope', 'property')
       .not('status', 'eq', 'cancelled')
 
     if (startISO) {
@@ -249,18 +250,15 @@ export async function GET(
         return base
       })
 
-    // Totals
-    const totals = months.reduce(
-      (acc, m) => ({
-        income: acc.income + m.income,
-        expenses: acc.expenses + m.expenses,
-        net: acc.income + m.income - (acc.expenses + m.expenses),
-      }),
-      { income: 0, expenses: 0, net: 0 }
-    )
-    totals.income = Math.round(totals.income * 100) / 100
-    totals.expenses = Math.round(totals.expenses * 100) / 100
-    totals.net = Math.round(totals.net * 100) / 100
+    // Totals (property-level: gross profit = income - property expenses)
+    const totalIncome = months.reduce((sum, m) => sum + m.income, 0)
+    const totalExpenses = months.reduce((sum, m) => sum + m.expenses, 0)
+    const totals = {
+      income: Math.round(totalIncome * 100) / 100,
+      expenses: Math.round(totalExpenses * 100) / 100,
+      net: Math.round((totalIncome - totalExpenses) * 100) / 100,
+      grossProfit: Math.round((totalIncome - totalExpenses) * 100) / 100,
+    }
 
     return NextResponse.json({
       success: true,

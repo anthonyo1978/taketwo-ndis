@@ -10,6 +10,7 @@ interface HouseFinancial {
   income: number
   expenses: number
   net: number
+  grossProfit?: number
 }
 
 /* ───── Helpers ───── */
@@ -76,7 +77,7 @@ export function HouseFinancialHealth() {
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
       {/* Header */}
       <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">House Financial Health</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Property Gross Profit</h3>
         <div className="flex items-center bg-gray-100 rounded-lg p-0.5">
           {([
             { key: 'net', label: 'Net' },
@@ -115,7 +116,7 @@ export function HouseFinancialHealth() {
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-gray-900">{house.houseName}</span>
                   <span className={`text-sm font-bold ${isPositive ? 'text-emerald-600' : 'text-rose-600'}`}>
-                    {isPositive ? '+' : ''}{fmtCurrency(house.net)}
+                    {isPositive ? '+' : ''}{fmtCurrency(house.grossProfit ?? house.net)}
                   </span>
                 </div>
                 {/* Mini stacked bars */}
@@ -154,7 +155,7 @@ export function HouseFinancialHealth() {
 
       {sorted.length > 0 && (
         <div className="px-6 py-3 border-t border-gray-200 bg-gray-50">
-          <p className="text-xs text-gray-500">Showing last 12 months of income vs expenses per house</p>
+          <p className="text-xs text-gray-500">Showing last 12 months · Gross Profit = Income – Property Expenses</p>
         </div>
       )}
     </div>

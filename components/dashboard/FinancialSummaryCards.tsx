@@ -6,7 +6,11 @@ import { useState, useEffect } from 'react'
 interface FinancialTotals {
   income: number
   expenses: number
+  propertyExpenses: number
+  orgExpenses: number
   net: number
+  portfolioGrossProfit: number
+  netOperatingProfit: number
 }
 
 /* ───── Helpers ───── */
@@ -69,9 +73,10 @@ export function FinancialSummaryCards() {
     )
   }
 
-  const t12 = totals12m || { income: 0, expenses: 0, net: 0 }
-  const t1 = totals30d || { income: 0, expenses: 0, net: 0 }
-  const margin = t12.income > 0 ? ((t12.net / t12.income) * 100) : 0
+  const defaults: FinancialTotals = { income: 0, expenses: 0, propertyExpenses: 0, orgExpenses: 0, net: 0, portfolioGrossProfit: 0, netOperatingProfit: 0 }
+  const t12 = { ...defaults, ...totals12m }
+  const t1 = { ...defaults, ...totals30d }
+  const margin = t12.income > 0 ? ((t12.netOperatingProfit / t12.income) * 100) : 0
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -91,7 +96,7 @@ export function FinancialSummaryCards() {
         </p>
       </div>
 
-      {/* Total Expenses (12m) */}
+      {/* Total Expenses (12m) – split by property vs org */}
       <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Expenses</p>
@@ -103,51 +108,53 @@ export function FinancialSummaryCards() {
         </div>
         <p className="text-2xl font-bold text-gray-900">{fmtCurrency(t12.expenses)}</p>
         <p className="text-xs text-gray-500 mt-1">
-          Last 12 months{t1.expenses > 0 && <> · <span className="text-rose-500 font-medium">{fmtCurrency(t1.expenses)}</span> this month</>}
+          <span className="text-rose-500">{fmtCurrency(t12.propertyExpenses)}</span> property · <span className="text-orange-500">{fmtCurrency(t12.orgExpenses)}</span> org
         </p>
       </div>
 
-      {/* Net Profit (12m) */}
+      {/* Portfolio Gross Profit (Income – Property Expenses) */}
       <div className={`rounded-xl border p-5 hover:shadow-md transition-shadow ${
-        t12.net >= 0
+        t12.portfolioGrossProfit >= 0
           ? 'bg-emerald-50/50 border-emerald-200'
           : 'bg-rose-50/50 border-rose-200'
       }`}>
         <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Net Profit</p>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Gross Profit</p>
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-            t12.net >= 0 ? 'bg-emerald-100' : 'bg-rose-100'
+            t12.portfolioGrossProfit >= 0 ? 'bg-emerald-100' : 'bg-rose-100'
           }`}>
-            <span className="text-sm">{t12.net >= 0 ? '📈' : '📉'}</span>
+            <span className="text-sm">{t12.portfolioGrossProfit >= 0 ? '📈' : '📉'}</span>
           </div>
         </div>
-        <p className={`text-2xl font-bold ${t12.net >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-          {t12.net >= 0 ? '+' : ''}{fmtCurrency(t12.net)}
+        <p className={`text-2xl font-bold ${t12.portfolioGrossProfit >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
+          {t12.portfolioGrossProfit >= 0 ? '+' : ''}{fmtCurrency(t12.portfolioGrossProfit)}
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          {margin.toFixed(1)}% margin · {houseCount} {houseCount === 1 ? 'house' : 'houses'}
+          Income – Property Expenses · {houseCount} {houseCount === 1 ? 'house' : 'houses'}
         </p>
       </div>
 
-      {/* This Month Net */}
+      {/* Net Operating Profit (Gross – Org Expenses) */}
       <div className={`rounded-xl border p-5 hover:shadow-md transition-shadow ${
-        t1.net >= 0
-          ? 'bg-white border-gray-200'
-          : 'bg-white border-gray-200'
+        t12.netOperatingProfit >= 0
+          ? 'bg-blue-50/50 border-blue-200'
+          : 'bg-rose-50/50 border-rose-200'
       }`}>
         <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">This Month</p>
-          <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
-            <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Net Operating</p>
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+            t12.netOperatingProfit >= 0 ? 'bg-blue-100' : 'bg-rose-100'
+          }`}>
+            <svg className={`w-4 h-4 ${t12.netOperatingProfit >= 0 ? 'text-blue-600' : 'text-rose-600'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </div>
         </div>
-        <p className={`text-2xl font-bold ${t1.net >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>
-          {t1.net >= 0 ? '+' : ''}{fmtCurrency(t1.net)}
+        <p className={`text-2xl font-bold ${t12.netOperatingProfit >= 0 ? 'text-blue-700' : 'text-rose-700'}`}>
+          {t12.netOperatingProfit >= 0 ? '+' : ''}{fmtCurrency(t12.netOperatingProfit)}
         </p>
         <p className="text-xs text-gray-500 mt-1">
-          {fmtCurrency(t1.income)} in · {fmtCurrency(t1.expenses)} out
+          {margin.toFixed(1)}% margin · After org costs
         </p>
       </div>
     </div>

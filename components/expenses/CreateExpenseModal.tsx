@@ -113,6 +113,7 @@ export function CreateExpenseModal({
   } = useForm<HouseExpenseSchemaType>({
     resolver: zodResolver(houseExpenseSchema),
     defaultValues: {
+      scope: 'property',
       houseId,
       status: 'draft',
       category: defaultCategory || 'rent',

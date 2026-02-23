@@ -9,6 +9,11 @@ import { getCurrentUserOrganizationId } from 'lib/utils/organization'
  * When `detailed=1`, each month also includes per-house (or per-resident when
  * filtered to a single house) income breakdown and per-category expense breakdown.
  *
+ * Financial model:
+ *   Property Gross Profit = Sum(income) - Sum(property expenses) per house
+ *   Portfolio Gross Profit = Total Property Income - Total Property Expenses
+ *   Net Operating Profit  = Portfolio Gross Profit - Total Organisation Expenses
+ *
  * Query params:
  *   months   – number of months to look back. 0 or omitted = all time.
  *   houseId  – optional, filter to a single house.
@@ -54,7 +59,6 @@ export async function GET(request: NextRequest) {
     }
 
     // ── 2. Income: transactions for residents in those houses ──
-    // Always fetch resident_id for per-house / per-resident attribution
     let residentsQuery = supabase
       .from('residents')
       .select('id, house_id, first_name, last_name')
@@ -110,10 +114,10 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // ── 3. Expenses ──
+    // ── 3. Expenses (property + organisation) ──
     let expenseQuery = supabase
       .from('house_expenses')
-      .select('occurred_at, amount, house_id, description, category')
+      .select('occurred_at, amount, house_id, description, category, scope')
       .eq('organization_id', organizationId)
       .not('status', 'eq', 'cancelled')
 
@@ -122,10 +126,35 @@ export async function GET(request: NextRequest) {
     }
 
     if (filterHouseId) {
+      // When filtering by house, only show property expenses for that house
       expenseQuery = expenseQuery.eq('house_id', filterHouseId)
     }
 
     const { data: expenseRows } = await expenseQuery
+
+    // Also fetch org-level expenses separately (they have no house_id)
+    let orgExpenseRows: typeof expenseRows = []
+    if (!filterHouseId) {
+      let orgQuery = supabase
+        .from('house_expenses')
+        .select('occurred_at, amount, house_id, description, category, scope')
+        .eq('organization_id', organizationId)
+        .eq('scope', 'organisation')
+        .not('status', 'eq', 'cancelled')
+
+      if (startISO) {
+        orgQuery = orgQuery.gte('occurred_at', startISO)
+      }
+
+      const { data: orgRows } = await orgQuery
+      orgExpenseRows = orgRows || []
+    }
+
+    // Combine: property expenses from main query + org expenses
+    // (Avoid double-counting: main query may already include org expenses if no houseId filter)
+    const allExpenseRows = filterHouseId
+      ? (expenseRows || [])
+      : [...(expenseRows || []).filter((r: any) => r.scope !== 'organisation'), ...orgExpenseRows]
 
     // ── 4. Determine effective start month ──
     let effectiveStart: Date
@@ -137,7 +166,7 @@ export async function GET(request: NextRequest) {
         const d = new Date(row.occurred_at)
         if (d < earliest) earliest = d
       }
-      for (const row of (expenseRows || [])) {
+      for (const row of allExpenseRows) {
         const d = new Date(row.occurred_at)
         if (d < earliest) earliest = d
       }
@@ -147,13 +176,10 @@ export async function GET(request: NextRequest) {
     // ── 5. Build monthly buckets ──
     const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-    interface IncomeBreakdownEntry { name: string; amount: number }
-    interface ExpenseBreakdownEntry { category: string; amount: number; topItem?: string }
-
     interface MonthBucket {
       income: number
-      expenses: number
-      // For portfolio: per-house income; for single-house: per-resident income
+      propertyExpenses: number
+      orgExpenses: number
       incomeBySource: Map<string, { name: string; amount: number }>
       expenseByCategory: Map<string, { amount: number; topItem: string; topAmount: number }>
     }
@@ -165,7 +191,8 @@ export async function GET(request: NextRequest) {
       const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}`
       monthMap.set(key, {
         income: 0,
-        expenses: 0,
+        propertyExpenses: 0,
+        orgExpenses: 0,
         incomeBySource: new Map(),
         expenseByCategory: new Map(),
       })
@@ -188,8 +215,6 @@ export async function GET(request: NextRequest) {
         bucket.income += amt
 
         if (detailed) {
-          // When filtered to a single house, break down by resident
-          // Otherwise break down by house
           const sourceId = filterHouseId ? row.resident_id : (row.house_id || 'unknown')
           const sourceName = filterHouseId
             ? (residentNameMap.get(row.resident_id) || 'Unknown')
@@ -209,14 +234,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Aggregate expenses
-    for (const row of (expenseRows || [])) {
+    // Aggregate expenses (split by scope)
+    for (const row of allExpenseRows) {
       const d = new Date(row.occurred_at)
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
       const amt = parseFloat(row.amount) || 0
+      const scope = (row as any).scope || 'property'
       const bucket = monthMap.get(key)
       if (bucket) {
-        bucket.expenses += amt
+        if (scope === 'organisation') {
+          bucket.orgExpenses += amt
+        } else {
+          bucket.propertyExpenses += amt
+        }
 
         if (detailed) {
           const cat = row.category || 'other'
@@ -236,7 +266,7 @@ export async function GET(request: NextRequest) {
           }
         }
       }
-      if (row.house_id) {
+      if (row.house_id && scope === 'property') {
         const hBucket = houseAgg.get(row.house_id)
         if (hBucket) hBucket.expenses += amt
       }
@@ -251,12 +281,16 @@ export async function GET(request: NextRequest) {
         const month = parts[1] || '01'
         const monthIdx = parseInt(month, 10) - 1
 
+        const totalExpenses = bucket.propertyExpenses + bucket.orgExpenses
+
         const base: any = {
           month: key,
           label: `${SHORT_MONTHS[monthIdx]} ${year}`,
           shortLabel: SHORT_MONTHS[monthIdx] || '',
           income: Math.round(bucket.income * 100) / 100,
-          expenses: Math.round(bucket.expenses * 100) / 100,
+          expenses: Math.round(totalExpenses * 100) / 100,
+          propertyExpenses: Math.round(bucket.propertyExpenses * 100) / 100,
+          orgExpenses: Math.round(bucket.orgExpenses * 100) / 100,
         }
 
         if (detailed) {
@@ -276,20 +310,24 @@ export async function GET(request: NextRequest) {
         return base
       })
 
-    // Totals
-    const totals = months.reduce(
-      (acc, m) => ({
-        income: acc.income + m.income,
-        expenses: acc.expenses + m.expenses,
-        net: acc.income + m.income - (acc.expenses + m.expenses),
-      }),
-      { income: 0, expenses: 0, net: 0 }
-    )
-    totals.income = Math.round(totals.income * 100) / 100
-    totals.expenses = Math.round(totals.expenses * 100) / 100
-    totals.net = Math.round(totals.net * 100) / 100
+    // Totals with new financial model
+    const totalIncome = months.reduce((sum, m) => sum + m.income, 0)
+    const totalPropertyExpenses = months.reduce((sum, m) => sum + m.propertyExpenses, 0)
+    const totalOrgExpenses = months.reduce((sum, m) => sum + m.orgExpenses, 0)
+    const totalExpenses = totalPropertyExpenses + totalOrgExpenses
 
-    // Per-house breakdown
+    const totals = {
+      income: Math.round(totalIncome * 100) / 100,
+      expenses: Math.round(totalExpenses * 100) / 100,
+      propertyExpenses: Math.round(totalPropertyExpenses * 100) / 100,
+      orgExpenses: Math.round(totalOrgExpenses * 100) / 100,
+      net: Math.round((totalIncome - totalExpenses) * 100) / 100,
+      // New financial model fields
+      portfolioGrossProfit: Math.round((totalIncome - totalPropertyExpenses) * 100) / 100,
+      netOperatingProfit: Math.round((totalIncome - totalExpenses) * 100) / 100,
+    }
+
+    // Per-house breakdown (property gross profit per house)
     const byHouse = Array.from(houseAgg.entries())
       .map(([hId, vals]) => ({
         houseId: hId,
@@ -297,6 +335,7 @@ export async function GET(request: NextRequest) {
         income: Math.round(vals.income * 100) / 100,
         expenses: Math.round(vals.expenses * 100) / 100,
         net: Math.round((vals.income - vals.expenses) * 100) / 100,
+        grossProfit: Math.round((vals.income - vals.expenses) * 100) / 100,
       }))
       .sort((a, b) => b.net - a.net)
 

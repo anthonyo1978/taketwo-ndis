@@ -26,7 +26,8 @@ export async function GET(
 }
 
 /**
- * POST /api/houses/[id]/expenses — Create a new expense for a house
+ * POST /api/houses/[id]/expenses — Create a new property expense for a house
+ * This is a convenience endpoint that always sets scope='property' and houseId from the URL.
  */
 export async function POST(
   request: NextRequest,
@@ -46,6 +47,7 @@ export async function POST(
     const expense = await houseExpenseService.create({
       ...body,
       houseId: id,
+      scope: 'property', // Always property when creating via house endpoint
     })
 
     return NextResponse.json({ success: true, data: expense }, { status: 201 })
@@ -57,4 +59,3 @@ export async function POST(
     )
   }
 }
-

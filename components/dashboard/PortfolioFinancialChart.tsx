@@ -34,6 +34,8 @@ interface MonthData {
   shortLabel: string
   income: number
   expenses: number
+  propertyExpenses?: number
+  orgExpenses?: number
   net?: number
   incomeBreakdown?: IncomeBreakdown[]
   expenseBreakdown?: ExpenseBreakdown[]
@@ -45,11 +47,22 @@ interface HouseBreakdown {
   income: number
   expenses: number
   net: number
+  grossProfit?: number
+}
+
+interface FinancialTotals {
+  income: number
+  expenses: number
+  propertyExpenses: number
+  orgExpenses: number
+  net: number
+  portfolioGrossProfit: number
+  netOperatingProfit: number
 }
 
 interface FinancialData {
   months: MonthData[]
-  totals: { income: number; expenses: number; net: number }
+  totals: FinancialTotals
   byHouse: HouseBreakdown[]
 }
 
@@ -69,10 +82,24 @@ const PERIOD_MONTHS: Record<TimePeriod, number> = {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  rent: 'Rent',
-  maintenance: 'Maintenance',
-  insurance: 'Insurance',
+  // Property categories
+  head_lease: 'Head Lease',
   utilities: 'Utilities',
+  maintenance: 'Maintenance',
+  cleaning: 'Cleaning',
+  insurance: 'Insurance',
+  compliance: 'Compliance',
+  repairs: 'Repairs',
+  // Organisation categories
+  salaries: 'Salaries',
+  software: 'Software',
+  office_rent: 'Office Rent',
+  marketing: 'Marketing',
+  accounting: 'Accounting',
+  corporate_insurance: 'Corporate Insurance',
+  vehicles: 'Vehicles',
+  // Legacy / shared
+  rent: 'Rent',
   rates: 'Rates',
   management_fee: 'Management Fee',
   other: 'Other',
@@ -294,7 +321,7 @@ export function PortfolioFinancialChart() {
     ...m,
     net: Math.max(0, m.income - m.expenses),
   }))
-  const totals = data?.totals || { income: 0, expenses: 0, net: 0 }
+  const totals = data?.totals || { income: 0, expenses: 0, propertyExpenses: 0, orgExpenses: 0, net: 0, portfolioGrossProfit: 0, netOperatingProfit: 0 }
   const hasData = chartData.some(d => d.income > 0 || d.expenses > 0)
   const useFullLabel = chartData.length > 12
   const xDataKey = useFullLabel ? 'label' : 'shortLabel'

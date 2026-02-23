@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { TransactionsTable } from "components/transactions/TransactionsTable"
 import { TransactionAdvancedFilters } from "components/transactions/TransactionAdvancedFilters"
-import { CreateTransactionDialog } from "components/transactions/CreateTransactionDialog"
+import { UnifiedTransactionModal } from "components/transactions/UnifiedTransactionModal"
 import { Button } from "components/Button/Button"
 import { type TransactionFilters as TxFilters, type TransactionStatus } from "types/transaction"
 import type { HouseExpense } from "types/house-expense"
@@ -13,9 +13,10 @@ import {
   EXPENSE_STATUS_LABELS,
   EXPENSE_FREQUENCY_LABELS,
   type ExpenseStatus,
+  type ExpenseScope,
 } from "types/house-expense"
 
-type ViewMode = 'all' | 'income' | 'expenses'
+type ViewMode = 'all' | 'income' | 'property_expenses' | 'org_expenses'
 
 const STATUS_COLORS: Record<ExpenseStatus, string> = {
   draft: 'bg-gray-100 text-gray-700',
@@ -25,46 +26,30 @@ const STATUS_COLORS: Record<ExpenseStatus, string> = {
   cancelled: 'bg-gray-100 text-gray-400',
 }
 
+const SCOPE_ICONS: Record<string, string> = {
+  property: '🏠',
+  organisation: '🏢',
+}
+
 /**
  * Parse URL search params into TransactionFilters.
- * Supports:
- *   ?residentId=xxx           → residentIds: [xxx]
- *   ?houseId=xxx              → houseIds: [xxx]
- *   ?status=draft,paid        → statuses: ['draft','paid']
- *   ?dateFrom=2025-01-01      → dateRange.from
- *   ?dateTo=2025-06-30        → dateRange.to
- *   ?serviceCode=SDA_RENT     → serviceCode
- *   ?search=text              → search
- *   ?view=income|expenses     → viewMode (handled separately)
  */
 function parseUrlFilters(searchParams: URLSearchParams): { filters: TxFilters; viewMode?: ViewMode } {
   const filters: TxFilters = {}
 
-  // Resident
   const residentId = searchParams.get('residentId')
   const residentIds = searchParams.get('residentIds')
-  if (residentId) {
-    filters.residentIds = [residentId]
-  } else if (residentIds) {
-    filters.residentIds = residentIds.split(',').filter(Boolean)
-  }
+  if (residentId) filters.residentIds = [residentId]
+  else if (residentIds) filters.residentIds = residentIds.split(',').filter(Boolean)
 
-  // House
   const houseId = searchParams.get('houseId')
   const houseIds = searchParams.get('houseIds')
-  if (houseId) {
-    filters.houseIds = [houseId]
-  } else if (houseIds) {
-    filters.houseIds = houseIds.split(',').filter(Boolean)
-  }
+  if (houseId) filters.houseIds = [houseId]
+  else if (houseIds) filters.houseIds = houseIds.split(',').filter(Boolean)
 
-  // Statuses
   const statuses = searchParams.get('statuses') || searchParams.get('status')
-  if (statuses) {
-    filters.statuses = statuses.split(',').filter(Boolean) as TransactionStatus[]
-  }
+  if (statuses) filters.statuses = statuses.split(',').filter(Boolean) as TransactionStatus[]
 
-  // Date range
   const dateFrom = searchParams.get('dateFrom')
   const dateTo = searchParams.get('dateTo')
   if (dateFrom || dateTo) {
@@ -74,68 +59,51 @@ function parseUrlFilters(searchParams: URLSearchParams): { filters: TxFilters; v
     }
   }
 
-  // Service code
   const serviceCode = searchParams.get('serviceCode')
-  if (serviceCode) {
-    filters.serviceCode = serviceCode
-  }
+  if (serviceCode) filters.serviceCode = serviceCode
 
-  // Search
   const search = searchParams.get('search')
-  if (search) {
-    filters.search = search
-  }
+  if (search) filters.search = search
 
-  // View mode
   const view = searchParams.get('view') as ViewMode | null
-  const viewMode = view && ['all', 'income', 'expenses'].includes(view) ? view : undefined
+  const validViews: ViewMode[] = ['all', 'income', 'property_expenses', 'org_expenses']
+  const viewMode = view && validViews.includes(view) ? view : undefined
 
   return { filters, viewMode }
 }
 
-/**
- * Serialize filters back to URL search params (preserving pagination etc.)
- */
 function serializeFiltersToUrl(filters: TxFilters, viewMode: ViewMode, currentParams: URLSearchParams): string {
   const params = new URLSearchParams()
-
-  // Preserve pagination
   const page = currentParams.get('page')
   const pageSize = currentParams.get('pageSize')
   if (page) params.set('page', page)
   if (pageSize) params.set('pageSize', pageSize)
-
-  // View mode
   if (viewMode !== 'all') params.set('view', viewMode)
-
-  // Filters
-  if (filters.residentIds && filters.residentIds.length > 0) params.set('residentId', filters.residentIds[0] as string)
-  if (filters.houseIds && filters.houseIds.length > 0) params.set('houseId', filters.houseIds[0] as string)
-  if (filters.statuses && filters.statuses.length > 0) params.set('statuses', filters.statuses.join(','))
+  if (filters.residentIds?.length) params.set('residentId', filters.residentIds[0] as string)
+  if (filters.houseIds?.length) params.set('houseId', filters.houseIds[0] as string)
+  if (filters.statuses?.length) params.set('statuses', filters.statuses.join(','))
   if (filters.dateRange?.from) params.set('dateFrom', filters.dateRange.from.toISOString().split('T')[0] as string)
   if (filters.dateRange?.to) params.set('dateTo', filters.dateRange.to.toISOString().split('T')[0] as string)
   if (filters.serviceCode) params.set('serviceCode', filters.serviceCode)
   if (filters.search) params.set('search', filters.search)
-
   return params.toString()
 }
 
 function TransactionsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  // Parse initial filters and view mode from URL
   const [initialParsed] = useState(() => parseUrlFilters(searchParams))
   const [filters, setFilters] = useState<TxFilters>(initialParsed.filters)
   const [viewMode, setViewMode] = useState<ViewMode>(initialParsed.viewMode || 'all')
 
-  // Expense data for "All" and "Expenses" views
-  const [expenses, setExpenses] = useState<(HouseExpense & { houseName?: string })[]>([])
+  // Expense data
+  const [expenses, setExpenses] = useState<HouseExpense[]>([])
   const [expensesLoading, setExpensesLoading] = useState(false)
 
-  // Sync filters to URL (debounced)
+  // Sync filters to URL
   useEffect(() => {
     const url = serializeFiltersToUrl(filters, viewMode, searchParams)
     const currentUrl = searchParams.toString()
@@ -147,7 +115,7 @@ function TransactionsPageContent() {
 
   // Fetch expenses when view mode includes them
   useEffect(() => {
-    if (viewMode === 'all' || viewMode === 'expenses') {
+    if (viewMode === 'all' || viewMode === 'property_expenses' || viewMode === 'org_expenses') {
       fetchExpenses()
     }
   }, [viewMode, refreshTrigger])
@@ -155,8 +123,9 @@ function TransactionsPageContent() {
   const fetchExpenses = async () => {
     setExpensesLoading(true)
     try {
-      const response = await fetch('/api/expenses?pageSize=200')
-      const result = await response.json() as { success: boolean; data?: (HouseExpense & { houseName?: string })[]; pagination?: { total: number } }
+      const scopeParam = viewMode === 'property_expenses' ? '&scope=property' : viewMode === 'org_expenses' ? '&scope=organisation' : ''
+      const response = await fetch(`/api/expenses?pageSize=200${scopeParam}`)
+      const result = await response.json() as { success: boolean; data?: HouseExpense[] }
       if (result.success && result.data) {
         setExpenses(result.data)
       }
@@ -177,23 +146,29 @@ function TransactionsPageContent() {
   const formatDate = (date: Date | string) =>
     new Date(date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  // Summary stats for expenses
+  // Filter expenses based on view mode
+  const filteredExpenses = viewMode === 'property_expenses'
+    ? expenses.filter(e => e.scope === 'property')
+    : viewMode === 'org_expenses'
+      ? expenses.filter(e => e.scope === 'organisation')
+      : expenses
+
+  // Summary stats
   const expenseSummary = {
-    total: expenses.filter(e => e.status !== 'cancelled').reduce((sum, e) => sum + e.amount, 0),
-    paid: expenses.filter(e => e.status === 'paid').reduce((sum, e) => sum + e.amount, 0),
-    pending: expenses.filter(e => e.status === 'draft' || e.status === 'approved').reduce((sum, e) => sum + e.amount, 0),
+    total: filteredExpenses.filter(e => e.status !== 'cancelled').reduce((sum, e) => sum + e.amount, 0),
+    property: filteredExpenses.filter(e => e.scope === 'property' && e.status !== 'cancelled').reduce((sum, e) => sum + e.amount, 0),
+    organisation: filteredExpenses.filter(e => e.scope === 'organisation' && e.status !== 'cancelled').reduce((sum, e) => sum + e.amount, 0),
   }
 
-  // Check if any filters are active (for the info banner)
   const hasActiveFilters = Boolean(
-    filters.search ||
-    filters.residentIds?.length ||
-    filters.houseIds?.length ||
-    filters.statuses?.length ||
-    filters.dateRange ||
-    filters.serviceCode
+    filters.search || filters.residentIds?.length || filters.houseIds?.length ||
+    filters.statuses?.length || filters.dateRange || filters.serviceCode
   )
-  
+
+  // Determine default direction for modal based on current view
+  const modalDefaultDirection = viewMode === 'income' ? 'income' as const : 'expense' as const
+  const modalDefaultScope: ExpenseScope = viewMode === 'org_expenses' ? 'organisation' : 'property'
+
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
@@ -203,28 +178,30 @@ function TransactionsPageContent() {
             <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
             <p className="text-gray-600 mt-1">
               {viewMode === 'income' && 'Income from NDIS contract drawdowns'}
-              {viewMode === 'expenses' && 'Business outgoings and house expenses'}
+              {viewMode === 'property_expenses' && 'Property-level expenses across your portfolio'}
+              {viewMode === 'org_expenses' && 'Organisation-level business expenses'}
               {viewMode === 'all' && 'All income and expense activity across your portfolio'}
             </p>
           </div>
           <Button
-            onClick={() => setShowCreateDialog(true)}
+            onClick={() => setShowCreateModal(true)}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
           >
             <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Create Transaction
+            Add Transaction
           </Button>
         </div>
 
-        {/* ─── View Mode Segmented Control ─── */}
+        {/* ─── Quick Filter Tabs ─── */}
         <div className="flex items-center gap-1 p-1 bg-gray-100 rounded-lg w-fit mb-6">
           {([
-            { key: 'all', label: 'All', icon: '📊' },
-            { key: 'income', label: 'Income', icon: '↗' },
-            { key: 'expenses', label: 'Expenses', icon: '↙' },
-          ] as const).map((tab) => (
+            { key: 'all' as ViewMode, label: 'All', icon: '📊' },
+            { key: 'income' as ViewMode, label: 'Income', icon: '↗' },
+            { key: 'property_expenses' as ViewMode, label: 'Property Expenses', icon: '🏠' },
+            { key: 'org_expenses' as ViewMode, label: 'Org Expenses', icon: '🏢' },
+          ]).map((tab) => (
             <button
               key={tab.key}
               onClick={() => setViewMode(tab.key)}
@@ -250,17 +227,17 @@ function TransactionsPageContent() {
           </div>
         )}
 
-        {/* ─── Income View (existing transactions table) ─── */}
+        {/* ─── Income Section ─── */}
         {(viewMode === 'income' || viewMode === 'all') && (
           <>
             {viewMode === 'all' && (
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-5 rounded-full bg-green-500" />
+                <div className="w-1 h-5 rounded-full bg-emerald-500" />
                 <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Income — NDIS Drawdowns</h2>
               </div>
             )}
 
-            {/* Advanced Filters */}
+            {/* Advanced Filters (income only) */}
             <div className="mb-4">
               <TransactionAdvancedFilters
                 filters={filters}
@@ -277,12 +254,11 @@ function TransactionsPageContent() {
                 }}
               />
             </div>
-            
-            {/* Transactions Table */}
+
             <div className="bg-white rounded-lg border border-gray-200 mb-8">
-              <TransactionsTable 
+              <TransactionsTable
                 filters={filters}
-                onCreateTransaction={() => setShowCreateDialog(true)}
+                onCreateTransaction={() => setShowCreateModal(true)}
                 refreshTrigger={refreshTrigger}
                 showIncomeAccent={viewMode === 'all'}
               />
@@ -290,30 +266,30 @@ function TransactionsPageContent() {
           </>
         )}
 
-        {/* ─── Expenses View ─── */}
-        {(viewMode === 'expenses' || viewMode === 'all') && (
+        {/* ─── Expenses Section ─── */}
+        {(viewMode === 'property_expenses' || viewMode === 'org_expenses' || viewMode === 'all') && (
           <>
             {viewMode === 'all' && (
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-1 h-5 rounded-full bg-red-400" />
+                <div className="w-1 h-5 rounded-full bg-rose-400" />
                 <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Expenses — Business Outgoings</h2>
               </div>
             )}
 
             {/* Expense Summary Cards */}
-            {expenses.length > 0 && (
+            {filteredExpenses.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
                   <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total Expenses</p>
                   <p className="mt-1 text-xl font-bold text-gray-900">{formatCurrency(expenseSummary.total)}</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Paid</p>
-                  <p className="mt-1 text-xl font-bold text-green-600">{formatCurrency(expenseSummary.paid)}</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">🏠 Property</p>
+                  <p className="mt-1 text-xl font-bold text-gray-900">{formatCurrency(expenseSummary.property)}</p>
                 </div>
                 <div className="bg-white border border-gray-200 rounded-lg p-4">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Pending / Draft</p>
-                  <p className="mt-1 text-xl font-bold text-amber-600">{formatCurrency(expenseSummary.pending)}</p>
+                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">🏢 Organisation</p>
+                  <p className="mt-1 text-xl font-bold text-gray-900">{formatCurrency(expenseSummary.organisation)}</p>
                 </div>
               </div>
             )}
@@ -325,14 +301,14 @@ function TransactionsPageContent() {
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600" />
                   <p className="ml-2 text-sm text-gray-400">Loading expenses…</p>
                 </div>
-              ) : expenses.length === 0 ? (
+              ) : filteredExpenses.length === 0 ? (
                 <div className="py-12 text-center">
                   <svg className="mx-auto h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
                   </svg>
                   <h3 className="mt-2 text-sm font-medium text-gray-900">No expenses recorded</h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Expenses are created per house from the Ownership & Lease tab.
+                    Click &quot;Add Transaction&quot; to create your first expense.
                   </p>
                 </div>
               ) : (
@@ -341,44 +317,50 @@ function TransactionsPageContent() {
                     <tr>
                       <th className="w-1 px-0 py-3"></th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">House</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scope</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Frequency</th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {expenses.map((expense) => (
+                    {filteredExpenses.map((expense) => (
                       <tr
                         key={expense.id}
                         className="hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => router.push(`/houses/${expense.houseId}`)}
+                        onClick={() => expense.houseId ? router.push(`/houses/${expense.houseId}`) : undefined}
                       >
-                        {/* Red accent bar */}
+                        {/* Accent bar */}
                         <td className="w-1 px-0 py-0">
-                          <div className="w-1 h-full min-h-[48px] bg-red-400 rounded-r" />
+                          <div className={`w-1 h-full min-h-[48px] rounded-r ${expense.scope === 'organisation' ? 'bg-purple-400' : 'bg-rose-400'}`} />
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 whitespace-nowrap">
                           {formatDate(expense.occurredAt)}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                          {(expense as any).houseName || 'Unknown'}
+                        <td className="px-4 py-3 text-sm whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                            expense.scope === 'organisation'
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {SCOPE_ICONS[expense.scope || 'property']} {expense.scope === 'organisation' ? 'Org' : 'Property'}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
-                          {EXPENSE_CATEGORY_LABELS[expense.category]}
+                          {expense.houseName || (expense.scope === 'organisation' ? '—' : 'Unknown')}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">
+                          {EXPENSE_CATEGORY_LABELS[expense.category] || expense.category}
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-900 max-w-[250px] truncate">
                           {expense.description}
-                          {expense.reference && (
-                            <span className="text-xs text-gray-400 ml-1.5">({expense.reference})</span>
+                          {expense.supplier && (
+                            <span className="text-xs text-gray-400 ml-1.5">({expense.supplier})</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-                          {expense.frequency ? EXPENSE_FREQUENCY_LABELS[expense.frequency] : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-red-600 text-right whitespace-nowrap">
+                        <td className="px-4 py-3 text-sm font-medium text-rose-600 text-right whitespace-nowrap">
                           -{formatCurrency(expense.amount)}
                         </td>
                         <td className="px-4 py-3 text-center whitespace-nowrap">
@@ -394,18 +376,18 @@ function TransactionsPageContent() {
             </div>
           </>
         )}
-        
-        {/* Create Transaction Dialog */}
-        {showCreateDialog && (
-          <CreateTransactionDialog
-            onClose={() => setShowCreateDialog(false)}
-            onSuccess={() => {
-              setShowCreateDialog(false)
-              setRefreshTrigger(prev => prev + 1)
-            }}
-          />
-        )}
 
+        {/* Unified Transaction Modal */}
+        <UnifiedTransactionModal
+          open={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false)
+            setRefreshTrigger(prev => prev + 1)
+          }}
+          defaultDirection={modalDefaultDirection}
+          defaultScope={modalDefaultScope}
+        />
       </div>
     </div>
   )
