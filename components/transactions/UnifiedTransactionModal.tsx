@@ -18,6 +18,7 @@ import {
 } from "types/house-expense"
 import type { FundingInformation } from "types/resident"
 import type { TransactionCreateInput } from "types/transaction"
+import { CreateAutomationModal } from "components/automations/CreateAutomationModal"
 
 /* ═══════════════════════════════════════════════════════════
    Types
@@ -136,6 +137,11 @@ export function UnifiedTransactionModal({
 
   // ── Create & Next for expenses ──
   const [createAndNext, setCreateAndNext] = useState(false)
+
+  // ── Make recurring / automation wizard ──
+  const [makeRecurring, setMakeRecurring] = useState(false)
+  const [showAutomationWizard, setShowAutomationWizard] = useState(false)
+  const [lastCreatedExpenseId, setLastCreatedExpenseId] = useState<string | null>(null)
 
   // ── Expense form ──
   const expenseForm = useForm<ExpenseFormData>({
@@ -340,10 +346,19 @@ export function UnifiedTransactionModal({
           houseId: data.scope === 'property' ? data.houseId : null,
         }),
       })
-      const result = await response.json() as { success: boolean; error?: string }
+      const result = await response.json() as { success: boolean; error?: string; data?: { id?: string } }
       if (!result.success) throw new Error(result.error || 'Failed to create expense')
 
       setCreateCount(prev => prev + 1)
+
+      // If "Make recurring" is checked, open the automation wizard
+      if (makeRecurring && result.data?.id) {
+        setLastCreatedExpenseId(result.data.id)
+        toast.success('Expense created — now set up the recurring schedule')
+        setShowAutomationWizard(true)
+        setMakeRecurring(false)
+        return
+      }
 
       if (createAndNext && data.occurredAt) {
         const dateStr = data.occurredAt instanceof Date
@@ -632,6 +647,25 @@ export function UnifiedTransactionModal({
               </div>
             )}
 
+            {/* Make Recurring */}
+            <div className={`flex items-center gap-3 rounded-lg px-4 py-3 transition-colors ${makeRecurring ? 'bg-indigo-50 border border-indigo-100' : 'bg-gray-50'}`}>
+              <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                <input
+                  type="checkbox"
+                  checked={makeRecurring}
+                  onChange={(e) => setMakeRecurring(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-gray-200 rounded-full peer peer-checked:bg-indigo-500 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all" />
+              </label>
+              <div>
+                <p className="text-sm font-medium text-gray-700">Make recurring</p>
+                <p className="text-xs text-gray-500">
+                  After creating, set up an automation to repeat this expense on a schedule
+                </p>
+              </div>
+            </div>
+
             {/* Footer */}
             <div className="flex items-center justify-end gap-2 pt-4 border-t border-gray-100">
               <button
@@ -654,6 +688,8 @@ export function UnifiedTransactionModal({
                   </>
                 ) : createAndNext ? (
                   <>Create & Next →</>
+                ) : makeRecurring ? (
+                  'Create & Set Up Recurring'
                 ) : (
                   'Create Expense'
                 )}
@@ -835,6 +871,36 @@ export function UnifiedTransactionModal({
           </form>
         )}
       </DialogContent>
+
+      {/* Automation Wizard (opened after expense creation when "Make recurring" is checked) */}
+      <CreateAutomationModal
+        open={showAutomationWizard}
+        onClose={() => {
+          setShowAutomationWizard(false)
+          setLastCreatedExpenseId(null)
+          onSuccess()
+          onClose()
+        }}
+        onCreated={() => {
+          toast.success('Recurring automation created!')
+          onSuccess()
+          onClose()
+        }}
+        prefill={{
+          name: expenseForm.getValues('description') ? `Recurring: ${expenseForm.getValues('description')}` : 'Recurring Expense',
+          type: 'recurring_transaction',
+          schedule: {
+            frequency: (expenseForm.getValues('frequency') as 'daily' | 'weekly' | 'monthly') || 'monthly',
+            timeOfDay: '02:00',
+            timezone: 'Australia/Sydney',
+          },
+          parameters: {
+            templateExpenseId: lastCreatedExpenseId || undefined,
+            direction: 'expense',
+            scope: expenseForm.getValues('scope'),
+          },
+        }}
+      />
     </Dialog>
   )
 }

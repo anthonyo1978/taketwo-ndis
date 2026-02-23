@@ -1,85 +1,124 @@
-import { AutomationError } from './resident'
+/* ───── Automation Types ───── */
 
-/**
- * Automation settings configuration.
- */
-export interface AutomationSettings {
+export type AutomationType = 'recurring_transaction' | 'contract_billing_run'
+export type AutomationRunStatus = 'running' | 'success' | 'failed'
+export type ScheduleFrequency = 'daily' | 'weekly' | 'monthly'
+
+export interface AutomationSchedule {
+  frequency: ScheduleFrequency
+  timeOfDay: string          // "HH:MM"
+  timezone: string           // IANA e.g. "Australia/Sydney"
+  dayOfWeek?: number         // 0–6 (for weekly)
+  dayOfMonth?: number        // 1–31 (for monthly)
+}
+
+/** Parameters for recurring_transaction runner */
+export interface RecurringTransactionParams {
+  /** ID of the expense to clone each period */
+  templateExpenseId?: string
+  /** ID of the NDIS transaction to clone each period */
+  templateTransactionId?: string
+  /** Direction: income or expense */
+  direction?: 'income' | 'expense'
+  /** Scope: property or organisation (expenses only) */
+  scope?: 'property' | 'organisation'
+}
+
+/** Parameters for contract_billing_run runner */
+export interface ContractBillingParams {
+  notifyEmails?: string[]
+  catchUpMode?: boolean
+}
+
+export type AutomationParameters = RecurringTransactionParams | ContractBillingParams
+
+export interface Automation {
   id: string
-  enabled: boolean
-  runTime: string // Format: "HH:MM" (e.g., "02:00")
-  timezone: string // IANA timezone (e.g., "Australia/Sydney")
-  adminEmails: string[] // Email addresses to notify
-  notificationSettings: {
-    onSuccess: boolean
-    onPartial: boolean
-    onFailure: boolean
-    weeklySummary: boolean
-  }
-  errorHandling: {
-    maxRetries: number
-    retryDelayMs: number
-    continueOnError: boolean
-  }
+  organizationId: string
+  name: string
+  description?: string
+  type: AutomationType
+  isEnabled: boolean
+  schedule: AutomationSchedule
+  parameters: AutomationParameters
+  lastRunAt?: Date | null
+  nextRunAt?: Date | null
+  lastRunStatus?: 'success' | 'failed' | null
+  createdByUserId?: string
   createdAt: Date
   updatedAt: Date
 }
 
+export interface AutomationCreateInput {
+  name: string
+  description?: string
+  type: AutomationType
+  isEnabled?: boolean
+  schedule: AutomationSchedule
+  parameters: AutomationParameters
+}
+
+export interface AutomationUpdateInput {
+  name?: string
+  description?: string
+  isEnabled?: boolean
+  schedule?: Partial<AutomationSchedule>
+  parameters?: Partial<AutomationParameters>
+}
+
+export interface AutomationRun {
+  id: string
+  automationId: string
+  organizationId: string
+  startedAt: Date
+  finishedAt?: Date | null
+  status: AutomationRunStatus
+  summary?: string
+  metrics?: Record<string, any>
+  error?: Record<string, any> | string | null
+  createdAt: Date
+}
+
+/* ───── Schedule helpers ───── */
+
+export const FREQUENCY_LABELS: Record<ScheduleFrequency, string> = {
+  daily: 'Daily',
+  weekly: 'Weekly',
+  monthly: 'Monthly',
+}
+
+export const DAY_OF_WEEK_LABELS = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+]
+
+export const AUTOMATION_TYPE_LABELS: Record<AutomationType, string> = {
+  recurring_transaction: 'Recurring Transaction',
+  contract_billing_run: 'Contract Billing Run',
+}
+
+export const AUTOMATION_TYPE_DESCRIPTIONS: Record<AutomationType, string> = {
+  recurring_transaction: 'Automatically generates a transaction on schedule from a template',
+  contract_billing_run: 'Nightly scan of funding contracts to generate NDIS drawdown transactions',
+}
+
 /**
- * Input for creating or updating automation settings.
+ * Produce a human-readable schedule description.
  */
-export interface AutomationSettingsInput {
-  enabled?: boolean
-  runTime?: string
-  timezone?: string
-  adminEmails?: string[]
-  notificationSettings?: {
-    onSuccess?: boolean
-    onPartial?: boolean
-    onFailure?: boolean
-    weeklySummary?: boolean
+export function describeSchedule(s: AutomationSchedule): string {
+  const time = s.timeOfDay || '02:00'
+  switch (s.frequency) {
+    case 'daily':
+      return `Daily at ${time}`
+    case 'weekly': {
+      const day = s.dayOfWeek != null ? DAY_OF_WEEK_LABELS[s.dayOfWeek] : 'Monday'
+      return `Every ${day} at ${time}`
+    }
+    case 'monthly': {
+      const dom = s.dayOfMonth ?? 1
+      const suffix = dom === 1 ? 'st' : dom === 2 ? 'nd' : dom === 3 ? 'rd' : 'th'
+      return `Monthly on the ${dom}${suffix} at ${time}`
+    }
+    default:
+      return `${s.frequency} at ${time}`
   }
-  errorHandling?: {
-    maxRetries?: number
-    retryDelayMs?: number
-    continueOnError?: boolean
-  }
-}
-
-/**
- * Result of an automated billing run.
- */
-export interface BillingRunResult {
-  success: boolean
-  contractsProcessed: number
-  contractsSkipped: number
-  contractsFailed: number
-  totalAmount: number
-  errors: AutomationError[]
-  executionTimeMs: number
-  summary: string
-}
-
-/**
- * Contract eligibility for automated billing.
- */
-export interface EligibleContract {
-  contractId: string
-  residentId: string
-  residentName: string
-  houseAddress: string
-  currentBalance: number
-  runAmount: number
-  nextRunDate: Date
-  frequency: AutomatedDrawdownFrequency
-  supportItemCode?: string
-}
-
-/**
- * Frequency calculation utilities.
- */
-export type AutomatedDrawdownFrequency = 'daily' | 'weekly' | 'fortnightly'
-
-export interface FrequencyCalculation {
-  nextRunDate: Date
-  daysUntilNext: number
 }

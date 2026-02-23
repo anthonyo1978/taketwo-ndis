@@ -392,6 +392,22 @@ export function AutomationSettingsPage() {
   return (
     <div className="p-8">
       <div className="max-w-7xl mx-auto">
+        {/* Migration banner */}
+        <div className="mb-6 bg-indigo-50 border border-indigo-200 rounded-xl px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-indigo-900">Automations has moved!</p>
+            <p className="text-xs text-indigo-700 mt-0.5">
+              Manage all automations — recurring transactions, billing runs, and schedules — from the new Automations module.
+            </p>
+          </div>
+          <a
+            href="/automations"
+            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors flex-shrink-0"
+          >
+            Go to Automations →
+          </a>
+        </div>
+
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-4 mb-4">

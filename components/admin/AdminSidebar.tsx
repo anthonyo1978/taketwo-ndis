@@ -12,7 +12,8 @@ import {
   LayoutDashboard, 
   Settings, 
   Users,
-  Wrench
+  Wrench,
+  Zap,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -59,6 +60,12 @@ const NAVIGATION_ITEMS = [
     href: "/suppliers",
     icon: Wrench,
     tourId: "suppliers-nav",
+  },
+  {
+    label: "Automations",
+    href: "/automations",
+    icon: Zap,
+    tourId: "automations-nav",
   },
   {
     label: "Notifications",
