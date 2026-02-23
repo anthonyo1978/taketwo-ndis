@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Suspense, useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
@@ -108,9 +108,17 @@ function useSummaryCounts(automations: Automation[]) {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Page
+   Page (wrapped in Suspense for useSearchParams)
    ═══════════════════════════════════════════════════════════ */
 export default function AutomationsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>}>
+      <AutomationsPageInner />
+    </Suspense>
+  )
+}
+
+function AutomationsPageInner() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
