@@ -159,6 +159,25 @@ function SimpleTooltip({ active, payload, label }: any) {
   )
 }
 
+/* ───── Scrollable breakdown list (caps at N visible, scrolls for the rest) ───── */
+const MAX_VISIBLE_ITEMS = 5
+
+function ScrollableBreakdown({ children, total }: { children: React.ReactNode; total: number }) {
+  if (total <= MAX_VISIBLE_ITEMS) {
+    return <>{children}</>
+  }
+  return (
+    <div className="max-h-[120px] overflow-y-auto pr-1 scrollbar-thin">
+      {children}
+      <style jsx>{`
+        div::-webkit-scrollbar { width: 3px; }
+        div::-webkit-scrollbar-track { background: transparent; }
+        div::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+      `}</style>
+    </div>
+  )
+}
+
 /* ───── Detailed Tooltip ───── */
 function DetailedTooltip({ active, payload, label, chartData, isHouseFiltered }: any) {
   if (!active || !payload?.length) return null
@@ -179,86 +198,101 @@ function DetailedTooltip({ active, payload, label, chartData, isHouseFiltered }:
   const sourceLabel = isHouseFiltered ? 'Resident' : 'House'
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-xl p-4 min-w-[280px] max-w-[380px]">
-      <p className="text-sm font-bold text-gray-900 mb-3">{monthData?.label || label}</p>
+    <div className="bg-white rounded-xl border border-gray-200 shadow-xl p-4 min-w-[280px] max-w-[380px] max-h-[420px] flex flex-col">
+      <p className="text-sm font-bold text-gray-900 mb-3 flex-shrink-0">{monthData?.label || label}</p>
 
-      {/* ── Income section ── */}
-      <div className="mb-3">
-        <div className="flex items-center justify-between gap-4 mb-1">
-          <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            Income
-          </span>
-          <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(income)}</span>
-        </div>
+      {/* ── Scrollable middle section ── */}
+      <div className="flex-1 min-h-0 overflow-y-auto pr-0.5" style={{ scrollbarWidth: 'thin', scrollbarColor: '#d1d5db transparent' }}>
 
-        {/* Per-source breakdown (house or resident) */}
-        {incomeBreakdown.length > 0 && (
-          <div className="ml-4 mt-1 space-y-0.5">
-            {incomeBreakdown.map((entry: IncomeBreakdown, i: number) => {
-              const pct = income > 0 ? Math.round((entry.amount / income) * 100) : 0
-              return (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0 ${
-                    isHouseFiltered
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-emerald-100 text-emerald-700'
-                  }`}>
-                    {entry.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </div>
-                  <span className="text-gray-600 truncate flex-1">{entry.name}</span>
-                  <span className="text-gray-900 font-medium tabular-nums">{fmtCurrencyFull(entry.amount)}</span>
-                  <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
-                </div>
-              )
-            })}
-            {incomeBreakdown.length > 0 && (
+        {/* ── Income section ── */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between gap-4 mb-1">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+              Income
+            </span>
+            <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(income)}</span>
+          </div>
+
+          {/* Per-source breakdown (house or resident) */}
+          {incomeBreakdown.length > 0 && (
+            <div className="ml-4 mt-1 space-y-0.5">
+              <ScrollableBreakdown total={incomeBreakdown.length}>
+                {incomeBreakdown.map((entry: IncomeBreakdown, i: number) => {
+                  const pct = income > 0 ? Math.round((entry.amount / income) * 100) : 0
+                  return (
+                    <div key={i} className="flex items-center gap-2 text-xs py-px">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold flex-shrink-0 ${
+                        isHouseFiltered
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                      }`}>
+                        {entry.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </div>
+                      <span className="text-gray-600 truncate flex-1">{entry.name}</span>
+                      <span className="text-gray-900 font-medium tabular-nums">{fmtCurrencyFull(entry.amount)}</span>
+                      <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
+                    </div>
+                  )
+                })}
+              </ScrollableBreakdown>
               <p className="text-[10px] text-gray-400 mt-0.5">
                 {incomeBreakdown.length} {sourceLabel.toLowerCase()}{incomeBreakdown.length > 1 ? 's' : ''} contributing
+                {incomeBreakdown.length > MAX_VISIBLE_ITEMS && (
+                  <span className="ml-1 text-gray-400">· scroll for more</span>
+                )}
               </p>
-            )}
-          </div>
-        )}
-        {incomeBreakdown.length === 0 && income > 0 && (
-          <p className="ml-4 text-xs text-gray-400 italic">No breakdown available</p>
-        )}
-      </div>
-
-      {/* ── Expenses section ── */}
-      <div className="mb-3">
-        <div className="flex items-center justify-between gap-4 mb-1">
-          <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-            Expenses
-          </span>
-          <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(expenses)}</span>
+            </div>
+          )}
+          {incomeBreakdown.length === 0 && income > 0 && (
+            <p className="ml-4 text-xs text-gray-400 italic">No breakdown available</p>
+          )}
         </div>
 
-        {/* Per-category breakdown */}
-        {expenseBreakdown.length > 0 && (
-          <div className="ml-4 mt-1 space-y-0.5">
-            {expenseBreakdown.map((c: ExpenseBreakdown, i: number) => {
-              const pct = expenses > 0 ? Math.round((c.amount / expenses) * 100) : 0
-              return (
-                <div key={i} className="flex items-center gap-2 text-xs">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-300 flex-shrink-0" />
-                  <span className="text-gray-600 truncate flex-1">
-                    {CATEGORY_LABELS[c.category] || c.category}
-                    {c.topItem && c.topItem !== c.category && (
-                      <span className="text-gray-400 ml-1">({c.topItem})</span>
-                    )}
-                  </span>
-                  <span className="text-gray-900 font-medium tabular-nums">{fmtCurrencyFull(c.amount)}</span>
-                  <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
-                </div>
-              )
-            })}
+        {/* ── Expenses section ── */}
+        <div className="mb-3">
+          <div className="flex items-center justify-between gap-4 mb-1">
+            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+              Expenses
+            </span>
+            <span className="text-sm font-semibold text-gray-900">{fmtCurrencyFull(expenses)}</span>
           </div>
-        )}
+
+          {/* Per-category breakdown */}
+          {expenseBreakdown.length > 0 && (
+            <div className="ml-4 mt-1 space-y-0.5">
+              <ScrollableBreakdown total={expenseBreakdown.length}>
+                {expenseBreakdown.map((c: ExpenseBreakdown, i: number) => {
+                  const pct = expenses > 0 ? Math.round((c.amount / expenses) * 100) : 0
+                  return (
+                    <div key={i} className="flex items-center gap-2 text-xs py-px">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-300 flex-shrink-0" />
+                      <span className="text-gray-600 truncate flex-1">
+                        {CATEGORY_LABELS[c.category] || c.category}
+                        {c.topItem && c.topItem !== c.category && (
+                          <span className="text-gray-400 ml-1">({c.topItem})</span>
+                        )}
+                      </span>
+                      <span className="text-gray-900 font-medium tabular-nums">{fmtCurrencyFull(c.amount)}</span>
+                      <span className="text-gray-400 text-[10px] w-8 text-right">{pct}%</span>
+                    </div>
+                  )
+                })}
+              </ScrollableBreakdown>
+              {expenseBreakdown.length > MAX_VISIBLE_ITEMS && (
+                <p className="text-[10px] text-gray-400 mt-0.5">
+                  {expenseBreakdown.length} categories · scroll for more
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
       </div>
 
-      {/* ── Net ── */}
-      <div className="border-t border-gray-100 pt-2 flex items-center justify-between gap-4">
+      {/* ── Net (always pinned at bottom) ── */}
+      <div className="border-t border-gray-100 pt-2 flex items-center justify-between gap-4 flex-shrink-0">
         <span className="text-sm font-medium text-gray-600">Net</span>
         <span className={`text-sm font-bold ${net >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
           {net >= 0 ? '+' : ''}{fmtCurrencyFull(net)}
@@ -388,7 +422,7 @@ export function PortfolioFinancialChart() {
     : <SimpleTooltip />
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
       {/* ── Header ── */}
       <div className="px-6 pt-5 pb-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         {/* Left: Title + inline summary */}
@@ -528,6 +562,8 @@ export function PortfolioFinancialChart() {
                 <Tooltip
                   content={tooltipContent}
                   cursor={{ fill: 'rgba(0,0,0,0.04)' }}
+                  allowEscapeViewBox={{ x: true, y: true }}
+                  wrapperStyle={{ zIndex: 50, pointerEvents: 'auto' }}
                 />
 
                 <Bar dataKey="income" name="Income" radius={[4, 4, 0, 0]} maxBarSize={28}>
@@ -574,6 +610,8 @@ export function PortfolioFinancialChart() {
                 <Tooltip
                   content={tooltipContent}
                   cursor={{ stroke: '#d1d5db', strokeWidth: 1 }}
+                  allowEscapeViewBox={{ x: true, y: true }}
+                  wrapperStyle={{ zIndex: 50, pointerEvents: 'auto' }}
                 />
 
                 <Area
