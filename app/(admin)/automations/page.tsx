@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { useSearchParams, useRouter } from 'next/navigation'
 import {
   Zap,
   Plus,
@@ -15,7 +16,7 @@ import {
   CheckCircle2,
   Ban,
 } from 'lucide-react'
-import type { Automation, AutomationType, AutomationHealthStatus } from 'types/automation'
+import type { Automation, AutomationType, AutomationHealthStatus, AutomationCreateInput } from 'types/automation'
 import {
   AUTOMATION_TYPE_LABELS,
   AUTOMATION_TYPE_DESCRIPTIONS,
@@ -110,6 +111,9 @@ function useSummaryCounts(automations: Automation[]) {
    Page
    ═══════════════════════════════════════════════════════════ */
 export default function AutomationsPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+
   const [automations, setAutomations] = useState<Automation[]>([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -117,6 +121,48 @@ export default function AutomationsPage() {
   const [filterType, setFilterType] = useState<AutomationType | ''>('')
   const [filterHealth, setFilterHealth] = useState<AutomationHealthStatus | ''>('')
   const [runningId, setRunningId] = useState<string | null>(null)
+
+  // Build prefill from query params (e.g. from house page "Set up recurring" links)
+  const prefillFromParams = useMemo(() => {
+    const isNew = searchParams.get('new') === 'true'
+    if (!isNew) return null
+
+    const scope = searchParams.get('scope') as 'property' | 'organisation' | null
+    const houseId = searchParams.get('houseId')
+    const houseName = searchParams.get('houseName')
+    const category = searchParams.get('category')
+
+    const prefill: Partial<AutomationCreateInput> & {
+      templateExpenseId?: string
+      templateTransactionId?: string
+      _prefillScope?: string
+      _prefillHouseId?: string
+      _prefillHouseName?: string
+      _prefillCategory?: string
+    } = {
+      type: 'recurring_transaction',
+      schedule: { frequency: 'monthly', timeOfDay: '02:00', timezone: 'Australia/Sydney' },
+    }
+
+    if (scope) prefill._prefillScope = scope
+    if (houseId) prefill._prefillHouseId = houseId
+    if (houseName) {
+      prefill._prefillHouseName = houseName
+      prefill.name = `Recurring: ${houseName}`
+    }
+    if (category) prefill._prefillCategory = category
+
+    return prefill
+  }, [searchParams])
+
+  // Auto-open create modal when navigated with ?new=true
+  useEffect(() => {
+    if (prefillFromParams) {
+      setShowCreate(true)
+      // Clean URL without reloading
+      router.replace('/automations', { scroll: false })
+    }
+  }, [prefillFromParams])
 
   const fetchAutomations = useCallback(async () => {
     try {
@@ -452,6 +498,7 @@ export default function AutomationsPage() {
         open={showCreate}
         onClose={() => setShowCreate(false)}
         onCreated={fetchAutomations}
+        prefill={prefillFromParams || undefined}
       />
     </div>
   )

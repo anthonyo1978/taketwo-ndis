@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { toast } from 'react-hot-toast'
+import Link from 'next/link'
 import { houseExpenseSchema, type HouseExpenseSchemaType } from 'lib/schemas/house-expense'
 import { Input } from 'components/ui/Input'
 import type { HeadLease } from 'types/head-lease'
@@ -327,6 +328,22 @@ export function CreateExpenseModal({
             <p className="text-sm text-purple-800">
               Pre-filled from existing expense. <strong>Update the date</strong> and any other fields, then create.
             </p>
+          </div>
+        )}
+
+        {/* Recurring hint */}
+        {!duplicateFrom && chainCount === 0 && (
+          <div className="mx-6 mt-4 p-2.5 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-between">
+            <p className="text-xs text-indigo-700">
+              This creates a <strong>one-off</strong> expense.
+            </p>
+            <Link
+              href={`/automations?new=true&scope=property&houseId=${houseId}`}
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-800 whitespace-nowrap ml-2"
+              onClick={onClose}
+            >
+              Set up recurring →
+            </Link>
           </div>
         )}
 

@@ -758,6 +758,7 @@ export default function HouseDetailPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-5">
               <HouseExpensesList
                 houseId={id}
+                houseName={house.descriptor || house.address1 || house.suburb || ''}
                 refreshTrigger={expenseRefreshTrigger}
                 onAddExpense={() => setShowExpenseModal(true)}
                 onDuplicate={(exp) => handleDuplicateExpense(exp, 'expense')}
@@ -798,15 +799,26 @@ export default function HouseDetailPage() {
                   <h2 className="text-base font-semibold text-gray-900">Supplier Expenses</h2>
                   <p className="text-sm text-gray-500 mt-0.5">Bills and invoices from linked suppliers</p>
                 </div>
-                <button
-                  onClick={() => setShowSupplierExpenseModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
-                >
-                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  New Expense
-                </button>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/automations?new=true&scope=property&houseId=${id}&category=maintenance${house ? `&houseName=${encodeURIComponent(house.descriptor || house.address1 || '')}` : ''}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                  >
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Set Up Recurring
+                  </Link>
+                  <button
+                    onClick={() => setShowSupplierExpenseModal(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
+                  >
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    One-off Expense
+                  </button>
+                </div>
               </div>
 
               {/* Show maintenance/supplier expenses for this house */}
@@ -858,15 +870,26 @@ export default function HouseDetailPage() {
                   <h2 className="text-base font-semibold text-gray-900">Utility Charges</h2>
                   <p className="text-sm text-gray-500 mt-0.5">Bills, invoices and meter readings from utility providers</p>
               </div>
-                <button
-                  onClick={() => setShowUtilityExpenseModal(true)}
-                  className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
-                >
-                  <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  New Charge
-                </button>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/automations?new=true&scope=property&houseId=${id}&category=utilities${house ? `&houseName=${encodeURIComponent(house.descriptor || house.address1 || '')}` : ''}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                  >
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Set Up Recurring
+                  </Link>
+                  <button
+                    onClick={() => setShowUtilityExpenseModal(true)}
+                    className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
+                  >
+                    <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    One-off Charge
+                  </button>
+                </div>
               </div>
 
               {/* Legend for snapshot rows */}

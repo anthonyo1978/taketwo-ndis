@@ -26,10 +26,15 @@ interface Props {
   open: boolean
   onClose: () => void
   onCreated: () => void
-  /** Pre-fill for "Make Recurring" flow (from expense form) */
+  /** Pre-fill for "Make Recurring" flow (from expense form) or house page links */
   prefill?: Partial<AutomationCreateInput> & {
     templateExpenseId?: string
     templateTransactionId?: string
+    /** Prefill hints from house page navigation */
+    _prefillScope?: string
+    _prefillHouseId?: string
+    _prefillHouseName?: string
+    _prefillCategory?: string
   }
 }
 
@@ -39,14 +44,17 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // Are we in prefill mode (coming from expense form)?
+  // Are we in prefill mode (coming from expense form with a template)?
   const hasPrefill = !!prefill?.parameters && (
     (prefill.parameters as any).templateExpenseId ||
     (prefill.parameters as any).templateTransactionId
   )
 
-  // Step management
-  const [step, setStep] = useState<Step>(hasPrefill ? 'schedule' : 'type')
+  // Are we in house-prefill mode (coming from house page)?
+  const hasHousePrefill = !!prefill?._prefillHouseId || !!prefill?._prefillScope
+
+  // Step management — skip type step if we have house context
+  const [step, setStep] = useState<Step>(hasPrefill ? 'schedule' : hasHousePrefill ? 'expense' : 'type')
 
   // ── Automation fields ──
   const [name, setName] = useState(prefill?.name || '')
@@ -96,7 +104,7 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
   useEffect(() => {
     if (open) {
       setError('')
-      setStep(hasPrefill ? 'schedule' : 'type')
+      setStep(hasPrefill ? 'schedule' : hasHousePrefill ? 'expense' : 'type')
       setName(prefill?.name || '')
       setDescription(prefill?.description || '')
       setType(prefill?.type || 'recurring_transaction')
@@ -104,9 +112,10 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
       setTimeOfDay(prefill?.schedule?.timeOfDay || '02:00')
       setDayOfWeek(prefill?.schedule?.dayOfWeek ?? 1)
       setDayOfMonth(prefill?.schedule?.dayOfMonth ?? 1)
-      setExpenseScope('property')
-      setHouseId('')
-      setCategory('head_lease')
+      // Use house-prefill values if coming from house page
+      setExpenseScope((prefill?._prefillScope as ExpenseScope) || 'property')
+      setHouseId(prefill?._prefillHouseId || '')
+      setCategory(prefill?._prefillCategory || (prefill?._prefillScope === 'organisation' ? 'salaries' : 'head_lease'))
       setExpenseDescription('')
       setSupplier('')
       setAmount(0)
@@ -243,11 +252,18 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
             <div className="p-1.5 bg-indigo-100 rounded-lg">
               <Zap className="w-4 h-4 text-indigo-600" />
             </div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              {step === 'type' && 'New Automation'}
-              {step === 'expense' && 'Expense Template'}
-              {step === 'schedule' && (hasPrefill ? 'Create Automation' : 'Schedule')}
-            </h2>
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900">
+                {step === 'type' && 'New Automation'}
+                {step === 'expense' && 'Expense Template'}
+                {step === 'schedule' && (hasPrefill ? 'Create Automation' : 'Schedule')}
+              </h2>
+              {hasHousePrefill && prefill?._prefillHouseName && step === 'expense' && (
+                <p className="text-xs text-gray-500 mt-0.5">
+                  for {prefill._prefillHouseName}
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {/* Step indicator */}

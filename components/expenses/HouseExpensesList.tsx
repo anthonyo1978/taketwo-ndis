@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 import type { HouseExpense } from 'types/house-expense'
 import {
@@ -12,6 +13,8 @@ import {
 
 interface HouseExpensesListProps {
   houseId: string
+  /** House name for prefilling automation links */
+  houseName?: string
   refreshTrigger?: number
   onAddExpense: () => void
   /** If set, only show expenses matching this category */
@@ -40,7 +43,7 @@ const CATEGORY_ICONS: Record<string, string> = {
   other: '📄',
 }
 
-export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense, filterCategory, hideHeader, onDuplicate }: HouseExpensesListProps) {
+export function HouseExpensesList({ houseId, houseName, refreshTrigger = 0, onAddExpense, filterCategory, hideHeader, onDuplicate }: HouseExpensesListProps) {
   const [expenses, setExpenses] = useState<HouseExpense[]>([])
   const [loading, setLoading] = useState(true)
   const [totalExpenses, setTotalExpenses] = useState(0)
@@ -141,15 +144,26 @@ export function HouseExpensesList({ houseId, refreshTrigger = 0, onAddExpense, f
               </span>
             )}
           </div>
-          <button
-            onClick={onAddExpense}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
-          >
-            <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Expense
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/automations?new=true&scope=property&houseId=${houseId}${houseName ? `&houseName=${encodeURIComponent(houseName)}` : ''}`}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Set Up Recurring
+            </Link>
+            <button
+              onClick={onAddExpense}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-1.5 text-sm font-medium"
+            >
+              <svg className="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              One-off Expense
+            </button>
+          </div>
         </div>
       )}
       {hideHeader && expenses.length > 0 && (
