@@ -126,6 +126,35 @@ export const HEALTH_LABELS: Record<AutomationHealthStatus, string> = {
   disabled: 'Disabled',
 }
 
+/* ───── Automation Level (scope ring) ───── */
+
+export type AutomationLevel = 'organisation' | 'house' | 'client'
+
+/**
+ * Derive the automation level from type + parameters.
+ * - Organisation (green):  recurring_transaction with scope=organisation
+ * - House (orange):        recurring_transaction with scope=property (or default)
+ * - Client (red):          contract_billing_run (bills against participant contracts)
+ */
+export function getAutomationLevel(a: Pick<Automation, 'type' | 'parameters'>): AutomationLevel {
+  if (a.type === 'contract_billing_run') return 'client'
+  const params = a.parameters as RecurringTransactionParams
+  if (params?.scope === 'organisation') return 'organisation'
+  return 'house'
+}
+
+export const LEVEL_LABELS: Record<AutomationLevel, string> = {
+  organisation: 'Organisation',
+  house: 'House',
+  client: 'Client',
+}
+
+export const LEVEL_COLORS: Record<AutomationLevel, { ring: string; bg: string; text: string; dot: string }> = {
+  organisation: { ring: 'ring-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
+  house:        { ring: 'ring-amber-500',   bg: 'bg-amber-50',   text: 'text-amber-700',   dot: 'bg-amber-500' },
+  client:       { ring: 'ring-red-500',     bg: 'bg-red-50',     text: 'text-red-700',     dot: 'bg-red-500' },
+}
+
 /**
  * Produce a human-readable schedule description.
  */

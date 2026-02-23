@@ -16,13 +16,16 @@ import {
   CheckCircle2,
   Ban,
 } from 'lucide-react'
-import type { Automation, AutomationType, AutomationHealthStatus, AutomationCreateInput } from 'types/automation'
+import type { Automation, AutomationType, AutomationHealthStatus, AutomationCreateInput, AutomationLevel } from 'types/automation'
 import {
   AUTOMATION_TYPE_LABELS,
   AUTOMATION_TYPE_DESCRIPTIONS,
   describeSchedule,
   getAutomationHealth,
+  getAutomationLevel,
   HEALTH_LABELS,
+  LEVEL_LABELS,
+  LEVEL_COLORS,
 } from 'types/automation'
 import { CreateAutomationModal } from 'components/automations/CreateAutomationModal'
 
@@ -53,14 +56,16 @@ function HealthBadge({ health }: { health: AutomationHealthStatus }) {
   }
 }
 
-/* ─── Type Icon ─── */
-function TypeIcon({ type }: { type: AutomationType }) {
+/* ─── Type Icon with Level Ring ─── */
+function TypeIcon({ type, level }: { type: AutomationType; level: AutomationLevel }) {
   const isRecurring = type === 'recurring_transaction'
+  const colors = LEVEL_COLORS[level]
   return (
     <div
-      className={`flex items-center justify-center w-10 h-10 rounded-xl ${
+      className={`flex items-center justify-center w-10 h-10 rounded-xl ring-2 ring-offset-2 ${colors.ring} ${
         isRecurring ? 'bg-indigo-100' : 'bg-amber-100'
       }`}
+      title={`${LEVEL_LABELS[level]} level`}
     >
       {isRecurring ? (
         <RefreshCw className="w-5 h-5 text-indigo-600" />
@@ -338,6 +343,22 @@ function AutomationsPageInner() {
             <option value="recurring_transaction">Recurring Transaction</option>
             <option value="contract_billing_run">Contract Billing</option>
           </select>
+
+          {/* Level legend */}
+          <div className="flex items-center gap-3 ml-auto text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full ring-2 ring-emerald-500 bg-white" />
+              Org
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full ring-2 ring-amber-500 bg-white" />
+              House
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-2.5 h-2.5 rounded-full ring-2 ring-red-500 bg-white" />
+              Client
+            </span>
+          </div>
         </div>
       )}
 
@@ -382,6 +403,8 @@ function AutomationsPageInner() {
         <div className="space-y-3">
           {filtered.map((a) => {
             const health = getAutomationHealth(a)
+            const level = getAutomationLevel(a)
+            const levelColors = LEVEL_COLORS[level]
             const isBroken = health === 'broken'
             const isDisabled = health === 'disabled'
 
@@ -398,8 +421,8 @@ function AutomationsPageInner() {
                 }`}
               >
                 <div className="flex items-center gap-4 px-5 py-4">
-                  {/* Icon */}
-                  <TypeIcon type={a.type} />
+                  {/* Icon with level ring */}
+                  <TypeIcon type={a.type} level={level} />
 
                   {/* Main info */}
                   <div className="flex-1 min-w-0">
@@ -409,7 +432,12 @@ function AutomationsPageInner() {
                       </h3>
                       <HealthBadge health={health} />
                     </div>
-                    <p className="text-xs text-gray-500 flex items-center gap-2">
+                    <p className="text-xs text-gray-500 flex items-center gap-2 flex-wrap">
+                      <span className={`inline-flex items-center gap-1 font-medium ${levelColors.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${levelColors.dot}`} />
+                        {LEVEL_LABELS[level]}
+                      </span>
+                      <span className="text-gray-300">·</span>
                       <span className={`font-medium ${
                         a.type === 'recurring_transaction' ? 'text-indigo-600' : 'text-amber-600'
                       }`}>

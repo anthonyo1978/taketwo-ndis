@@ -31,6 +31,9 @@ import {
   DAY_OF_WEEK_LABELS,
   describeSchedule,
   getAutomationHealth,
+  getAutomationLevel,
+  LEVEL_LABELS,
+  LEVEL_COLORS,
 } from 'types/automation'
 import { EXPENSE_CATEGORY_LABELS } from 'types/house-expense'
 
@@ -301,6 +304,8 @@ export default function AutomationDetailPage() {
   }
 
   const isRecurring = automation.type === 'recurring_transaction'
+  const level = getAutomationLevel(automation)
+  const levelColors = LEVEL_COLORS[level]
 
   return (
     <div className="p-6 lg:p-8 max-w-5xl mx-auto">
@@ -317,7 +322,8 @@ export default function AutomationDetailPage() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
         <div className="flex items-start gap-3">
           <div
-            className={`p-2 rounded-xl ${isRecurring ? 'bg-indigo-100' : 'bg-amber-100'}`}
+            className={`p-2 rounded-xl ring-2 ring-offset-2 ${levelColors.ring} ${isRecurring ? 'bg-indigo-100' : 'bg-amber-100'}`}
+            title={`${LEVEL_LABELS[level]} level`}
           >
             {isRecurring ? (
               <RefreshCw className={`w-5 h-5 ${isRecurring ? 'text-indigo-600' : 'text-amber-600'}`} />
@@ -331,6 +337,12 @@ export default function AutomationDetailPage() {
               <p className="text-sm text-gray-500 mt-0.5">{automation.description}</p>
             )}
             <div className="flex items-center gap-2.5 mt-2">
+              <span
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${levelColors.bg} ${levelColors.text}`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${levelColors.dot}`} />
+                {LEVEL_LABELS[level]}
+              </span>
               <span
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                   isRecurring ? 'bg-indigo-100 text-indigo-700' : 'bg-amber-100 text-amber-700'
