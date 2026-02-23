@@ -90,6 +90,15 @@ export default function AutomationDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  // Run Now confirmation
+  const [showRunConfirm, setShowRunConfirm] = useState(false)
+  const [preflightLoading, setPreflightLoading] = useState(false)
+  const [preflightResult, setPreflightResult] = useState<{
+    canRun: boolean
+    reason: string
+    warnings?: string[]
+  } | null>(null)
+
   // Schedule editing
   const [editingSchedule, setEditingSchedule] = useState(false)
   const [scheduleFreq, setScheduleFreq] = useState<ScheduleFrequency>('monthly')
@@ -139,7 +148,28 @@ export default function AutomationDetailPage() {
     fetchData()
   }
 
-  const handleRunNow = async () => {
+  const handleRunNowClick = async () => {
+    // Open confirmation dialog and run preflight check
+    setShowRunConfirm(true)
+    setPreflightLoading(true)
+    setPreflightResult(null)
+    try {
+      const res = await fetch(`/api/automations/${id}/run-now`)
+      const json = (await res.json()) as { success: boolean; data?: { canRun: boolean; reason: string; warnings?: string[] } }
+      if (json.success && json.data) {
+        setPreflightResult(json.data)
+      } else {
+        setPreflightResult({ canRun: false, reason: 'Failed to check automation status.' })
+      }
+    } catch {
+      setPreflightResult({ canRun: false, reason: 'Failed to reach the server.' })
+    } finally {
+      setPreflightLoading(false)
+    }
+  }
+
+  const handleRunNowConfirm = async () => {
+    setShowRunConfirm(false)
     setRunningNow(true)
     try {
       await fetch(`/api/automations/${id}/run-now`, { method: 'POST' })
@@ -273,7 +303,7 @@ export default function AutomationDetailPage() {
 
         <div className="flex items-center gap-2 flex-wrap">
           <button
-            onClick={handleRunNow}
+            onClick={handleRunNowClick}
             disabled={runningNow}
             className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
           >
@@ -534,6 +564,80 @@ export default function AutomationDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Run Now Confirmation */}
+      {showRunConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`p-2 rounded-xl ${preflightResult?.canRun ? 'bg-indigo-100' : preflightLoading ? 'bg-gray-100' : 'bg-amber-100'}`}>
+                {preflightLoading ? (
+                  <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                ) : preflightResult?.canRun ? (
+                  <Play className="w-5 h-5 text-indigo-600" />
+                ) : (
+                  <AlertTriangle className="w-5 h-5 text-amber-600" />
+                )}
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {preflightLoading
+                  ? 'Checking…'
+                  : preflightResult?.canRun
+                    ? 'Ready to Run'
+                    : 'Cannot Run'}
+              </h3>
+            </div>
+
+            {preflightLoading ? (
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-6">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Validating automation conditions…
+              </div>
+            ) : preflightResult ? (
+              <div className="mb-6">
+                <p className={`text-sm ${preflightResult.canRun ? 'text-gray-600' : 'text-amber-700'}`}>
+                  {preflightResult.reason}
+                </p>
+                {preflightResult.warnings && preflightResult.warnings.length > 0 && (
+                  <div className="mt-3 space-y-1">
+                    {preflightResult.warnings.map((w, i) => (
+                      <p key={i} className="text-xs text-amber-600 flex items-start gap-1.5">
+                        <AlertTriangle className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                        {w}
+                      </p>
+                    ))}
+                  </div>
+                )}
+                {preflightResult.canRun && (
+                  <p className="text-xs text-gray-400 mt-3">
+                    This will execute the automation immediately and log the result.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowRunConfirm(false)
+                  setPreflightResult(null)
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              {preflightResult?.canRun && (
+                <button
+                  onClick={handleRunNowConfirm}
+                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
+                >
+                  Run Now
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation */}
       {showDeleteConfirm && (

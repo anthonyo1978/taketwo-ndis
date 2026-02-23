@@ -21,7 +21,6 @@ interface Props {
   prefill?: Partial<AutomationCreateInput> & {
     templateExpenseId?: string
     templateTransactionId?: string
-    direction?: string
   }
 }
 

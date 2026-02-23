@@ -896,7 +896,6 @@ export function UnifiedTransactionModal({
           },
           parameters: {
             templateExpenseId: lastCreatedExpenseId || undefined,
-            direction: 'expense',
             scope: expenseForm.getValues('scope'),
           },
         }}

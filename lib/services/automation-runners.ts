@@ -17,6 +17,12 @@ export interface RunnerResult {
   error?: string
 }
 
+export interface PreflightResult {
+  canRun: boolean
+  reason: string
+  warnings?: string[]
+}
+
 /* ────────────────────────────────────────────────────────────
    A) Recurring Transaction Runner
    ──────────────────────────────────────────────────────────── */
@@ -53,7 +59,6 @@ async function runRecurringTransaction(
       .insert({
         organization_id: template.organization_id,
         house_id: template.house_id,
-        direction: template.direction || 'expense',
         scope: template.scope || 'property',
         category: template.category,
         organisation_category: template.organisation_category,
@@ -263,6 +268,144 @@ async function runContractBilling(
       metrics: {},
       error: err.message,
     }
+  }
+}
+
+/* ────────────────────────────────────────────────────────────
+   Preflight Checks
+   ──────────────────────────────────────────────────────────── */
+
+async function preflightRecurringTransaction(
+  automation: Automation,
+  supabase: any,
+): Promise<PreflightResult> {
+  const params = automation.parameters as any
+  const templateExpenseId = params.templateExpenseId as string | undefined
+  const templateTransactionId = params.templateTransactionId as string | undefined
+
+  if (!templateExpenseId && !templateTransactionId) {
+    return {
+      canRun: false,
+      reason: 'No template configured. This automation has no templateExpenseId or templateTransactionId in its parameters.',
+    }
+  }
+
+  if (templateExpenseId) {
+    const { data: template, error } = await supabase
+      .from('house_expenses')
+      .select('id, description, amount, status')
+      .eq('id', templateExpenseId)
+      .single()
+
+    if (error || !template) {
+      return {
+        canRun: false,
+        reason: `Template expense not found (${templateExpenseId}). It may have been deleted.`,
+      }
+    }
+
+    if (template.status === 'cancelled') {
+      return {
+        canRun: false,
+        reason: `Template expense "${template.description}" has been cancelled. Re-enable or choose a different template.`,
+      }
+    }
+
+    return {
+      canRun: true,
+      reason: `Ready to clone expense "${template.description}" ($${template.amount}).`,
+    }
+  }
+
+  if (templateTransactionId) {
+    const { data: template, error } = await supabase
+      .from('transactions')
+      .select('id, description, amount')
+      .eq('id', templateTransactionId)
+      .single()
+
+    if (error || !template) {
+      return {
+        canRun: false,
+        reason: `Template transaction not found (${templateTransactionId}). It may have been deleted.`,
+      }
+    }
+
+    return {
+      canRun: true,
+      reason: `Ready to clone transaction "${template.description || templateTransactionId}" ($${template.amount}).`,
+    }
+  }
+
+  return { canRun: false, reason: 'Unknown template configuration.' }
+}
+
+async function preflightContractBilling(
+  automation: Automation,
+  supabase: any,
+): Promise<PreflightResult> {
+  const warnings: string[] = []
+
+  // Check org exists
+  const { data: org, error: orgErr } = await supabase
+    .from('organizations')
+    .select('id, name')
+    .eq('id', automation.organizationId)
+    .single()
+
+  if (orgErr || !org) {
+    return {
+      canRun: false,
+      reason: 'Organisation not found. Cannot run contract billing.',
+    }
+  }
+
+  // Check there are active contracts
+  const { count, error: countErr } = await supabase
+    .from('funding_contracts')
+    .select('id', { count: 'exact', head: true })
+    .eq('organization_id', automation.organizationId)
+    .eq('status', 'active')
+
+  if (countErr) {
+    return {
+      canRun: false,
+      reason: `Failed to check contracts: ${countErr.message}`,
+    }
+  }
+
+  if (!count || count === 0) {
+    return {
+      canRun: false,
+      reason: 'No active funding contracts found. There is nothing to bill.',
+    }
+  }
+
+  return {
+    canRun: true,
+    reason: `Ready to process ${count} active contract${count > 1 ? 's' : ''} for ${org.name}.`,
+    warnings: warnings.length > 0 ? warnings : undefined,
+  }
+}
+
+/**
+ * Run a preflight check to determine if an automation can safely execute.
+ * Use this before "Run Now" to give users meaningful feedback.
+ */
+export async function preflightCheck(
+  automation: Automation,
+  supabase: any,
+): Promise<PreflightResult> {
+  switch (automation.type) {
+    case 'recurring_transaction':
+      return preflightRecurringTransaction(automation, supabase)
+    case 'contract_billing_run':
+      return preflightContractBilling(automation, supabase)
+    default:
+      return {
+        canRun: false,
+        reason: `Unknown automation type: ${automation.type}`,
+      }
   }
 }
 
