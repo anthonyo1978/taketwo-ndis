@@ -687,14 +687,17 @@ function pluralise(n: number, singular: string, plural?: string): string {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   HTML Email Template — Text-first, conversational, mobile-optimised
+   HTML Email Template — Executive operational briefing
    ═══════════════════════════════════════════════════════════════════════════
-   Design principles:
-   - Reads like a morning note from a smart COO, not a dashboard
-   - Scannable in under 60 seconds on mobile
-   - Georgia serif body, system sans headings — calm, editorial feel
-   - Three narrative sections: Yesterday / Week Ahead / Worth Watching
-   - Bullet points only where needed, paragraphs preferred
+   Reads like a CFO-style morning memo, not a dashboard or marketing email.
+   Structure:
+     1. Header
+     2. Executive Summary (3–5 bullet snapshot)
+     3. Yesterday (narrative + number strip)
+     4. 7-Day Context
+     5. Portfolio Context
+     6. Your Week Ahead (grouped: Funding · Costs · Contract Risk · Projections)
+     7. Risk & Alerts
    ═══════════════════════════════════════════════════════════════════════════ */
 
 export function renderDailyBriefEmail(data: DailyBriefData): string {
@@ -710,103 +713,152 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
     propertyHighlights: ph,
   } = data
 
-  // ── YESTERDAY narrative ──
+  /* ─── 1. Executive Summary bullets ─── */
+  const execBullets: string[] = []
 
-  // Client billing
-  let clientLine = ''
-  if (cl.billedCount > 0) {
-    clientLine = `${bold(String(cl.billedCount))} ${pluralise(cl.billedCount, 'client')} across ${bold(String(cl.housesWithBilling))} ${pluralise(cl.housesWithBilling, 'house')} were billed a total of ${green('$' + fmt(cl.totalBilled))}. This is yet to be claimed.`
+  // Yesterday's outcome
+  if (y.net > 0) {
+    execBullets.push(`Yesterday closed ${green('+$' + fmt(y.net))}.`)
+  } else if (y.net < 0) {
+    execBullets.push(`Yesterday closed ${red('-$' + fmt(Math.abs(y.net)))}.`)
+  } else if (y.transactionCount === 0 && y.expenseCount === 0) {
+    execBullets.push('No financial activity recorded yesterday.')
   } else {
-    clientLine = `No client billing occurred yesterday.`
+    execBullets.push('Yesterday closed neutral.')
   }
 
+  // 7-day trend
+  const last7Formatted = tr.last7DaysNet >= 0 ? green('+$' + fmt(tr.last7DaysNet)) : red('-$' + fmt(Math.abs(tr.last7DaysNet)))
+  const vsWord = tr.direction === 'up' ? 'improving' : tr.direction === 'down' ? 'declining' : 'steady'
+  execBullets.push(`The business is ${last7Formatted} over the past 7 days, ${vsWord} vs the prior week.`)
+
   // Occupancy
-  let occupancyLine = ''
-  if (occ.totalHouses > 0) {
+  if (occ.totalBedrooms > 0) {
+    const pct = Math.round((occ.occupiedBedrooms / occ.totalBedrooms) * 100)
     if (occ.vacantBedrooms > 0) {
-      occupancyLine = `Of the ${bold(String(occ.totalHouses))} ${pluralise(occ.totalHouses, 'house')} currently online, ${red(String(occ.vacantBedrooms) + ' ' + pluralise(occ.vacantBedrooms, 'room'))} ${occ.vacantBedrooms === 1 ? 'is' : 'are'} vacant (${occ.occupiedBedrooms} of ${occ.totalBedrooms} beds filled).`
+      execBullets.push(`Portfolio occupancy is ${bold(pct + '%')} (${occ.occupiedBedrooms} of ${occ.totalBedrooms} beds filled).`)
     } else {
-      occupancyLine = `All ${bold(String(occ.totalBedrooms))} rooms across ${bold(String(occ.totalHouses))} houses are occupied. ${green('Full capacity.')}`
+      execBullets.push(`Portfolio at ${green('full capacity')} — all ${occ.totalBedrooms} beds occupied.`)
     }
   }
 
-  // Recurring invoices
-  let recurringLine = ''
-  if (rec.count > 0) {
-    recurringLine = `Yesterday ${green('$' + fmt(rec.total))} of invoices were created from ${bold(String(rec.count))} recurring ${esc(rec.description)} ${pluralise(rec.count, 'automation')}.`
+  // Cash pressure
+  if (o.projectedNet < 0) {
+    execBullets.push('Cash outflow expected this week due to scheduled rent and recurring costs.')
+  } else if (o.projectedNet > 0) {
+    execBullets.push(`Net inflow of ${green('$' + fmt(o.projectedNet))} projected this week.`)
   }
 
-  // P&L trend — the key narrative paragraph
-  let trendLine = ''
-  const netWord = y.net >= 0 ? green('up $' + fmt(y.net)) : red('down $' + fmt(Math.abs(y.net)))
-  const trendWord = tr.direction === 'up' ? green('trending up') : tr.direction === 'down' ? red('trending down') : muted('roughly flat')
-  const last7Str = tr.last7DaysNet >= 0 ? green('$' + fmt(tr.last7DaysNet)) : red('-$' + fmt(Math.abs(tr.last7DaysNet)))
-  trendLine = `From a P&amp;L view, yesterday the business was ${netWord}. Over the last 7 days the net position is ${last7Str}, which is ${trendWord} compared to the prior week.`
+  // Risks
+  const totalRisks = a.expiringContracts.length + a.failedAutomations.length + a.lowBalanceContracts.length
+  if (totalRisks === 0) {
+    execBullets.push('No contract or automation risks detected.')
+  } else {
+    const parts: string[] = []
+    if (a.expiringContracts.length > 0) parts.push(`${a.expiringContracts.length} expiring ${pluralise(a.expiringContracts.length, 'contract')}`)
+    if (a.lowBalanceContracts.length > 0) parts.push(`${a.lowBalanceContracts.length} low-balance ${pluralise(a.lowBalanceContracts.length, 'client')}`)
+    if (a.failedAutomations.length > 0) parts.push(`${a.failedAutomations.length} failed ${pluralise(a.failedAutomations.length, 'automation')}`)
+    execBullets.push(`${bold(String(totalRisks))} ${pluralise(totalRisks, 'item')} flagged: ${parts.join(', ')}. See below.`)
+  }
 
-  // Property highlights — inline, not a table
+  /* ─── 2. Yesterday section ─── */
+  let billingNarrative: string
+  if (cl.billedCount > 0) {
+    billingNarrative = `${bold(String(cl.billedCount))} ${pluralise(cl.billedCount, 'client')} in ${bold(String(cl.housesWithBilling))} ${pluralise(cl.housesWithBilling, 'house')} were billed a total of ${green('$' + fmt(cl.totalBilled))}. This is yet to be claimed.`
+  } else {
+    billingNarrative = 'No billing activity recorded yesterday.'
+  }
+
+  let recurringNarrative = ''
+  if (rec.count > 0) {
+    recurringNarrative = `${bold('$' + fmt(rec.total))} of invoices were created from ${bold(String(rec.count))} recurring ${esc(rec.description)} ${pluralise(rec.count, 'automation')}.`
+  }
+
+  const txContextLine = y.transactionCount > 0 || y.expenseCount > 0
+    ? `${y.transactionCount} ${pluralise(y.transactionCount, 'transaction')} across ${y.expenseCount} ${pluralise(y.expenseCount, 'expense')}.`
+    : '0 transactions across 0 expenses.'
+
+  /* ─── 3. 7-Day Context line ─── */
+  const last7Str = tr.last7DaysNet >= 0 ? green('$' + fmt(tr.last7DaysNet)) : red('-$' + fmt(Math.abs(tr.last7DaysNet)))
+  const trendVs = tr.direction === 'up' ? 'improving' : tr.direction === 'down' ? 'declining' : 'steady'
+  const sevenDayLine = `Over the last 7 days the net position is ${last7Str}, ${trendVs} vs the prior week.`
+
+  /* ─── 4. Portfolio Context ─── */
+  let portfolioBlock = ''
+  if (occ.totalHouses > 0) {
+    const pct = Math.round((occ.occupiedBedrooms / occ.totalBedrooms) * 100)
+    if (occ.vacantBedrooms > 0) {
+      portfolioBlock = `Of ${bold(String(occ.totalHouses))} ${pluralise(occ.totalHouses, 'house')} online, ${bold(String(occ.vacantBedrooms))} ${pluralise(occ.vacantBedrooms, 'room')} ${occ.vacantBedrooms === 1 ? 'is' : 'are'} vacant (${occ.occupiedBedrooms} of ${occ.totalBedrooms} beds filled). Portfolio occupancy: ${bold(pct + '%')}.`
+    } else {
+      portfolioBlock = `All ${bold(String(occ.totalBedrooms))} rooms across ${bold(String(occ.totalHouses))} ${pluralise(occ.totalHouses, 'house')} are occupied. ${green('Full capacity.')}`
+    }
+  }
+
+  /* ─── 5. Property highlights ─── */
   let propertyLine = ''
   if (ph.length > 0) {
     const snippets = ph.slice(0, 4).map(p => {
       const netStr = p.net >= 0 ? green('+$' + fmt(p.net)) : red('-$' + fmt(Math.abs(p.net)))
       return `${bold(esc(p.propertyName))} ${netStr}`
     })
-    propertyLine = snippets.join(' · ')
+    propertyLine = snippets.join(' &nbsp;·&nbsp; ')
   }
 
-  // ── WEEK AHEAD narrative ──
-  const weekLines: string[] = []
+  /* ─── 6. Week Ahead — grouped ─── */
 
-  // Low balance clients
-  if (a.lowBalanceContracts.length > 0) {
-    const top = a.lowBalanceContracts[0]!
-    weekLines.push(`${bold(esc(top.residentName))} is running low on funds — ${red('$' + fmt(top.balance) + ' remaining')} of $${fmt(top.originalAmount)}. ${link(data.baseUrl + '/residents', 'Worth checking.')}`)
-    if (a.lowBalanceContracts.length > 1) {
-      weekLines.push(`${muted(String(a.lowBalanceContracts.length - 1) + ' other ' + pluralise(a.lowBalanceContracts.length - 1, 'client') + ' also ' + (a.lowBalanceContracts.length - 1 === 1 ? 'has' : 'have') + ' low balances.')}`)
-    }
-  }
-
-  // Claims pipeline
+  // Funding Pipeline
+  const fundingLines: string[] = []
   if (cm.draftCount > 0) {
-    weekLines.push(`${bold(fmtShort(cm.draftAmount))} of NDIS claims across ${bold(String(cm.draftCount))} ${pluralise(cm.draftCount, 'claim')} ${pluralise(cm.draftCount, 'needs', 'need')} to be ${link(data.baseUrl + '/claims', 'submitted')}.`)
+    fundingLines.push(`${bold(fmtShort(cm.draftAmount))} across ${bold(String(cm.draftCount))} ${pluralise(cm.draftCount, 'claim')} ${pluralise(cm.draftCount, 'needs', 'need')} ${link(data.baseUrl + '/claims', 'submission')}.`)
   }
   if (cm.submittedCount > 0) {
-    weekLines.push(`${bold(fmtShort(cm.submittedAmount))} across ${bold(String(cm.submittedCount))} ${pluralise(cm.submittedCount, 'claim')} ${cm.submittedCount === 1 ? 'is' : 'are'} submitted and awaiting payment.`)
+    fundingLines.push(`${bold(fmtShort(cm.submittedAmount))} across ${bold(String(cm.submittedCount))} ${pluralise(cm.submittedCount, 'claim')} awaiting payment.`)
   }
 
-  // Upcoming scheduled items
-  for (const item of o.upcomingItems.slice(0, 3)) {
+  // Upcoming Costs
+  const costLines: string[] = []
+  for (const item of o.upcomingItems.slice(0, 5)) {
     const propStr = item.property ? ` (${esc(item.property)})` : ''
-    weekLines.push(`${bold(esc(item.date))} — ${esc(item.name)}${propStr}: ${item.amount > 0 ? '$' + fmt(item.amount) : 'scheduled'}.`)
+    const amtStr = item.amount > 0 ? `: $${fmt(item.amount)}` : ''
+    costLines.push(`${bold(esc(item.date))} — ${esc(item.name)}${propStr}${amtStr}`)
   }
 
-  // Expiring contracts
-  if (a.expiringContracts.length > 0) {
-    const exp = a.expiringContracts[0]!
-    weekLines.push(`${bold(esc(exp.residentName))}'s ${esc(exp.contractType)} contract expires ${bold(esc(exp.endDate))} (${exp.daysRemaining} ${pluralise(exp.daysRemaining, 'day')}).`)
-    if (a.expiringContracts.length > 1) {
-      weekLines.push(`${muted(String(a.expiringContracts.length - 1) + ' other ' + pluralise(a.expiringContracts.length - 1, 'contract') + ' also expiring within 30 days.')}`)
-    }
+  // Contract Risk
+  const contractRiskLines: string[] = []
+  for (const exp of a.expiringContracts.slice(0, 5)) {
+    contractRiskLines.push(`${bold(esc(exp.residentName))} contract expires ${bold(esc(exp.endDate))} (${exp.daysRemaining} ${pluralise(exp.daysRemaining, 'day')}).`)
+  }
+  for (const lb of a.lowBalanceContracts.slice(0, 5)) {
+    contractRiskLines.push(`${bold(esc(lb.residentName))} low balance: ${red('$' + fmt(lb.balance) + ' remaining')}.`)
   }
 
-  // ── WORTH WATCHING narrative ──
-  const watchLines: string[] = []
+  // Projected net context
+  let projectionContext = ''
+  if (o.projectedNet < 0) {
+    projectionContext = 'Cash outflow expected this week due to scheduled rent and recurring costs.'
+  }
+
+  /* ─── 7. Risk & Alerts ─── */
+  const riskLines: string[] = []
 
   if (a.failedAutomations.length > 0) {
-    for (const f of a.failedAutomations.slice(0, 3)) {
-      watchLines.push(`${red('⚠')} ${bold(esc(f.automationName))} failed at ${esc(f.failedAt)} — ${muted(esc(f.error))}`)
+    for (const f of a.failedAutomations.slice(0, 5)) {
+      riskLines.push(`${red('⚠')} ${bold(esc(f.automationName))} failed at ${esc(f.failedAt)} — ${muted(esc(f.error))}`)
     }
   }
 
   const negProps = ph.filter(p => p.net < 0)
   if (negProps.length > 0) {
-    for (const p of negProps.slice(0, 2)) {
-      watchLines.push(`${bold(esc(p.propertyName))} ran at a loss yesterday: income $${fmt(p.income)}, costs $${fmt(p.expenses)}, net ${red('-$' + fmt(Math.abs(p.net)))}.`)
+    for (const p of negProps.slice(0, 3)) {
+      riskLines.push(`${bold(esc(p.propertyName))} ran at a loss yesterday: income $${fmt(p.income)}, costs $${fmt(p.expenses)}, net ${red('-$' + fmt(Math.abs(p.net)))}.`)
     }
   }
 
-  const hasWatching = watchLines.length > 0
+  const hasRisks = riskLines.length > 0
 
-  // ── Render HTML ──
+  /* ═══════════════════════════════════════════════════════════
+     Render HTML
+     ═══════════════════════════════════════════════════════════ */
   return `<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -816,7 +868,6 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
   <title>Haven Daily Brief — ${esc(data.todayDate)}</title>
   <!--[if mso]><style>body,table,td{font-family:Arial,Helvetica,sans-serif!important;}</style><![endif]-->
   <style>
-    /* Reset */
     body, html { margin: 0; padding: 0; width: 100%; }
     body {
       font-family: Georgia, 'Times New Roman', Times, serif;
@@ -829,7 +880,6 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
     img { border: 0; display: block; }
     a { color: #4f46e5; }
 
-    /* Layout */
     .outer { width: 100%; background: #f9fafb; padding: 24px 0; }
     .inner {
       max-width: 560px;
@@ -839,34 +889,40 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
       overflow: hidden;
     }
 
-    /* Header bar */
+    /* Header */
     .header-bar {
       background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
-      padding: 28px 32px 24px;
+      padding: 28px 32px 22px;
     }
     .header-bar h1 {
-      margin: 0 0 2px;
+      margin: 0 0 4px;
       font-size: 22px;
       font-weight: 700;
       color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       letter-spacing: -0.3px;
     }
-    .header-bar .subtitle {
-      margin: 0;
+    .header-bar .org-date {
+      margin: 0 0 6px;
       font-size: 13px;
       color: rgba(255,255,255,0.7);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
+    .header-bar .positioning {
+      margin: 0;
+      font-size: 12px;
+      color: rgba(255,255,255,0.5);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-style: italic;
+    }
 
-    /* Body content */
     .body-content { padding: 28px 32px 32px; }
 
     /* Intro */
     .intro {
-      font-size: 15px;
+      font-size: 14.5px;
       color: #6b7280;
-      line-height: 1.55;
+      line-height: 1.6;
       margin: 0 0 24px;
       padding-bottom: 20px;
       border-bottom: 1px solid #f3f4f6;
@@ -884,16 +940,44 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
     }
     .section-title:first-child { margin-top: 0; }
 
+    /* Sub-section headers */
+    .sub-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #6b7280;
+      margin: 18px 0 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
     /* Paragraphs */
-    p { font-size: 15.5px; line-height: 1.7; margin: 0 0 14px; color: #1f2937; }
-    .muted-p { font-size: 13px; color: #9ca3af; margin: 4px 0 0; }
+    p { font-size: 15px; line-height: 1.7; margin: 0 0 12px; color: #1f2937; }
+    .context { font-size: 14px; color: #6b7280; margin: 4px 0 12px; line-height: 1.6; }
+
+    /* Executive summary bullets */
+    .exec-summary {
+      background: #fafbfc;
+      border-left: 3px solid #312e81;
+      padding: 14px 18px;
+      margin: 0 0 24px;
+      border-radius: 0 6px 6px 0;
+    }
+    .exec-summary ul { margin: 0; padding-left: 16px; }
+    .exec-summary li {
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 4px;
+      color: #374151;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
 
     /* Number strip */
     .nums {
       background: #f8fafc;
       border-radius: 6px;
       padding: 14px 18px;
-      margin: 18px 0;
+      margin: 16px 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
     .nums table { width: 100%; border-collapse: collapse; }
@@ -903,11 +987,11 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
     .nums .net .lbl { font-weight: 700; color: #1f2937; font-size: 14px; }
 
     /* Bullet list */
-    ul { margin: 0 0 14px; padding-left: 18px; }
-    li { font-size: 15px; line-height: 1.65; margin-bottom: 8px; color: #1f2937; }
+    ul { margin: 0 0 12px; padding-left: 18px; }
+    li { font-size: 14.5px; line-height: 1.65; margin-bottom: 6px; color: #1f2937; }
 
     /* Property line */
-    .prop-line { font-size: 13px; color: #6b7280; line-height: 1.5; margin: 2px 0 18px; }
+    .prop-line { font-size: 13px; color: #6b7280; line-height: 1.5; margin: 2px 0 14px; }
 
     /* Divider */
     .sep { height: 1px; background: #f3f4f6; margin: 24px 0; }
@@ -931,18 +1015,19 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
     .footer p { margin: 0; font-size: 11px; color: #9ca3af; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.5; }
     .footer a { color: #6366f1; text-decoration: none; }
 
-    /* Empty state */
-    .quiet { font-size: 14px; color: #9ca3af; font-style: italic; }
+    /* Quiet / no-data state */
+    .quiet { font-size: 14px; color: #9ca3af; margin: 0 0 12px; }
 
     /* Mobile */
     @media (max-width: 600px) {
       .inner { border-radius: 0; }
-      .header-bar { padding: 22px 20px 20px; }
+      .header-bar { padding: 22px 20px 18px; }
       .body-content { padding: 22px 20px 28px; }
       .header-bar h1 { font-size: 20px; }
-      p { font-size: 15px; }
+      p { font-size: 14.5px; }
       li { font-size: 14px; }
       .nums { padding: 12px 14px; }
+      .exec-summary { padding: 12px 14px; }
       .footer { padding: 14px 20px 20px; }
     }
   </style>
@@ -951,33 +1036,34 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
   <div class="outer">
     <div class="inner">
 
-      <!-- ─── Header ─── -->
+      <!-- ─── 1. HEADER ─── -->
       <div class="header-bar">
         <h1>☀️ Haven Daily Brief</h1>
-        <p class="subtitle">${esc(data.orgName)} · ${esc(data.todayDate)}</p>
+        <p class="org-date">${esc(data.orgName)} · ${esc(data.todayDate)}</p>
+        <p class="positioning">Your morning operational snapshot across funding, houses and risk.</p>
       </div>
 
       <div class="body-content">
 
         <!-- ─── Intro ─── -->
         <p class="intro">
-          Here's your update on what happened yesterday across the business, from a client, house and organisational funding perspective.
+          Please find an update on what happened yesterday across the business from a client, house and organisational funding perspective.
         </p>
 
-        <!-- ═══════════════════════════════════════════ -->
-        <!-- YESTERDAY                                   -->
-        <!-- ═══════════════════════════════════════════ -->
+        <!-- ─── 2. EXECUTIVE SUMMARY ─── -->
+        <div class="exec-summary">
+          <ul>
+            ${execBullets.map(b => `<li>${b}</li>`).join('\n            ')}
+          </ul>
+        </div>
+
+        <!-- ─── 3. YESTERDAY ─── -->
         <div class="section-title">Yesterday</div>
 
-        <p>${clientLine}</p>
+        <p>${billingNarrative}</p>
 
-        ${occupancyLine ? `<p>${occupancyLine}</p>` : ''}
+        ${recurringNarrative ? `<p>${recurringNarrative}</p>` : ''}
 
-        ${recurringLine ? `<p>${recurringLine}</p>` : ''}
-
-        <p>${trendLine}</p>
-
-        <!-- Number strip -->
         <div class="nums">
           <table>
             <tr>
@@ -994,30 +1080,51 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
             </tr>
             <tr class="net">
               <td class="lbl">Net Result</td>
-              <td class="val" style="color:${y.net >= 0 ? '#059669' : '#dc2626'};">$${fmt(y.net)}</td>
+              <td class="val" style="color:${y.net >= 0 ? '#059669' : '#dc2626'};">${y.net >= 0 ? '' : '-'}$${fmt(Math.abs(y.net))}</td>
             </tr>
           </table>
         </div>
 
         ${propertyLine ? `<p class="prop-line">${propertyLine}</p>` : ''}
 
-        <p class="muted-p">${y.transactionCount} ${pluralise(y.transactionCount, 'transaction')} · ${y.expenseCount} ${pluralise(y.expenseCount, 'expense')}</p>
+        <p class="context">${txContextLine}</p>
 
-        <!-- ═══════════════════════════════════════════ -->
-        <!-- YOUR WEEK AHEAD                             -->
-        <!-- ═══════════════════════════════════════════ -->
+        <!-- ─── 4. 7-DAY CONTEXT ─── -->
+        <p>${sevenDayLine}</p>
+
+        <!-- ─── 5. PORTFOLIO CONTEXT ─── -->
+        ${portfolioBlock ? `<p>${portfolioBlock}</p>` : ''}
+
+        <!-- ─── 6. YOUR WEEK AHEAD ─── -->
         <div class="sep"></div>
         <div class="section-title">Your Week Ahead</div>
 
-        ${weekLines.length > 0 ? `
+        ${fundingLines.length > 0 ? `
+        <div class="sub-title">Funding Pipeline</div>
         <ul>
-          ${weekLines.map(b => `<li>${b}</li>`).join('\n          ')}
+          ${fundingLines.map(l => `<li>${l}</li>`).join('\n          ')}
         </ul>
-        ` : `
-        <p class="quiet">Nothing flagged for the coming week. All clear.</p>
-        `}
+        ` : ''}
 
-        ${o.projectedNet !== 0 ? `
+        ${costLines.length > 0 ? `
+        <div class="sub-title">Upcoming Costs</div>
+        <ul>
+          ${costLines.map(l => `<li>${l}</li>`).join('\n          ')}
+        </ul>
+        ` : ''}
+
+        ${contractRiskLines.length > 0 ? `
+        <div class="sub-title">Contract Risk</div>
+        <ul>
+          ${contractRiskLines.map(l => `<li>${l}</li>`).join('\n          ')}
+        </ul>
+        ` : ''}
+
+        ${fundingLines.length === 0 && costLines.length === 0 && contractRiskLines.length === 0 ? `
+        <p class="quiet">Nothing scheduled for the coming week.</p>
+        ` : ''}
+
+        ${(o.expectedIncome > 0 || o.expectedPropertyCosts > 0 || o.expectedOrgCosts > 0) ? `
         <div class="nums">
           <table>
             <tr>
@@ -1030,44 +1137,33 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
             </tr>
             <tr class="net">
               <td class="lbl">Projected Net</td>
-              <td class="val" style="color:${o.projectedNet >= 0 ? '#059669' : '#dc2626'};">$${fmt(o.projectedNet)}</td>
+              <td class="val" style="color:${o.projectedNet >= 0 ? '#059669' : '#dc2626'};">${o.projectedNet >= 0 ? '' : '-'}$${fmt(Math.abs(o.projectedNet))}</td>
             </tr>
           </table>
         </div>
+        ${projectionContext ? `<p class="context">${projectionContext}</p>` : ''}
         ` : ''}
 
-        <!-- ═══════════════════════════════════════════ -->
-        <!-- THINGS WORTH WATCHING                       -->
-        <!-- ═══════════════════════════════════════════ -->
+        <!-- ─── 7. RISK & ALERTS ─── -->
         <div class="sep"></div>
-        <div class="section-title">Things Worth Watching</div>
+        <div class="section-title">Risk &amp; Alerts</div>
 
-        ${hasWatching ? `
+        ${hasRisks ? `
         <ul>
-          ${watchLines.map(b => `<li>${b}</li>`).join('\n          ')}
+          ${riskLines.map(l => `<li>${l}</li>`).join('\n          ')}
         </ul>
-
-        ${(a.lowBalanceContracts.length > 0 || a.expiringContracts.length > 0) ? `
-        <p style="font-size:13px;color:#6b7280;">
-          ${a.lowBalanceContracts.length > 0 ? `${bold(String(a.lowBalanceContracts.length))} ${pluralise(a.lowBalanceContracts.length, 'client')} with low funding balances. ` : ''}
-          ${a.expiringContracts.length > 0 ? `${bold(String(a.expiringContracts.length))} ${pluralise(a.expiringContracts.length, 'contract')} expiring within 30 days. ` : ''}
-          ${link(data.baseUrl + '/residents', 'Review in Haven →')}
-        </p>
-        ` : ''}
         ` : `
-        <p class="quiet">Nothing flagged. All systems running smoothly.</p>
+        <p class="quiet">No financial or contract risks identified today. All automations operating normally.</p>
         `}
 
         <div class="sep"></div>
 
-        <!-- CTA -->
         <div class="cta">
           <a href="${data.baseUrl}/dashboard">Open Haven →</a>
         </div>
 
-      </div><!-- /body-content -->
+      </div>
 
-      <!-- ─── Footer ─── -->
       <div class="footer">
         <p>
           ${esc(data.orgName)} · Haven Daily Brief<br>
@@ -1075,8 +1171,8 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
         </p>
       </div>
 
-    </div><!-- /inner -->
-  </div><!-- /outer -->
+    </div>
+  </div>
 </body>
 </html>`
 }
@@ -1093,7 +1189,7 @@ export async function sendDailyBriefEmail(
   }
 
   const html = renderDailyBriefEmail(data)
-  const subject = `☀️ Haven Daily Brief — ${data.todayDate}`
+  const subject = `☀️ ${data.orgName} — Daily Brief · ${data.todayDate}`
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
