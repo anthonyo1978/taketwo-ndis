@@ -892,11 +892,17 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
                 )}
                 <button
                   type="button"
-                  onClick={handleSubmit}
-                  disabled={saving}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                  onClick={() => {
+                    console.log('[CreateAutomation] Button clicked, saving:', saving, 'type:', type)
+                    if (!saving) handleSubmit()
+                  }}
+                  className={`inline-flex items-center gap-1.5 px-5 py-2.5 text-sm font-semibold text-white rounded-lg transition-colors ${
+                    saving
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-indigo-600 hover:bg-indigo-700 cursor-pointer'
+                  }`}
                 >
-                  {saving ? 'Creating…' : 'Create Automation'}
+                  {saving ? 'Creating…' : 'Create Automation →'}
                 </button>
               </div>
             </div>
