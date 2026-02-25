@@ -156,6 +156,16 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
   }
 
   const handleSubmit = async () => {
+    // Validate before submitting
+    if (type === 'recurring_transaction' && !name && !expenseDescription) {
+      setError('Please provide a name or expense description.')
+      return
+    }
+    if (type === 'daily_digest' && recipientEmails.length === 0) {
+      setError('Please add at least one recipient email.')
+      return
+    }
+
     setError('')
     setSaving(true)
 
@@ -883,11 +893,7 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={
-                    saving ||
-                    (type === 'recurring_transaction' && !name && !expenseDescription) ||
-                    (type === 'daily_digest' && recipientEmails.length === 0)
-                  }
+                  disabled={saving}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                 >
                   {saving ? 'Creating…' : 'Create Automation'}
