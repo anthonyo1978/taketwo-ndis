@@ -865,7 +865,7 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Haven Daily Brief — ${esc(data.todayDate)}</title>
+  <title>Daily Brief — ${esc(data.todayDate)}</title>
   <!--[if mso]><style>body,table,td{font-family:Arial,Helvetica,sans-serif!important;}</style><![endif]-->
   <style>
     body, html { margin: 0; padding: 0; width: 100%; }
@@ -1038,8 +1038,8 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
 
       <!-- ─── 1. HEADER ─── -->
       <div class="header-bar">
-        <h1>☀️ Haven Daily Brief</h1>
-        <p class="org-date">${esc(data.orgName)} · ${esc(data.todayDate)}</p>
+        <h1>☀️ Daily Brief</h1>
+        <p class="org-date">${esc(data.todayDate)}</p>
         <p class="positioning">Your morning operational snapshot across funding, houses and risk.</p>
       </div>
 
@@ -1166,7 +1166,7 @@ export function renderDailyBriefEmail(data: DailyBriefData): string {
 
       <div class="footer">
         <p>
-          ${esc(data.orgName)} · Haven Daily Brief<br>
+          Daily Brief<br>
           <a href="${data.baseUrl}/automations">Automations</a> · <a href="${data.baseUrl}/transactions">Transactions</a> · <a href="${data.baseUrl}/houses">Houses</a> · <a href="${data.baseUrl}/claims">Claims</a>
         </p>
       </div>
@@ -1189,7 +1189,7 @@ export async function sendDailyBriefEmail(
   }
 
   const html = renderDailyBriefEmail(data)
-  const subject = `☀️ ${data.orgName} — Daily Brief · ${data.todayDate}`
+  const subject = `☀️ Daily Brief — ${data.todayDate}`
 
   const apiKey = process.env.RESEND_API_KEY
   if (!apiKey) {
