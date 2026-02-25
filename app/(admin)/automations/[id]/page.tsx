@@ -117,7 +117,100 @@ function formatDuration(start: Date | string, end: Date | string | null | undefi
   return `${Math.round(ms / 60_000)}m`
 }
 
-type Tab = 'config' | 'history'
+type Tab = 'config' | 'forecast' | 'history'
+
+/* ─── Forecast projection helper ─── */
+interface ProjectedRun {
+  date: Date
+  label: string
+  amount?: number
+  category?: string
+  scope?: string
+  houseName?: string
+  description?: string
+  type: string
+}
+
+function projectNextRuns(
+  automation: Automation,
+  days: number,
+  templateExpense: any | null
+): ProjectedRun[] {
+  const schedule = automation.schedule
+  const runs: ProjectedRun[] = []
+  const now = new Date()
+  const end = new Date(now)
+  end.setDate(end.getDate() + days)
+
+  const parts = (schedule.timeOfDay || '02:00').split(':').map(Number)
+  const hours = parts[0] ?? 2
+  const minutes = parts[1] ?? 0
+
+  // Find first occurrence from now
+  let cursor = new Date(now)
+
+  switch (schedule.frequency) {
+    case 'daily': {
+      cursor.setHours(hours, minutes, 0, 0)
+      if (cursor <= now) cursor.setDate(cursor.getDate() + 1)
+      while (cursor <= end) {
+        runs.push(buildProjectedRun(cursor, automation, templateExpense))
+        cursor = new Date(cursor)
+        cursor.setDate(cursor.getDate() + 1)
+      }
+      break
+    }
+    case 'weekly': {
+      const targetDay = schedule.dayOfWeek ?? 1
+      cursor.setHours(hours, minutes, 0, 0)
+      const currentDay = cursor.getDay()
+      let daysUntil = targetDay - currentDay
+      if (daysUntil < 0 || (daysUntil === 0 && cursor <= now)) daysUntil += 7
+      cursor.setDate(cursor.getDate() + daysUntil)
+      while (cursor <= end) {
+        runs.push(buildProjectedRun(cursor, automation, templateExpense))
+        cursor = new Date(cursor)
+        cursor.setDate(cursor.getDate() + 7)
+      }
+      break
+    }
+    case 'monthly': {
+      const targetDOM = schedule.dayOfMonth ?? 1
+      cursor = new Date(now.getFullYear(), now.getMonth(), targetDOM, hours, minutes, 0, 0)
+      if (cursor <= now) cursor.setMonth(cursor.getMonth() + 1)
+      while (cursor <= end) {
+        runs.push(buildProjectedRun(cursor, automation, templateExpense))
+        cursor = new Date(cursor)
+        cursor.setMonth(cursor.getMonth() + 1)
+      }
+      break
+    }
+  }
+
+  return runs
+}
+
+function buildProjectedRun(date: Date, automation: Automation, templateExpense: any | null): ProjectedRun {
+  const base: ProjectedRun = {
+    date: new Date(date),
+    label: AUTOMATION_TYPE_LABELS[automation.type],
+    type: automation.type,
+  }
+
+  if (automation.type === 'recurring_transaction' && templateExpense) {
+    base.amount = Number(templateExpense.amount) || 0
+    base.category = templateExpense.category
+    base.scope = templateExpense.scope
+    base.houseName = templateExpense.houseName
+    base.description = templateExpense.description
+  } else if (automation.type === 'contract_billing_run') {
+    base.description = 'Scan eligible contracts and generate billing transactions'
+  } else if (automation.type === 'daily_digest') {
+    base.description = 'Send executive summary email to recipients'
+  }
+
+  return base
+}
 
 export default function AutomationDetailPage() {
   const params = useParams()
@@ -133,6 +226,7 @@ export default function AutomationDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [activeTab, setActiveTab] = useState<Tab>('config')
+  const [forecastDays, setForecastDays] = useState(90)
 
   // Run Now confirmation
   const [showRunConfirm, setShowRunConfirm] = useState(false)
@@ -536,6 +630,19 @@ export default function AutomationDetailPage() {
           </span>
         </button>
         <button
+          onClick={() => setActiveTab('forecast')}
+          className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'forecast'
+              ? 'border-indigo-600 text-indigo-600'
+              : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <Calendar className="w-4 h-4" />
+            Forecast
+          </span>
+        </button>
+        <button
           onClick={() => setActiveTab('history')}
           className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'history'
@@ -913,6 +1020,212 @@ export default function AutomationDetailPage() {
           )}
         </div>
       )}
+
+      {/* ═══════════════════════════════════════════
+          TAB: Forecast
+          ═══════════════════════════════════════════ */}
+      {activeTab === 'forecast' && automation && (() => {
+        const projected = projectNextRuns(automation, forecastDays, templateExpense)
+        const totalAmount = projected.reduce((sum, r) => sum + (r.amount || 0), 0)
+        const hasAmounts = projected.some((r) => r.amount && r.amount > 0)
+
+        return (
+          <div className="space-y-4">
+            {/* Controls */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">Projected Runs</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Based on the current schedule, showing what this automation will generate over the next {forecastDays} days.
+                    {!automation.isEnabled && <span className="text-amber-600 font-medium ml-1">(Automation is disabled — forecast shown as if enabled)</span>}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <label className="text-xs text-gray-500">Period:</label>
+                  <select
+                    value={forecastDays}
+                    onChange={(e) => setForecastDays(Number(e.target.value))}
+                    className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                  >
+                    <option value={30}>30 days</option>
+                    <option value={60}>60 days</option>
+                    <option value={90}>90 days</option>
+                    <option value={180}>6 months</option>
+                    <option value={365}>12 months</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Summary strip */}
+            {projected.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Projected Runs</p>
+                  <p className="text-lg font-bold text-gray-900 mt-0.5">{projected.length}</p>
+                </div>
+                <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                  <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Frequency</p>
+                  <p className="text-lg font-bold text-gray-900 mt-0.5 capitalize">{automation.schedule.frequency}</p>
+                </div>
+                {hasAmounts && (
+                  <>
+                    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Per Run</p>
+                      <p className="text-lg font-bold text-gray-900 mt-0.5">${(projected[0]?.amount || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Total ({forecastDays}d)</p>
+                      <p className="text-lg font-bold text-red-600 mt-0.5">${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  </>
+                )}
+                {!hasAmounts && (
+                  <>
+                    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">First Run</p>
+                      <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                        {projected[0] ? new Date(projected[0].date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '—'}
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Last Run</p>
+                      <p className="text-sm font-semibold text-gray-900 mt-0.5">
+                        {projected.length > 0 && projected[projected.length - 1] ? new Date(projected[projected.length - 1]!.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '—'}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* Forecast table */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              {projected.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">No projected runs in the next {forecastDays} days</p>
+                  <p className="text-xs text-gray-400 mt-1">Try extending the forecast period.</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-100 bg-gray-50/50">
+                        <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">#</th>
+                        <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Projected Date</th>
+                        <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Day</th>
+                        <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Action</th>
+                        {hasAmounts && (
+                          <>
+                            <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Category</th>
+                            <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Scope</th>
+                            <th className="text-right px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                            <th className="text-right px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Cumulative</th>
+                          </>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {projected.map((run, idx) => {
+                        const cumulative = projected.slice(0, idx + 1).reduce((s, r) => s + (r.amount || 0), 0)
+                        const isNextRun = idx === 0
+                        return (
+                          <tr
+                            key={idx}
+                            className={`hover:bg-gray-50/50 transition-colors ${isNextRun ? 'bg-indigo-50/30' : ''}`}
+                          >
+                            <td className="px-5 py-3 text-xs text-gray-400 font-mono">{idx + 1}</td>
+                            <td className="px-5 py-3 font-medium text-gray-900">
+                              <div className="flex items-center gap-2">
+                                {isNextRun && (
+                                  <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700">
+                                    NEXT
+                                  </span>
+                                )}
+                                {new Date(run.date).toLocaleDateString('en-AU', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                })}
+                              </div>
+                              <span className="text-xs text-gray-400 font-normal">
+                                {new Date(run.date).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3 text-gray-600">
+                              {new Date(run.date).toLocaleDateString('en-AU', { weekday: 'short' })}
+                            </td>
+                            <td className="px-5 py-3">
+                              <span className="text-gray-700">{run.description || run.label}</span>
+                              {run.houseName && (
+                                <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                                  <Home className="w-3 h-3" /> {run.houseName}
+                                </p>
+                              )}
+                            </td>
+                            {hasAmounts && (
+                              <>
+                                <td className="px-5 py-3">
+                                  {run.category ? (
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                                      {EXPENSE_CATEGORY_LABELS[run.category] || run.category}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-300">—</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3">
+                                  {run.scope ? (
+                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                                      run.scope === 'organisation' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                    }`}>
+                                      {run.scope === 'organisation' ? <Building2 className="w-3 h-3" /> : <Home className="w-3 h-3" />}
+                                      {run.scope === 'organisation' ? 'Org' : 'House'}
+                                    </span>
+                                  ) : (
+                                    <span className="text-gray-300">—</span>
+                                  )}
+                                </td>
+                                <td className="px-5 py-3 text-right font-mono font-medium text-gray-900">
+                                  {run.amount ? `$${run.amount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}` : '—'}
+                                </td>
+                                <td className="px-5 py-3 text-right font-mono text-xs text-gray-500">
+                                  ${cumulative.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                    {hasAmounts && (
+                      <tfoot>
+                        <tr className="border-t-2 border-gray-200 bg-gray-50">
+                          <td colSpan={6} className="px-5 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                            Total projected expenditure ({forecastDays} days)
+                          </td>
+                          <td className="px-5 py-3 text-right font-mono font-bold text-red-600">
+                            ${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td />
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Disclaimer */}
+            <p className="text-[11px] text-gray-400 text-center">
+              Projections are based on the current schedule and template values. Actual amounts may vary if the automation parameters or template are modified.
+              {automation.type === 'contract_billing_run' && ' Contract billing amounts depend on eligible contracts at the time of each run.'}
+            </p>
+          </div>
+        )
+      })()}
 
       {/* ═══════════════════════════════════════════
           TAB: Run History
