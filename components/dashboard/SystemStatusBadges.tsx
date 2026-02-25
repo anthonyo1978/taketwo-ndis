@@ -64,7 +64,7 @@ export function SystemStatusBadges({ className = '' }: SystemStatusBadgesProps) 
     <div className={`flex items-center gap-2 ${className}`}>
       {/* Automation Status Badge */}
       <Link 
-        href="/settings/automation"
+        href="/automations"
         className="group"
       >
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${

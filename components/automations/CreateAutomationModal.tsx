@@ -76,6 +76,10 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
   const [amount, setAmount] = useState<number>(0)
   const [expenseFrequency, setExpenseFrequency] = useState<ExpenseFrequency>('monthly')
 
+  // ── Contract Billing notification emails ──
+  const [notifyEmails, setNotifyEmails] = useState<string[]>([])
+  const [notifyInput, setNotifyInput] = useState('')
+
   // ── Daily Brief recipients ──
   const [recipientEmails, setRecipientEmails] = useState<string[]>([])
   const [recipientInput, setRecipientInput] = useState('')
@@ -134,7 +138,7 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
       ? Object.entries(PROPERTY_CATEGORY_LABELS)
       : Object.entries(ORGANISATION_CATEGORY_LABELS)
 
-  const canProceedFromType = type === 'contract_billing_run' || type === 'recurring_transaction'
+  const canProceedFromType = type === 'contract_billing_run' || type === 'recurring_transaction' || type === 'daily_digest'
 
   const canProceedFromExpense =
     expenseDescription.trim() &&
@@ -212,6 +216,10 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
         if (prefill?.parameters) Object.assign(parameters, prefill.parameters)
         // Override with our template if we just created one
         if (templateExpenseId && !hasPrefill) parameters.templateExpenseId = templateExpenseId
+      } else if (type === 'contract_billing_run') {
+        if (notifyEmails.length > 0) {
+          parameters.notifyEmails = notifyEmails
+        }
       } else if (type === 'daily_digest') {
         parameters.lookbackDays = 1
         parameters.forwardDays = 7
@@ -613,18 +621,28 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
                 </div>
               )}
 
-              {/* Name (if not already set) */}
-              {hasPrefill && (
+              {type === 'contract_billing_run' && (
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200">
+                  <p className="text-xs text-amber-800 font-medium">
+                    This automation will scan all active funding contracts in your organisation and generate NDIS drawdown transactions for any that are due.
+                  </p>
+                </div>
+              )}
+
+              {/* Name (if not already set or for non-expense types) */}
+              {(hasPrefill || type === 'contract_billing_run') && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    required
-                    placeholder="e.g. Monthly Rent — 123 Smith St"
+                    placeholder={type === 'contract_billing_run' ? 'Nightly Contract Billing' : 'e.g. Monthly Rent — 123 Smith St'}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Leave blank to auto-generate.
+                  </p>
                 </div>
               )}
 
@@ -635,7 +653,7 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
                   type="text"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Optional description"
+                  placeholder={type === 'contract_billing_run' ? 'Scans active contracts and generates drawdown transactions' : 'Optional description'}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
@@ -702,6 +720,69 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
                   </div>
                 )}
               </div>
+
+              {/* Notification Emails — Contract Billing only */}
+              {type === 'contract_billing_run' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notification Emails</label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Get notified when this billing run completes. Optional.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={notifyInput}
+                      onChange={(e) => setNotifyInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault()
+                          const email = notifyInput.trim().replace(/,$/g, '')
+                          if (email && email.includes('@') && !notifyEmails.includes(email)) {
+                            setNotifyEmails([...notifyEmails, email])
+                            setNotifyInput('')
+                          }
+                        }
+                      }}
+                      placeholder="name@company.com"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const email = notifyInput.trim().replace(/,$/g, '')
+                        if (email && email.includes('@') && !notifyEmails.includes(email)) {
+                          setNotifyEmails([...notifyEmails, email])
+                          setNotifyInput('')
+                        }
+                      }}
+                      className="px-3 py-2 text-sm font-medium text-amber-600 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {notifyEmails.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {notifyEmails.map((email) => (
+                        <span
+                          key={email}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-medium"
+                        >
+                          {email}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setNotifyEmails(notifyEmails.filter((e) => e !== email))
+                            }
+                            className="text-amber-400 hover:text-amber-600"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Recipients — Daily Brief only */}
               {type === 'daily_digest' && (
@@ -802,7 +883,11 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={saving || (!name && !expenseDescription) || (type === 'daily_digest' && recipientEmails.length === 0)}
+                  disabled={
+                    saving ||
+                    (type === 'recurring_transaction' && !name && !expenseDescription) ||
+                    (type === 'daily_digest' && recipientEmails.length === 0)
+                  }
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                 >
                   {saving ? 'Creating…' : 'Create Automation'}

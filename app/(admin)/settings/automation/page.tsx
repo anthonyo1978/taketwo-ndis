@@ -1,11 +1,9 @@
-import { Metadata } from "next"
-import { AutomationSettingsPage } from "components/admin/AutomationSettingsPage"
+import { redirect } from "next/navigation"
 
-export const metadata: Metadata = {
-  title: "Automation Settings",
-  description: "Configure automated billing and transaction generation",
-}
-
-export default function AutomationPage() {
-  return <AutomationSettingsPage />
+/**
+ * Legacy automation settings page — now redirects to the Automations module.
+ * All automation configuration has been migrated to /automations.
+ */
+export default function AutomationSettingsRedirect() {
+  redirect('/automations')
 }
