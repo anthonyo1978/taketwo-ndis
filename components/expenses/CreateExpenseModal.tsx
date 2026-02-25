@@ -180,6 +180,7 @@ export function CreateExpenseModal({
       if (duplicateFrom) {
         // Pre-fill from the expense being duplicated — leave date blank so user must set it
         reset({
+          scope: 'property',
           houseId,
           status: 'draft',
           category: duplicateFrom.category,
@@ -197,6 +198,7 @@ export function CreateExpenseModal({
         })
       } else {
         reset({
+          scope: 'property',
           houseId,
           status: 'draft',
           category: defaultCategory || 'rent',
@@ -366,6 +368,7 @@ export function CreateExpenseModal({
 
         {/* Form */}
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+          <input type="hidden" {...register('scope')} />
           <input type="hidden" {...register('houseId')} />
           <input type="hidden" {...register('headLeaseId')} />
 
@@ -626,6 +629,14 @@ export function CreateExpenseModal({
               </div>
             </label>
           </div>
+
+          {/* Hidden field errors */}
+          {(errors.scope || errors.houseId) && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {errors.scope && <p>Scope: {errors.scope.message || 'Invalid scope'}</p>}
+              {errors.houseId && <p>House: {errors.houseId.message || 'A house must be selected'}</p>}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t">
