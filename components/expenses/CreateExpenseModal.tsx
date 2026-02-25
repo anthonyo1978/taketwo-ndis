@@ -660,8 +660,9 @@ export function CreateExpenseModal({
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium inline-flex items-center gap-2"
+                className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium inline-flex items-center gap-2 cursor-pointer"
                 disabled={isSubmitting}
+                onClick={() => console.log('[CreateExpenseModal] Submit clicked, errors:', errors, 'values:', getValues())}
               >
                 {isSubmitting ? (
                   <>
