@@ -367,11 +367,7 @@ export function CreateExpenseModal({
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit, (errs) => {
-          const fields = Object.keys(errs).join(', ')
-          console.error('[CreateExpenseModal] Validation failed:', errs, 'Values:', getValues())
-          toast.error(`Please fix: ${fields}`)
-        })} className="p-6 space-y-5">
+        <form onSubmit={(e) => e.preventDefault()} className="p-6 space-y-5">
           <input type="hidden" {...register('scope')} />
           <input type="hidden" {...register('houseId')} />
           <input type="hidden" {...register('headLeaseId')} />
@@ -659,10 +655,16 @@ export function CreateExpenseModal({
                 {chainCount > 0 ? 'Done' : 'Cancel'}
               </button>
               <button
-                type="submit"
+                type="button"
                 className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium inline-flex items-center gap-2 cursor-pointer"
                 disabled={isSubmitting}
-                onClick={() => console.log('[CreateExpenseModal] Submit clicked, errors:', errors, 'values:', getValues())}
+                onClick={() => {
+                  handleSubmit(onSubmit, (errs) => {
+                    const fields = Object.keys(errs).join(', ')
+                    console.error('[CreateExpenseModal] Validation failed:', errs)
+                    toast.error(`Please fix: ${fields}`)
+                  })()
+                }}
               >
                 {isSubmitting ? (
                   <>
