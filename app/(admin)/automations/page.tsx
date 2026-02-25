@@ -438,26 +438,58 @@ function AutomationsPageInner() {
                       </h3>
                       <HealthBadge health={health} />
                     </div>
-                    <p className="text-xs text-gray-500 flex items-center gap-2 flex-wrap">
-                      <span className={`inline-flex items-center gap-1 font-medium ${levelColors.text}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${levelColors.dot}`} />
-                        {LEVEL_LABELS[level]}
-                      </span>
-                      <span className="text-gray-300">·</span>
-                      <span className={`font-medium ${
-                        a.type === 'recurring_transaction' ? 'text-indigo-600' : a.type === 'daily_digest' ? 'text-sky-600' : 'text-amber-600'
-                      }`}>
-                        {AUTOMATION_TYPE_LABELS[a.type]}
-                      </span>
-                      <span className="text-gray-300">·</span>
-                      <span>{describeSchedule(a.schedule)}</span>
-                      {a.description && (
-                        <>
+
+                    {/* Daily Brief — richer subtitle */}
+                    {a.type === 'daily_digest' ? (
+                      <div className="text-xs text-gray-500">
+                        <p className="flex items-center gap-2 flex-wrap">
+                          <span className={`inline-flex items-center gap-1 font-medium ${levelColors.text}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full ${levelColors.dot}`} />
+                            {LEVEL_LABELS[level]}
+                          </span>
                           <span className="text-gray-300">·</span>
-                          <span className="truncate max-w-[180px]">{a.description}</span>
-                        </>
-                      )}
-                    </p>
+                          <span className="font-medium text-sky-600">
+                            {AUTOMATION_TYPE_LABELS[a.type]}
+                          </span>
+                          <span className="text-gray-300">·</span>
+                          <span>{describeSchedule(a.schedule)}</span>
+                        </p>
+                        <p className="mt-1 text-gray-400">
+                          {(() => {
+                            const recipients = (a.parameters as any)?.recipientEmails as string[] | undefined
+                            if (recipients && recipients.length > 0) {
+                              return recipients.length === 1
+                                ? `Sends to ${recipients[0]}`
+                                : `Sends to ${recipients.length} people`
+                            }
+                            return 'No recipients configured'
+                          })()}
+                          {' · '}
+                          Executive summary of yesterday&apos;s performance + week ahead
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-gray-500 flex items-center gap-2 flex-wrap">
+                        <span className={`inline-flex items-center gap-1 font-medium ${levelColors.text}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${levelColors.dot}`} />
+                          {LEVEL_LABELS[level]}
+                        </span>
+                        <span className="text-gray-300">·</span>
+                        <span className={`font-medium ${
+                          a.type === 'recurring_transaction' ? 'text-indigo-600' : 'text-amber-600'
+                        }`}>
+                          {AUTOMATION_TYPE_LABELS[a.type]}
+                        </span>
+                        <span className="text-gray-300">·</span>
+                        <span>{describeSchedule(a.schedule)}</span>
+                        {a.description && (
+                          <>
+                            <span className="text-gray-300">·</span>
+                            <span className="truncate max-w-[180px]">{a.description}</span>
+                          </>
+                        )}
+                      </p>
+                    )}
                   </div>
 
                   {/* Right side — timing + actions */}

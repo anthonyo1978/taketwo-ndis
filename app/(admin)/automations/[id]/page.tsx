@@ -24,6 +24,8 @@ import {
   Building2,
   ExternalLink,
   Mail,
+  Users,
+  X,
 } from 'lucide-react'
 import type { Automation, AutomationRun, ScheduleFrequency, AutomationHealthStatus } from 'types/automation'
 import {
@@ -430,6 +432,72 @@ export default function AutomationDetailPage() {
         </div>
       </div>
 
+      {/* Daily Brief — friendly status banner */}
+      {automation.type === 'daily_digest' && (
+        <div className={`rounded-xl border p-5 mb-6 ${
+          !automation.isEnabled
+            ? 'bg-gray-50 border-gray-200'
+            : getAutomationHealth(automation) === 'broken'
+              ? 'bg-red-50 border-red-200'
+              : 'bg-sky-50 border-sky-200'
+        }`}>
+          <div className="flex items-start gap-4">
+            <div className={`p-2.5 rounded-lg ${
+              !automation.isEnabled ? 'bg-gray-200' : getAutomationHealth(automation) === 'broken' ? 'bg-red-100' : 'bg-sky-100'
+            }`}>
+              <Mail className={`w-5 h-5 ${
+                !automation.isEnabled ? 'text-gray-400' : getAutomationHealth(automation) === 'broken' ? 'text-red-500' : 'text-sky-600'
+              }`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              {!automation.isEnabled ? (
+                <>
+                  <p className="text-sm font-semibold text-gray-700">Daily Brief is disabled</p>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    No emails will be sent. Enable this automation to resume daily briefings.
+                  </p>
+                </>
+              ) : recipientEmails.length === 0 ? (
+                <>
+                  <p className="text-sm font-semibold text-amber-700">⚠ No recipients configured</p>
+                  <p className="text-sm text-amber-600 mt-0.5">
+                    Add at least one email address below so the brief has somewhere to go.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-semibold text-sky-800">
+                    ✓ Daily Brief is active
+                  </p>
+                  <p className="text-sm text-sky-700 mt-0.5">
+                    Next email: <strong>{automation.nextRunAt ? new Date(automation.nextRunAt).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '—'}</strong>
+                    {' → '}
+                    {recipientEmails.length} {recipientEmails.length === 1 ? 'recipient' : 'recipients'}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {recipientEmails.map((email) => (
+                      <span
+                        key={email}
+                        className="inline-flex items-center px-2 py-0.5 bg-white/70 text-sky-700 rounded-full text-xs font-medium border border-sky-200"
+                      >
+                        {email}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
+              {automation.lastRunAt && (
+                <p className="text-xs text-gray-400 mt-2">
+                  Last sent: {formatDate(automation.lastRunAt)}
+                  {automation.lastRunStatus === 'failed' && <span className="text-red-500 ml-1">· Failed</span>}
+                  {automation.lastRunStatus === 'success' && <span className="text-emerald-500 ml-1">· Delivered</span>}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left column — Overview + Schedule */}
         <div className="lg:col-span-1 space-y-6">
@@ -563,142 +631,173 @@ export default function AutomationDetailPage() {
 
           {/* Linked Expense / Daily Brief Config / Parameters Card */}
           {automation.type === 'daily_digest' ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-4">
-                <Mail className="w-4 h-4 text-sky-500" />
-                Daily Brief Configuration
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Lookback</span>
-                  <span className="font-medium text-gray-900">{(automation.parameters as any)?.lookbackDays ?? 1} day(s)</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Outlook</span>
-                  <span className="font-medium text-gray-900">{(automation.parameters as any)?.forwardDays ?? 7} day(s)</span>
-                </div>
+            <>
+              {/* What's in the email */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-3">
+                  <Mail className="w-4 h-4 text-sky-500" />
+                  What&apos;s in the email
+                </h3>
+                <p className="text-xs text-gray-500 mb-3">
+                  Each morning, recipients get a concise narrative covering:
+                </p>
+                <ul className="space-y-2 text-xs text-gray-600">
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
+                    <span><strong className="text-gray-800">Yesterday&apos;s performance</strong> — income, property costs, org costs, and net result in plain language</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
+                    <span><strong className="text-gray-800">Property highlights</strong> — any properties running at a loss, plus top performers</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
+                    <span><strong className="text-gray-800">Your week ahead</strong> — upcoming scheduled income and expenses for the next {(automation.parameters as any)?.forwardDays ?? 7} days</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mt-1.5 flex-shrink-0" />
+                    <span><strong className="text-gray-800">Things worth watching</strong> — expiring contracts, failed automations, low balances</span>
+                  </li>
+                </ul>
+              </div>
 
-                {/* Recipients */}
-                <div className="pt-2 border-t border-gray-100">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-gray-500">Recipients</span>
+              {/* Who receives it */}
+              <div className="bg-white rounded-xl border border-gray-200 p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Users className="w-4 h-4 text-sky-500" />
+                    Who receives it
+                  </h3>
+                  {!editingRecipients && (
                     <button
                       type="button"
-                      onClick={() => setEditingRecipients(!editingRecipients)}
+                      onClick={() => setEditingRecipients(true)}
                       className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
                     >
-                      {editingRecipients ? 'Cancel' : 'Edit'}
+                      Edit
                     </button>
-                  </div>
+                  )}
+                </div>
 
-                  {!editingRecipients ? (
-                    <div>
-                      {recipientEmails.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {recipientEmails.map((email) => (
-                            <span
-                              key={email}
-                              className="inline-flex items-center px-2 py-0.5 bg-sky-50 text-sky-700 rounded-full text-xs font-medium"
-                            >
-                              {email}
-                            </span>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-amber-600">
-                          No specific recipients — sends to all admin users
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <input
-                          type="email"
-                          value={recipientInput}
-                          onChange={(e) => setRecipientInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ',') {
-                              e.preventDefault()
-                              const email = recipientInput.trim().replace(/,$/g, '')
-                              if (email && email.includes('@') && !recipientEmails.includes(email)) {
-                                setRecipientEmails([...recipientEmails, email])
-                                setRecipientInput('')
-                              }
-                            }
-                          }}
-                          placeholder="name@company.com"
-                          className="flex-1 px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
+                {!editingRecipients ? (
+                  <div>
+                    {recipientEmails.length > 0 ? (
+                      <div className="space-y-2">
+                        {recipientEmails.map((email) => (
+                          <div
+                            key={email}
+                            className="flex items-center gap-2.5 px-3 py-2 bg-gray-50 rounded-lg"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs font-bold text-sky-600 uppercase">
+                                {email.charAt(0)}
+                              </span>
+                            </div>
+                            <span className="text-sm text-gray-700">{email}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 rounded-lg border border-amber-100">
+                        <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                        <p className="text-xs text-amber-700">
+                          No recipients configured yet. Click <strong>Edit</strong> to add email addresses.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-xs text-gray-500">
+                      Type an email address and press <kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px] font-mono">Enter</kbd> to add it.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={recipientInput}
+                        onChange={(e) => setRecipientInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault()
                             const email = recipientInput.trim().replace(/,$/g, '')
                             if (email && email.includes('@') && !recipientEmails.includes(email)) {
                               setRecipientEmails([...recipientEmails, email])
                               setRecipientInput('')
                             }
-                          }}
-                          className="px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
-                        >
-                          Add
-                        </button>
-                      </div>
-                      {recipientEmails.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5">
-                          {recipientEmails.map((email) => (
-                            <span
-                              key={email}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 text-sky-700 rounded-full text-xs font-medium"
-                            >
-                              {email}
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setRecipientEmails(recipientEmails.filter((e) => e !== email))
-                                }
-                                className="text-sky-400 hover:text-sky-600"
-                              >
-                                ×
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <div className="flex justify-end gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingRecipients(false)
-                            // Reset to saved state
-                            const p = automation.parameters as any
-                            setRecipientEmails(p?.recipientEmails || [])
+                          }
+                        }}
+                        placeholder="name@company.com"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const email = recipientInput.trim().replace(/,$/g, '')
+                          if (email && email.includes('@') && !recipientEmails.includes(email)) {
+                            setRecipientEmails([...recipientEmails, email])
                             setRecipientInput('')
-                          }}
-                          className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleSaveRecipients}
-                          disabled={savingRecipients}
-                          className="px-2.5 py-1 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-                        >
-                          {savingRecipients ? 'Saving…' : 'Save Recipients'}
-                        </button>
-                      </div>
+                          }
+                        }}
+                        className="px-3 py-2 text-sm font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 transition-colors"
+                      >
+                        Add
+                      </button>
                     </div>
-                  )}
-                </div>
-
-                <div className="pt-2 border-t border-gray-100">
-                  <p className="text-xs text-gray-500">
-                    Sends an executive financial summary each morning. Includes yesterday&apos;s performance, 7-day outlook, and operational alerts.
-                  </p>
-                </div>
+                    {recipientEmails.length > 0 && (
+                      <div className="space-y-1.5">
+                        {recipientEmails.map((email) => (
+                          <div
+                            key={email}
+                            className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg group"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-full bg-sky-100 flex items-center justify-center flex-shrink-0">
+                                <span className="text-xs font-bold text-sky-600 uppercase">
+                                  {email.charAt(0)}
+                                </span>
+                              </div>
+                              <span className="text-sm text-gray-700">{email}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setRecipientEmails(recipientEmails.filter((e) => e !== email))
+                              }
+                              className="text-gray-300 hover:text-red-500 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingRecipients(false)
+                          const p = automation.parameters as any
+                          setRecipientEmails(p?.recipientEmails || [])
+                          setRecipientInput('')
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSaveRecipients}
+                        disabled={savingRecipients}
+                        className="px-3 py-1.5 text-xs font-medium text-white bg-sky-600 rounded-lg hover:bg-sky-700 disabled:opacity-50"
+                      >
+                        {savingRecipients ? 'Saving…' : 'Save Recipients'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            </>
           ) : templateExpense ? (
             <div className="bg-white rounded-xl border border-gray-200 p-5">
               <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2 mb-4">
