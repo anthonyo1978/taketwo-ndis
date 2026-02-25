@@ -367,7 +367,11 @@ export function CreateExpenseModal({
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit(onSubmit, (errs) => {
+          const fields = Object.keys(errs).join(', ')
+          console.error('[CreateExpenseModal] Validation failed:', errs, 'Values:', getValues())
+          toast.error(`Please fix: ${fields}`)
+        })} className="p-6 space-y-5">
           <input type="hidden" {...register('scope')} />
           <input type="hidden" {...register('houseId')} />
           <input type="hidden" {...register('headLeaseId')} />
@@ -630,11 +634,13 @@ export function CreateExpenseModal({
             </label>
           </div>
 
-          {/* Hidden field errors */}
-          {(errors.scope || errors.houseId) && (
-            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-              {errors.scope && <p>Scope: {errors.scope.message || 'Invalid scope'}</p>}
-              {errors.houseId && <p>House: {errors.houseId.message || 'A house must be selected'}</p>}
+          {/* Validation errors */}
+          {Object.keys(errors).length > 0 && (
+            <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 space-y-0.5">
+              <p className="font-medium text-xs">Please fix the following:</p>
+              {Object.entries(errors).map(([field, err]) => (
+                <p key={field} className="text-xs">• {field}: {(err as any)?.message || 'Invalid'}</p>
+              ))}
             </div>
           )}
 
