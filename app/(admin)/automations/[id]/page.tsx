@@ -124,9 +124,12 @@ interface ProjectedRun {
   date: Date
   label: string
   amount?: number
+  direction?: 'income' | 'expense' | 'action'
   category?: string
   scope?: string
   houseName?: string
+  residentName?: string
+  contractInfo?: string
   description?: string
   type: string
 }
@@ -134,7 +137,8 @@ interface ProjectedRun {
 function projectNextRuns(
   automation: Automation,
   days: number,
-  templateExpense: any | null
+  templateExpense: any | null,
+  templateTransaction: any | null,
 ): ProjectedRun[] {
   const schedule = automation.schedule
   const runs: ProjectedRun[] = []
@@ -154,7 +158,7 @@ function projectNextRuns(
       cursor.setHours(hours, minutes, 0, 0)
       if (cursor <= now) cursor.setDate(cursor.getDate() + 1)
       while (cursor <= end) {
-        runs.push(buildProjectedRun(cursor, automation, templateExpense))
+        runs.push(buildProjectedRun(cursor, automation, templateExpense, templateTransaction))
         cursor = new Date(cursor)
         cursor.setDate(cursor.getDate() + 1)
       }
@@ -168,7 +172,7 @@ function projectNextRuns(
       if (daysUntil < 0 || (daysUntil === 0 && cursor <= now)) daysUntil += 7
       cursor.setDate(cursor.getDate() + daysUntil)
       while (cursor <= end) {
-        runs.push(buildProjectedRun(cursor, automation, templateExpense))
+        runs.push(buildProjectedRun(cursor, automation, templateExpense, templateTransaction))
         cursor = new Date(cursor)
         cursor.setDate(cursor.getDate() + 7)
       }
@@ -179,7 +183,7 @@ function projectNextRuns(
       cursor = new Date(now.getFullYear(), now.getMonth(), targetDOM, hours, minutes, 0, 0)
       if (cursor <= now) cursor.setMonth(cursor.getMonth() + 1)
       while (cursor <= end) {
-        runs.push(buildProjectedRun(cursor, automation, templateExpense))
+        runs.push(buildProjectedRun(cursor, automation, templateExpense, templateTransaction))
         cursor = new Date(cursor)
         cursor.setMonth(cursor.getMonth() + 1)
       }
@@ -190,22 +194,42 @@ function projectNextRuns(
   return runs
 }
 
-function buildProjectedRun(date: Date, automation: Automation, templateExpense: any | null): ProjectedRun {
+function buildProjectedRun(
+  date: Date,
+  automation: Automation,
+  templateExpense: any | null,
+  templateTransaction: any | null,
+): ProjectedRun {
   const base: ProjectedRun = {
     date: new Date(date),
     label: AUTOMATION_TYPE_LABELS[automation.type],
     type: automation.type,
   }
 
-  if (automation.type === 'recurring_transaction' && templateExpense) {
-    base.amount = Number(templateExpense.amount) || 0
-    base.category = templateExpense.category
-    base.scope = templateExpense.scope
-    base.houseName = templateExpense.houseName
-    base.description = templateExpense.description
+  if (automation.type === 'recurring_transaction') {
+    if (templateTransaction) {
+      // Income / NDIS drawdown transaction
+      base.amount = Number(templateTransaction.amount) || 0
+      base.direction = 'income'
+      base.description = templateTransaction.note || templateTransaction.description || 'NDIS Drawdown'
+      base.residentName = templateTransaction.residentName || undefined
+      base.houseName = templateTransaction.houseName || undefined
+      base.contractInfo = templateTransaction.contractDescription || undefined
+      base.scope = 'client'
+    } else if (templateExpense) {
+      // Expense (house or org)
+      base.amount = Number(templateExpense.amount) || 0
+      base.direction = 'expense'
+      base.category = templateExpense.category
+      base.scope = templateExpense.scope
+      base.houseName = templateExpense.houseName
+      base.description = templateExpense.description
+    }
   } else if (automation.type === 'contract_billing_run') {
+    base.direction = 'income'
     base.description = 'Scan eligible contracts and generate billing transactions'
   } else if (automation.type === 'daily_digest') {
+    base.direction = 'action'
     base.description = 'Send executive summary email to recipients'
   }
 
@@ -222,6 +246,7 @@ export default function AutomationDetailPage() {
   const [loading, setLoading] = useState(true)
   const [runningNow, setRunningNow] = useState(false)
   const [templateExpense, setTemplateExpense] = useState<any | null>(null)
+  const [templateTransaction, setTemplateTransaction] = useState<any | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -281,6 +306,22 @@ export default function AutomationDetailPage() {
             const expJson = (await expRes.json()) as { success: boolean; data?: any }
             if (expJson.success && expJson.data) {
               setTemplateExpense(expJson.data)
+            }
+          } catch {
+            // non-fatal
+          }
+        }
+        if (prms?.templateTransactionId) {
+          try {
+            const txnRes = await fetch(`/api/transactions/${prms.templateTransactionId}`)
+            const txnJson = (await txnRes.json()) as { success: boolean; data?: any }
+            if (txnJson.success && txnJson.data) {
+              const txn = txnJson.data
+              // The API already returns residentName and houseName
+              if (txn.contractId || txn.contract_id) {
+                txn.contractDescription = `Contract ${(txn.contractId || txn.contract_id || '').slice(0, 8)}…`
+              }
+              setTemplateTransaction(txn)
             }
           } catch {
             // non-fatal
@@ -1025,9 +1066,12 @@ export default function AutomationDetailPage() {
           TAB: Forecast
           ═══════════════════════════════════════════ */}
       {activeTab === 'forecast' && automation && (() => {
-        const projected = projectNextRuns(automation, forecastDays, templateExpense)
-        const totalAmount = projected.reduce((sum, r) => sum + (r.amount || 0), 0)
+        const projected = projectNextRuns(automation, forecastDays, templateExpense, templateTransaction)
+        const totalIncome = projected.filter(r => r.direction === 'income').reduce((sum, r) => sum + (r.amount || 0), 0)
+        const totalExpense = projected.filter(r => r.direction === 'expense').reduce((sum, r) => sum + (r.amount || 0), 0)
+        const totalAmount = totalIncome + totalExpense
         const hasAmounts = projected.some((r) => r.amount && r.amount > 0)
+        const direction = projected[0]?.direction
 
         return (
           <div className="space-y-4">
@@ -1060,7 +1104,7 @@ export default function AutomationDetailPage() {
 
             {/* Summary strip */}
             {projected.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                 <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
                   <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Projected Runs</p>
                   <p className="text-lg font-bold text-gray-900 mt-0.5">{projected.length}</p>
@@ -1076,8 +1120,18 @@ export default function AutomationDetailPage() {
                       <p className="text-lg font-bold text-gray-900 mt-0.5">${(projected[0]?.amount || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}</p>
                     </div>
                     <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
-                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Total ({forecastDays}d)</p>
-                      <p className="text-lg font-bold text-red-600 mt-0.5">${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Direction</p>
+                      <p className={`text-lg font-bold mt-0.5 ${direction === 'income' ? 'text-emerald-600' : direction === 'expense' ? 'text-red-600' : 'text-gray-600'}`}>
+                        {direction === 'income' ? '↑ Income' : direction === 'expense' ? '↓ Expense' : '—'}
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">
+                        Total {direction === 'income' ? 'Projected Income' : direction === 'expense' ? 'Projected Cost' : 'Value'} ({forecastDays}d)
+                      </p>
+                      <p className={`text-lg font-bold mt-0.5 ${direction === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                        ${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </p>
                     </div>
                   </>
                 )}
@@ -1095,6 +1149,7 @@ export default function AutomationDetailPage() {
                         {projected.length > 0 && projected[projected.length - 1] ? new Date(projected[projected.length - 1]!.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '—'}
                       </p>
                     </div>
+                    <div />
                   </>
                 )}
               </div>
@@ -1113,16 +1168,16 @@ export default function AutomationDetailPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-gray-100 bg-gray-50/50">
-                        <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">#</th>
-                        <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Projected Date</th>
-                        <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Day</th>
-                        <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Action</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide w-10">#</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Creation Date</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Day</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Type</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Transaction / Item</th>
                         {hasAmounts && (
                           <>
-                            <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Category</th>
-                            <th className="text-left px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Scope</th>
-                            <th className="text-right px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
-                            <th className="text-right px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Cumulative</th>
+                            <th className="text-left px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Scope</th>
+                            <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Amount</th>
+                            <th className="text-right px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Running Total</th>
                           </>
                         )}
                       </tr>
@@ -1131,13 +1186,15 @@ export default function AutomationDetailPage() {
                       {projected.map((run, idx) => {
                         const cumulative = projected.slice(0, idx + 1).reduce((s, r) => s + (r.amount || 0), 0)
                         const isNextRun = idx === 0
+                        const isIncome = run.direction === 'income'
+                        const isExpense = run.direction === 'expense'
                         return (
                           <tr
                             key={idx}
                             className={`hover:bg-gray-50/50 transition-colors ${isNextRun ? 'bg-indigo-50/30' : ''}`}
                           >
-                            <td className="px-5 py-3 text-xs text-gray-400 font-mono">{idx + 1}</td>
-                            <td className="px-5 py-3 font-medium text-gray-900">
+                            <td className="px-4 py-3 text-xs text-gray-400 font-mono">{idx + 1}</td>
+                            <td className="px-4 py-3 font-medium text-gray-900">
                               <div className="flex items-center gap-2">
                                 {isNextRun && (
                                   <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-100 text-indigo-700">
@@ -1154,45 +1211,72 @@ export default function AutomationDetailPage() {
                                 {new Date(run.date).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </td>
-                            <td className="px-5 py-3 text-gray-600">
+                            <td className="px-4 py-3 text-gray-600">
                               {new Date(run.date).toLocaleDateString('en-AU', { weekday: 'short' })}
                             </td>
-                            <td className="px-5 py-3">
-                              <span className="text-gray-700">{run.description || run.label}</span>
-                              {run.houseName && (
-                                <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                                  <Home className="w-3 h-3" /> {run.houseName}
-                                </p>
+                            <td className="px-4 py-3">
+                              {isIncome ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700">
+                                  ↑ Income
+                                </span>
+                              ) : isExpense ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700">
+                                  ↓ Expense
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                                  {run.label}
+                                </span>
                               )}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className="text-gray-900 font-medium">{run.description || run.label}</span>
+                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                {run.residentName && (
+                                  <span className="text-xs text-indigo-600 flex items-center gap-1">
+                                    <Users className="w-3 h-3" /> {run.residentName}
+                                  </span>
+                                )}
+                                {run.contractInfo && (
+                                  <span className="text-xs text-gray-400">{run.contractInfo}</span>
+                                )}
+                                {run.houseName && (
+                                  <span className="text-xs text-amber-600 flex items-center gap-1">
+                                    <Home className="w-3 h-3" /> {run.houseName}
+                                  </span>
+                                )}
+                                {run.category && (
+                                  <span className="text-xs text-gray-500">
+                                    {EXPENSE_CATEGORY_LABELS[run.category] || run.category}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             {hasAmounts && (
                               <>
-                                <td className="px-5 py-3">
-                                  {run.category ? (
-                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
-                                      {EXPENSE_CATEGORY_LABELS[run.category] || run.category}
-                                    </span>
-                                  ) : (
-                                    <span className="text-gray-300">—</span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-3">
+                                <td className="px-4 py-3">
                                   {run.scope ? (
                                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
-                                      run.scope === 'organisation' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                                      run.scope === 'organisation' ? 'bg-emerald-50 text-emerald-700'
+                                        : run.scope === 'client' ? 'bg-red-50 text-red-700'
+                                        : 'bg-amber-50 text-amber-700'
                                     }`}>
-                                      {run.scope === 'organisation' ? <Building2 className="w-3 h-3" /> : <Home className="w-3 h-3" />}
-                                      {run.scope === 'organisation' ? 'Org' : 'House'}
+                                      {run.scope === 'organisation' ? <Building2 className="w-3 h-3" /> : run.scope === 'client' ? <Users className="w-3 h-3" /> : <Home className="w-3 h-3" />}
+                                      {run.scope === 'organisation' ? 'Org' : run.scope === 'client' ? 'Client' : 'House'}
                                     </span>
                                   ) : (
                                     <span className="text-gray-300">—</span>
                                   )}
                                 </td>
-                                <td className="px-5 py-3 text-right font-mono font-medium text-gray-900">
-                                  {run.amount ? `$${run.amount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}` : '—'}
+                                <td className={`px-4 py-3 text-right font-mono font-semibold ${isIncome ? 'text-emerald-600' : isExpense ? 'text-red-600' : 'text-gray-900'}`}>
+                                  {run.amount ? (
+                                    <>
+                                      {isIncome ? '+' : isExpense ? '-' : ''}${run.amount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                                    </>
+                                  ) : '—'}
                                 </td>
-                                <td className="px-5 py-3 text-right font-mono text-xs text-gray-500">
-                                  ${cumulative.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                                <td className={`px-4 py-3 text-right font-mono text-xs ${isIncome ? 'text-emerald-500' : 'text-red-500'}`}>
+                                  {isIncome ? '+' : '-'}${cumulative.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                                 </td>
                               </>
                             )}
@@ -1203,11 +1287,12 @@ export default function AutomationDetailPage() {
                     {hasAmounts && (
                       <tfoot>
                         <tr className="border-t-2 border-gray-200 bg-gray-50">
-                          <td colSpan={6} className="px-5 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                            Total projected expenditure ({forecastDays} days)
+                          <td colSpan={5} className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                            Total Projected {direction === 'income' ? 'Income' : direction === 'expense' ? 'Cost' : 'Value'} ({forecastDays} days)
                           </td>
-                          <td className="px-5 py-3 text-right font-mono font-bold text-red-600">
-                            ${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                          <td />
+                          <td className={`px-4 py-3 text-right font-mono font-bold ${direction === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {direction === 'income' ? '+' : '-'}${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                           </td>
                           <td />
                         </tr>
@@ -1221,7 +1306,8 @@ export default function AutomationDetailPage() {
             {/* Disclaimer */}
             <p className="text-[11px] text-gray-400 text-center">
               Projections are based on the current schedule and template values. Actual amounts may vary if the automation parameters or template are modified.
-              {automation.type === 'contract_billing_run' && ' Contract billing amounts depend on eligible contracts at the time of each run.'}
+              {automation.type === 'contract_billing_run' && ' Contract billing amounts depend on eligible contracts at the time of each run — individual transaction values are not shown here.'}
+              {direction === 'income' && ' Income projections assume the same amount per run as the template transaction.'}
             </p>
           </div>
         )
