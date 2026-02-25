@@ -124,6 +124,7 @@ interface ProjectedRun {
   date: Date
   label: string
   amount?: number
+  estimatedAmount?: boolean // true if amount is an estimate from historical runs
   direction?: 'income' | 'expense' | 'action'
   category?: string
   scope?: string
@@ -132,6 +133,7 @@ interface ProjectedRun {
   contractInfo?: string
   description?: string
   type: string
+  contractCount?: number // for billing runs: estimated contracts per run
 }
 
 function projectNextRuns(
@@ -139,6 +141,7 @@ function projectNextRuns(
   days: number,
   templateExpense: any | null,
   templateTransaction: any | null,
+  pastRuns?: AutomationRun[],
 ): ProjectedRun[] {
   const schedule = automation.schedule
   const runs: ProjectedRun[] = []
@@ -153,12 +156,39 @@ function projectNextRuns(
   // Find first occurrence from now
   let cursor = new Date(now)
 
+  // Compute historical average for contract billing runs
+  let historicalAvgAmount: number | undefined
+  let historicalAvgContracts: number | undefined
+  if (automation.type === 'contract_billing_run' && pastRuns && pastRuns.length > 0) {
+    const successfulRuns = pastRuns.filter(r => r.status === 'success' && r.metrics)
+    if (successfulRuns.length > 0) {
+      const amounts = successfulRuns
+        .map(r => {
+          const m = r.metrics as any
+          return m?.totalAmount || m?.amount || 0
+        })
+        .filter((a: number) => a > 0)
+      if (amounts.length > 0) {
+        historicalAvgAmount = amounts.reduce((s: number, a: number) => s + a, 0) / amounts.length
+      }
+      const contracts = successfulRuns
+        .map(r => {
+          const m = r.metrics as any
+          return m?.processedContracts || m?.createdTransactions || 0
+        })
+        .filter((c: number) => c > 0)
+      if (contracts.length > 0) {
+        historicalAvgContracts = Math.round(contracts.reduce((s: number, c: number) => s + c, 0) / contracts.length)
+      }
+    }
+  }
+
   switch (schedule.frequency) {
     case 'daily': {
       cursor.setHours(hours, minutes, 0, 0)
       if (cursor <= now) cursor.setDate(cursor.getDate() + 1)
       while (cursor <= end) {
-        runs.push(buildProjectedRun(cursor, automation, templateExpense, templateTransaction))
+        runs.push(buildProjectedRun(cursor, automation, templateExpense, templateTransaction, historicalAvgAmount, historicalAvgContracts))
         cursor = new Date(cursor)
         cursor.setDate(cursor.getDate() + 1)
       }
@@ -172,7 +202,7 @@ function projectNextRuns(
       if (daysUntil < 0 || (daysUntil === 0 && cursor <= now)) daysUntil += 7
       cursor.setDate(cursor.getDate() + daysUntil)
       while (cursor <= end) {
-        runs.push(buildProjectedRun(cursor, automation, templateExpense, templateTransaction))
+        runs.push(buildProjectedRun(cursor, automation, templateExpense, templateTransaction, historicalAvgAmount, historicalAvgContracts))
         cursor = new Date(cursor)
         cursor.setDate(cursor.getDate() + 7)
       }
@@ -183,7 +213,7 @@ function projectNextRuns(
       cursor = new Date(now.getFullYear(), now.getMonth(), targetDOM, hours, minutes, 0, 0)
       if (cursor <= now) cursor.setMonth(cursor.getMonth() + 1)
       while (cursor <= end) {
-        runs.push(buildProjectedRun(cursor, automation, templateExpense, templateTransaction))
+        runs.push(buildProjectedRun(cursor, automation, templateExpense, templateTransaction, historicalAvgAmount, historicalAvgContracts))
         cursor = new Date(cursor)
         cursor.setMonth(cursor.getMonth() + 1)
       }
@@ -199,6 +229,8 @@ function buildProjectedRun(
   automation: Automation,
   templateExpense: any | null,
   templateTransaction: any | null,
+  historicalAvgAmount?: number,
+  historicalAvgContracts?: number,
 ): ProjectedRun {
   const base: ProjectedRun = {
     date: new Date(date),
@@ -227,7 +259,14 @@ function buildProjectedRun(
     }
   } else if (automation.type === 'contract_billing_run') {
     base.direction = 'income'
-    base.description = 'Scan eligible contracts and generate billing transactions'
+    if (historicalAvgAmount && historicalAvgAmount > 0) {
+      base.amount = Math.round(historicalAvgAmount * 100) / 100
+      base.estimatedAmount = true
+      base.contractCount = historicalAvgContracts
+      base.description = `~${historicalAvgContracts || '?'} contracts · est. from past runs`
+    } else {
+      base.description = 'Scan eligible contracts and generate billing transactions'
+    }
   } else if (automation.type === 'daily_digest') {
     base.direction = 'action'
     base.description = 'Send executive summary email to recipients'
@@ -1066,7 +1105,7 @@ export default function AutomationDetailPage() {
           TAB: Forecast
           ═══════════════════════════════════════════ */}
       {activeTab === 'forecast' && automation && (() => {
-        const projected = projectNextRuns(automation, forecastDays, templateExpense, templateTransaction)
+        const projected = projectNextRuns(automation, forecastDays, templateExpense, templateTransaction, runs)
         const totalIncome = projected.filter(r => r.direction === 'income').reduce((sum, r) => sum + (r.amount || 0), 0)
         const totalExpense = projected.filter(r => r.direction === 'expense').reduce((sum, r) => sum + (r.amount || 0), 0)
         const totalAmount = totalIncome + totalExpense
@@ -1102,6 +1141,33 @@ export default function AutomationDetailPage() {
               </div>
             </div>
 
+            {/* Contract billing context banner */}
+            {automation.type === 'contract_billing_run' && !hasAmounts && projected.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-3">
+                <AlertTriangle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-blue-800">Amounts not yet available</p>
+                  <p className="text-xs text-blue-600 mt-0.5">
+                    Contract billing generates variable income depending on eligible contracts at runtime.
+                    Once this automation has completed a few runs, the forecast will show estimated amounts based on historical averages.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Estimated amounts context banner */}
+            {projected.some(r => r.estimatedAmount) && (
+              <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-start gap-3">
+                <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-amber-800">Amounts are estimates</p>
+                  <p className="text-xs text-amber-600 mt-0.5">
+                    Based on the average of {runs.filter(r => r.status === 'success').length} past successful runs. Actual amounts will vary depending on eligible contracts at the time of each run.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Summary strip */}
             {projected.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
@@ -1116,8 +1182,15 @@ export default function AutomationDetailPage() {
                 {hasAmounts && (
                   <>
                     <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
-                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Per Run</p>
-                      <p className="text-lg font-bold text-gray-900 mt-0.5">${(projected[0]?.amount || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">
+                        {projected[0]?.estimatedAmount ? 'Avg Per Run' : 'Per Run'}
+                      </p>
+                      <p className="text-lg font-bold text-gray-900 mt-0.5">
+                        {projected[0]?.estimatedAmount ? '~' : ''}${(projected[0]?.amount || 0).toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                      </p>
+                      {projected[0]?.estimatedAmount && (
+                        <p className="text-[10px] text-gray-400 mt-0.5">Based on {runs.filter(r => r.status === 'success').length} past runs</p>
+                      )}
                     </div>
                     <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
                       <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">Direction</p>
@@ -1127,10 +1200,10 @@ export default function AutomationDetailPage() {
                     </div>
                     <div className="bg-white rounded-xl border border-gray-200 px-4 py-3">
                       <p className="text-[11px] font-medium text-gray-400 uppercase tracking-wide">
-                        Total {direction === 'income' ? 'Projected Income' : direction === 'expense' ? 'Projected Cost' : 'Value'} ({forecastDays}d)
+                        {projected.some(r => r.estimatedAmount) ? 'Est. ' : ''}Total {direction === 'income' ? 'Projected Income' : direction === 'expense' ? 'Projected Cost' : 'Value'} ({forecastDays}d)
                       </p>
                       <p className={`text-lg font-bold mt-0.5 ${direction === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                        ${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                        {projected.some(r => r.estimatedAmount) ? '~' : ''}${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                       </p>
                     </div>
                   </>
@@ -1270,13 +1343,14 @@ export default function AutomationDetailPage() {
                                 </td>
                                 <td className={`px-4 py-3 text-right font-mono font-semibold ${isIncome ? 'text-emerald-600' : isExpense ? 'text-red-600' : 'text-gray-900'}`}>
                                   {run.amount ? (
-                                    <>
-                                      {isIncome ? '+' : isExpense ? '-' : ''}${run.amount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
-                                    </>
+                                    <span title={run.estimatedAmount ? 'Estimated from historical run average' : undefined}>
+                                      {run.estimatedAmount ? '~' : ''}{isIncome ? '+' : isExpense ? '-' : ''}${run.amount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                                      {run.estimatedAmount && <span className="text-[10px] text-gray-400 font-normal ml-1">est.</span>}
+                                    </span>
                                   ) : '—'}
                                 </td>
                                 <td className={`px-4 py-3 text-right font-mono text-xs ${isIncome ? 'text-emerald-500' : 'text-red-500'}`}>
-                                  {isIncome ? '+' : '-'}${cumulative.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                                  {run.estimatedAmount ? '~' : ''}{isIncome ? '+' : '-'}${cumulative.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                                 </td>
                               </>
                             )}
@@ -1288,11 +1362,11 @@ export default function AutomationDetailPage() {
                       <tfoot>
                         <tr className="border-t-2 border-gray-200 bg-gray-50">
                           <td colSpan={5} className="px-4 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                            Total Projected {direction === 'income' ? 'Income' : direction === 'expense' ? 'Cost' : 'Value'} ({forecastDays} days)
+                            {projected.some(r => r.estimatedAmount) ? 'Est. ' : ''}Total Projected {direction === 'income' ? 'Income' : direction === 'expense' ? 'Cost' : 'Value'} ({forecastDays} days)
                           </td>
                           <td />
                           <td className={`px-4 py-3 text-right font-mono font-bold ${direction === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
-                            {direction === 'income' ? '+' : '-'}${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
+                            {projected.some(r => r.estimatedAmount) ? '~' : ''}{direction === 'income' ? '+' : '-'}${totalAmount.toLocaleString('en-AU', { minimumFractionDigits: 2 })}
                           </td>
                           <td />
                         </tr>
