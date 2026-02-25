@@ -76,6 +76,10 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
   const [amount, setAmount] = useState<number>(0)
   const [expenseFrequency, setExpenseFrequency] = useState<ExpenseFrequency>('monthly')
 
+  // ── Daily Brief recipients ──
+  const [recipientEmails, setRecipientEmails] = useState<string[]>([])
+  const [recipientInput, setRecipientInput] = useState('')
+
   // ── Houses ──
   const [houses, setHouses] = useState<{ id: string; name: string }[]>([])
   const [housesLoading, setHousesLoading] = useState(false)
@@ -211,6 +215,9 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
       } else if (type === 'daily_digest') {
         parameters.lookbackDays = 1
         parameters.forwardDays = 7
+        if (recipientEmails.length > 0) {
+          parameters.recipientEmails = recipientEmails
+        }
       }
 
       const payload: AutomationCreateInput = {
@@ -696,6 +703,74 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
                 )}
               </div>
 
+              {/* Recipients — Daily Brief only */}
+              {type === 'daily_digest' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Recipients *</label>
+                  <p className="text-xs text-gray-500 mb-2">
+                    Add the email addresses of people who should receive this brief.
+                  </p>
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={recipientInput}
+                      onChange={(e) => setRecipientInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ',') {
+                          e.preventDefault()
+                          const email = recipientInput.trim().replace(/,$/g, '')
+                          if (email && email.includes('@') && !recipientEmails.includes(email)) {
+                            setRecipientEmails([...recipientEmails, email])
+                            setRecipientInput('')
+                          }
+                        }
+                      }}
+                      placeholder="name@company.com"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const email = recipientInput.trim().replace(/,$/g, '')
+                        if (email && email.includes('@') && !recipientEmails.includes(email)) {
+                          setRecipientEmails([...recipientEmails, email])
+                          setRecipientInput('')
+                        }
+                      }}
+                      className="px-3 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {recipientEmails.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {recipientEmails.map((email) => (
+                        <span
+                          key={email}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 bg-sky-50 text-sky-700 rounded-full text-xs font-medium"
+                        >
+                          {email}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRecipientEmails(recipientEmails.filter((e) => e !== email))
+                            }
+                            className="text-sky-400 hover:text-sky-600"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {recipientEmails.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-1">
+                      No recipients added yet. Add at least one email address.
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Error */}
               {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -727,7 +802,7 @@ export function CreateAutomationModal({ open, onClose, onCreated, prefill }: Pro
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={saving || (!name && !expenseDescription)}
+                  disabled={saving || (!name && !expenseDescription) || (type === 'daily_digest' && recipientEmails.length === 0)}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                 >
                   {saving ? 'Creating…' : 'Create Automation'}

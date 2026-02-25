@@ -144,6 +144,12 @@ export default function AutomationDetailPage() {
   const [scheduleDOW, setScheduleDOW] = useState(1)
   const [scheduleDOM, setScheduleDOM] = useState(1)
 
+  // Recipients editing (daily_digest)
+  const [editingRecipients, setEditingRecipients] = useState(false)
+  const [recipientEmails, setRecipientEmails] = useState<string[]>([])
+  const [recipientInput, setRecipientInput] = useState('')
+  const [savingRecipients, setSavingRecipients] = useState(false)
+
   const fetchData = useCallback(async () => {
     try {
       const [autoRes, runsRes] = await Promise.all([
@@ -161,6 +167,12 @@ export default function AutomationDetailPage() {
         setScheduleTime(s.timeOfDay || '02:00')
         setScheduleDOW(s.dayOfWeek ?? 1)
         setScheduleDOM(s.dayOfMonth ?? 1)
+
+        // Init recipient emails for daily_digest
+        const p = autoJson.data.parameters as any
+        if (p?.recipientEmails && Array.isArray(p.recipientEmails)) {
+          setRecipientEmails(p.recipientEmails)
+        }
 
         // Fetch linked template expense if applicable
         const params = autoJson.data.parameters as any
@@ -251,6 +263,27 @@ export default function AutomationDetailPage() {
       fetchData()
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleSaveRecipients = async () => {
+    setSavingRecipients(true)
+    try {
+      const existingParams = (automation?.parameters || {}) as Record<string, any>
+      await fetch(`/api/automations/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parameters: {
+            ...existingParams,
+            recipientEmails: recipientEmails.length > 0 ? recipientEmails : undefined,
+          },
+        }),
+      })
+      setEditingRecipients(false)
+      fetchData()
+    } finally {
+      setSavingRecipients(false)
     }
   }
 
@@ -544,13 +577,124 @@ export default function AutomationDetailPage() {
                   <span className="text-gray-500">Outlook</span>
                   <span className="font-medium text-gray-900">{(automation.parameters as any)?.forwardDays ?? 7} day(s)</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-500">Recipients</span>
-                  <span className="font-medium text-gray-900">All admin users</span>
+
+                {/* Recipients */}
+                <div className="pt-2 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-gray-500">Recipients</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditingRecipients(!editingRecipients)}
+                      className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                    >
+                      {editingRecipients ? 'Cancel' : 'Edit'}
+                    </button>
+                  </div>
+
+                  {!editingRecipients ? (
+                    <div>
+                      {recipientEmails.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {recipientEmails.map((email) => (
+                            <span
+                              key={email}
+                              className="inline-flex items-center px-2 py-0.5 bg-sky-50 text-sky-700 rounded-full text-xs font-medium"
+                            >
+                              {email}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-amber-600">
+                          No specific recipients — sends to all admin users
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="email"
+                          value={recipientInput}
+                          onChange={(e) => setRecipientInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ',') {
+                              e.preventDefault()
+                              const email = recipientInput.trim().replace(/,$/g, '')
+                              if (email && email.includes('@') && !recipientEmails.includes(email)) {
+                                setRecipientEmails([...recipientEmails, email])
+                                setRecipientInput('')
+                              }
+                            }
+                          }}
+                          placeholder="name@company.com"
+                          className="flex-1 px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const email = recipientInput.trim().replace(/,$/g, '')
+                            if (email && email.includes('@') && !recipientEmails.includes(email)) {
+                              setRecipientEmails([...recipientEmails, email])
+                              setRecipientInput('')
+                            }
+                          }}
+                          className="px-2.5 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      {recipientEmails.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {recipientEmails.map((email) => (
+                            <span
+                              key={email}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 text-sky-700 rounded-full text-xs font-medium"
+                            >
+                              {email}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRecipientEmails(recipientEmails.filter((e) => e !== email))
+                                }
+                                className="text-sky-400 hover:text-sky-600"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex justify-end gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingRecipients(false)
+                            // Reset to saved state
+                            const p = automation.parameters as any
+                            setRecipientEmails(p?.recipientEmails || [])
+                            setRecipientInput('')
+                          }}
+                          className="px-2.5 py-1 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleSaveRecipients}
+                          disabled={savingRecipients}
+                          className="px-2.5 py-1 text-xs font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                          {savingRecipients ? 'Saving…' : 'Save Recipients'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
+
                 <div className="pt-2 border-t border-gray-100">
                   <p className="text-xs text-gray-500">
-                    Sends an executive financial summary to all admin users each morning. Includes yesterday&apos;s performance, 7-day outlook, and operational alerts.
+                    Sends an executive financial summary each morning. Includes yesterday&apos;s performance, 7-day outlook, and operational alerts.
                   </p>
                 </div>
               </div>

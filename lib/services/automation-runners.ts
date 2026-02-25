@@ -285,6 +285,7 @@ async function runDailyDigest(
   const timezone = automation.schedule.timezone || 'Australia/Sydney'
   const lookbackDays = params.lookbackDays ?? 1
   const forwardDays = params.forwardDays ?? 7
+  const recipientEmails = params.recipientEmails
 
   try {
     // 1. Aggregate data
@@ -294,6 +295,7 @@ async function runDailyDigest(
       timezone,
       lookbackDays,
       forwardDays,
+      recipientEmails,
     )
 
     // 2. Send email
@@ -470,6 +472,8 @@ async function preflightDailyDigest(
   automation: Automation,
   supabase: any,
 ): Promise<PreflightResult> {
+  const params = automation.parameters as DailyDigestParams
+
   // Check org exists
   const { data: org, error: orgErr } = await supabase
     .from('organizations')
@@ -481,7 +485,30 @@ async function preflightDailyDigest(
     return { canRun: false, reason: 'Organisation not found.' }
   }
 
-  // Check there are admin users to send to
+  const warnings: string[] = []
+
+  // Determine recipients
+  const explicitRecipients = (params.recipientEmails || []).filter(Boolean)
+
+  if (explicitRecipients.length > 0) {
+    // Explicit recipients configured — validate they look like emails
+    const invalid = explicitRecipients.filter(e => !e.includes('@'))
+    if (invalid.length > 0) {
+      warnings.push(`${invalid.length} recipient${invalid.length > 1 ? 's look' : ' looks'} like an invalid email.`)
+    }
+
+    if (!process.env.RESEND_API_KEY) {
+      warnings.push('RESEND_API_KEY is not configured — email will not actually send.')
+    }
+
+    return {
+      canRun: true,
+      reason: `Ready to generate Daily Brief for ${org.name} and send to ${explicitRecipients.length} configured recipient${explicitRecipients.length > 1 ? 's' : ''}.`,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    }
+  }
+
+  // No explicit recipients — fall back to all org admins
   const { count, error: countErr } = await supabase
     .from('users')
     .select('id', { count: 'exact', head: true })
@@ -496,18 +523,17 @@ async function preflightDailyDigest(
   if (!count || count === 0) {
     return {
       canRun: false,
-      reason: 'No active admin users found. The Daily Brief needs at least one admin to send to.',
+      reason: 'No recipients configured and no active admin users found. Add at least one recipient email.',
     }
   }
 
-  const warnings: string[] = []
   if (!process.env.RESEND_API_KEY) {
     warnings.push('RESEND_API_KEY is not configured — email will not actually send.')
   }
 
   return {
     canRun: true,
-    reason: `Ready to generate Daily Brief for ${org.name} and send to ${count} admin${count > 1 ? 's' : ''}.`,
+    reason: `Ready to generate Daily Brief for ${org.name} and send to ${count} admin${count > 1 ? 's' : ''} (no specific recipients configured — using all admins).`,
     warnings: warnings.length > 0 ? warnings : undefined,
   }
 }

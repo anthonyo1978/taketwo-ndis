@@ -36,6 +36,8 @@ export interface DailyDigestParams {
   lookbackDays?: number
   /** How many days forward for the outlook (default 7) */
   forwardDays?: number
+  /** Specific email addresses to send to. If empty/undefined, sends to all org admins. */
+  recipientEmails?: string[]
 }
 
 export type AutomationParameters = RecurringTransactionParams | ContractBillingParams | DailyDigestParams

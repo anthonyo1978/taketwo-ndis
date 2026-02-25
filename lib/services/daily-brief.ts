@@ -138,6 +138,8 @@ export async function aggregateDailyBrief(
   timezone: string = 'Australia/Sydney',
   lookbackDays: number = 1,
   forwardDays: number = 7,
+  /** If provided, only these emails receive the brief. Otherwise all org admins. */
+  recipientEmails?: string[],
 ): Promise<DailyBriefData> {
   const now = new Date()
 
@@ -544,15 +546,20 @@ export async function aggregateDailyBrief(
   }
   lowBalanceAlerts.splice(10)
 
-  // ── Admin emails ──
-  const { data: admins } = await supabase
-    .from('users')
-    .select('email')
-    .eq('organization_id', orgId)
-    .eq('role', 'admin')
-    .eq('status', 'active')
-
-  const adminEmails = (admins || []).map((u: any) => u.email).filter(Boolean)
+  // ── Recipients ──
+  // If explicit recipients were provided, use those. Otherwise fall back to all org admins.
+  let adminEmails: string[] = []
+  if (recipientEmails && recipientEmails.length > 0) {
+    adminEmails = recipientEmails.filter(Boolean)
+  } else {
+    const { data: admins } = await supabase
+      .from('users')
+      .select('email')
+      .eq('organization_id', orgId)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+    adminEmails = (admins || []).map((u: any) => u.email).filter(Boolean)
+  }
 
   // ── Base URL ──
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
